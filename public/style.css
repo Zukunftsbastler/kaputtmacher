@@ -78,6 +78,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 #hint .finger { animation: tap 1s ease-in-out infinite; }
 @keyframes tap { 0%, 100% { transform: translateY(-8px); } 50% { transform: translateY(4px) scale(0.9); } }
 
+#legal { left: 14px; top: 122px; pointer-events: auto; font-size: 12px; line-height: 1; color: var(--ink); background: rgba(255, 255, 255, 0.85); padding: 5px 8px; border-radius: 8px; text-decoration: none; }
+#legal:hover, #legal:focus-visible { background: #fff; text-decoration: underline; }
 #stick { left: 26px; bottom: 26px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255, 255, 255, 0.28); border: 3px solid rgba(255, 255, 255, 0.7); }
 #stick i { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); }
 
@@ -103,6 +105,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 @media (max-height: 520px), (max-width: 700px) {
   :root { --btn: 50px; }
   #power { width: 70px; height: 70px; }
+  #legal { top: 92px; font-size: 10px; }
   #power .face { font-size: 30px; }
   #worldbar { width: 38vw; }
   #worldbar .icons { font-size: 14px; }

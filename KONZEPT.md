@@ -429,6 +429,7 @@ Lose Trümmer bleiben nicht ewig liegen. Jeder Würfel, der als Schutt zur Ruhe 
 
 - Veröffentlicht wird der Ordner `public/` unverändert (`netlify.toml`). Konzept und Prompts liegen außerhalb.
 - `public/_headers` setzt eine Content-Security-Policy, die nur eigene Dateien erlaubt (mit Trusted Types), schaltet ungenutzte Gerätefunktionen ab und lässt den Browser jede Datei beim Server nachfragen, damit sich nach einem Update nie alte und neue Dateien mischen.
+- **Impressum und Datenschutzerklärung** stehen in `public/impressum.html`, im Spiel jederzeit erreichbar über einen kleinen Textlink unter dem Macht-Ring. Das ist neben der Eltern-Ecke die einzige Textstelle; die Regel „sprachfrei“ tritt hier hinter die gesetzliche Pflicht zurück. „Spielstand und Einstellungen löschen“ in der Eltern-Ecke entfernt alles, was das Spiel im Browser gespeichert hat.
 - Eingaben von außen – Adress-Parameter und der Spielstand im Browser – werden vor der Verwendung geprüft; Einzelheiten in der README, Abschnitt „Sicherheit“.
 
 ### 12.3 Speicher und große Welten

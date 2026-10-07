@@ -70,6 +70,10 @@ export class Hud {
     this.next = this.button(root, '➡️', () => game.nextWorld()); this.next.id = 'next';
     this.next.classList.add('hidden', 'pulse');
 
+    // Legal notice: the one piece of text outside the parents' corner. The law wants it easy to find.
+    const legal = el('a', '', root, 'Impressum & Datenschutz'); legal.id = 'legal';
+    legal.href = 'impressum.html';
+
     this.hintBox = el('div', 'hidden', root); this.hintBox.id = 'hint';
     this.hintQueue = [];
     this.hintId = null;
@@ -353,7 +357,7 @@ export class Hud {
     check('Alles freischalten', 'unlockAll');
     const full = el('button', '', sheet, 'Vollbild an/aus');
     full.addEventListener('click', () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.()));
-    const reset = el('button', 'danger', sheet, 'Fortschritt zurücksetzen');
+    const reset = el('button', 'danger', sheet, 'Spielstand und Einstellungen löschen');
     reset.addEventListener('click', () => {
       if (reset.dataset.armed) { resetProgress(p); location.reload(); }
       else { reset.dataset.armed = '1'; reset.textContent = 'Wirklich alles löschen? Nochmal tippen'; }

@@ -69,8 +69,9 @@ export function saveProgress(p) {
   try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* ignore */ }
 }
 
+// Deletes everything the game has stored in this browser, progress and settings alike
+// (the privacy notice promises exactly that). The caller reloads the page afterwards.
 export function resetProgress(p) {
-  const settings = p.settings;
-  Object.assign(p, structuredClone(DEFAULTS), { settings });
-  saveProgress(p);
+  p.volatile = true; // nothing may be written back before the reload
+  try { localStorage.removeItem(KEY); } catch { /* ignore */ }
 }

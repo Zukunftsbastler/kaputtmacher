@@ -1,0 +1,1 @@
+Hier fehlt noch ein Impressum und eine Datenschutzerklärung. Bitte ergänze beides, damit ich kein Problem eingehe. Orientiere dich an den Dateien, z.B. in /Users/macadmin/Games/Foerdeland/impressum.html - diese Datei ist bereits online und alle darin enthaltenen Infos damit auch.

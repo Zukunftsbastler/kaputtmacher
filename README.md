@@ -65,7 +65,8 @@ Spielbar. Geprüft wurde bisher fast nur automatisiert (Durchläufe im Browser m
 
 1. **Keine Abhängigkeiten, kein Build.** Kein npm, kein Framework, keine Engine, kein CDN. Der Inhalt von `public/` wird unverändert ausgeliefert (Netlify, `netlify.toml`). Grund: möglichst kleine Angriffsfläche.
 2. **Strenge Content-Security-Policy** (`public/_headers`): nur eigene Dateien, keine Inline-Skripte, keine Inline-Style-Attribute im Markup (Setzen über `element.style` ist erlaubt), keine Netzwerkzugriffe.
-3. **Quellcode englisch,** Spieloberfläche sprachfrei (Emoji als Symbole). Einzige Textstelle ist die Eltern-Ecke, auf Deutsch.
+3. **Quellcode englisch,** Spieloberfläche sprachfrei (Emoji als Symbole). Text gibt es nur an zwei Stellen, beide auf Deutsch: in der Eltern-Ecke und als Link „Impressum & Datenschutz“ (rechtlich nötig, führt zu `public/impressum.html`).
+   Wer ändert, was das Spiel speichert oder lädt, muss die Datenschutzerklärung in `public/impressum.html` anpassen – sie beschreibt den Ist-Zustand genau.
 4. **Jeder Prompt des Autors wird wörtlich abgelegt** als `PROMPTS/PROMPTnn.md` (nächste freie Nummer).
 5. **KONZEPT.md ist die Spezifikation** und wird bei jeder Änderung mitgeführt, einschließlich ehrlichem Umsetzungsstand in Abschnitt 16.
 6. **Kindgerecht:** kein Scheitern, kein Blut, niemand stirbt; Neues wird einzeln eingeführt und vorgemacht.
@@ -79,6 +80,7 @@ KONZEPT.md          Spielkonzept und Umsetzungsstand
 PROMPTS/            alle Prompts des Autors
 public/
   index.html, style.css, _headers
+  impressum.html, legal.css   Impressum und Datenschutzerklärung
   src/              21 ES-Module, siehe unten
 ```
 

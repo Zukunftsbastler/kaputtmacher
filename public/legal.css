@@ -1,0 +1,74 @@
+/* Impressum & Datenschutz: plain, readable, in the game's colours. No external fonts. */
+:root {
+  --sky: #dcecfb;
+  --paper: #fdfaf3;
+  --ink: #23303d;
+  --accent: #ff9f1c;
+  --line: #c3d3e2;
+}
+
+body {
+  margin: 0;
+  padding: 24px 16px;
+  background: var(--sky);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.6;
+}
+
+.legal {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.box {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: 2rem;
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 0.4rem;
+}
+
+h2 {
+  font-size: 1.35rem;
+  margin-top: 1.8rem;
+}
+
+h3 {
+  font-size: 1.1rem;
+}
+
+a {
+  color: var(--ink);
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+a:hover,
+a:focus-visible {
+  color: #b86a00;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+@media (max-width: 520px) {
+  .box { padding: 1rem 1.1rem; }
+  h1 { font-size: 1.6rem; }
+}
