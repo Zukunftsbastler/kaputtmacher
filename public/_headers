@@ -1,0 +1,21 @@
+# Security headers for Netlify. The game consists only of its own static files:
+# no third-party scripts, styles, fonts or network requests are allowed.
+#
+# Content-Security-Policy: only this site's own scripts and styles; no inline code, no plug-ins,
+#   no frames, no forms, no network requests. Trusted Types make the browser refuse any attempt
+#   to turn a string into HTML or script (the game never does).
+# Permissions-Policy: device features the game does not use are switched off; gamepad and
+#   fullscreen stay available to this site only.
+# Cache-Control: always ask the server whether a file has changed, so an update never mixes
+#   old and new source files.
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'; trusted-types 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: accelerometer=(), camera=(), display-capture=(), fullscreen=(self), gamepad=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), xr-spatial-tracking=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Resource-Policy: same-origin
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  Cache-Control: no-cache

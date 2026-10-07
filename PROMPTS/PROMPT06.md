@@ -1,0 +1,1 @@
+Treffer müssen noch wesentlich wuchtiger wirken - die Voxel dürfen viel weiter hoch fliegen. Außerdem müssen die Gebäude in Großstädten noch wesentlich höher sein - eine Szene wie Tokyo oder New York, bei der das Monster die Größe eines Autos hat.

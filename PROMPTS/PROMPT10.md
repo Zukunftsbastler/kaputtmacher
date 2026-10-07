@@ -1,0 +1,1 @@
+Ich möchte, dass du einen umfassenden Code Review machst. Prüfe den Code besonders genau auf sicherheitsrelevante Probleme/Code Smells, die korrigiert werden müssen. Ich will auf netlify deployen und will hier keine Risiken eingehen. Prüfe zudem, ob der Code noch effizienter gebaut werden kann.

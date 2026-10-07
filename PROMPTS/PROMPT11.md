@@ -1,0 +1,1 @@
+Erstelle nun einen Prompt, mit dem ich in Gemini ein Titelbild für meine Website erstellen kann, auf der ich alle meine Spieleprojekte vorstelle. Sichte diese auch gern - die Bilder in /Users/macadmin/tillalbert.de/games/ stehen jeweils für ein Spiel.
