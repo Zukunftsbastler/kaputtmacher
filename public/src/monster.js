@@ -28,6 +28,8 @@ const JUMP_HEIGHT = 3.2; // apex of a full jump in monster heights
 const JUMP_CUT = 3; // extra gravity while rising with the button released
 const FALL_GRAVITY = 1.7; // extra gravity on the way down
 const SPRINT = 1.75;
+const JUMP2_HEIGHT = 2.4; // extra height of the second jump in mid-air, in monster heights
+const FLIP_TIME = 0.55; // seconds the somersault of the second jump takes
 
 const C = { SKIN: 1, BELLY: 2, DARK: 3, WHITE: 4, EYE: 5, TEETH: 6, ARMOR: 7, GLOW: 8 };
 // Every joint has three rotations (x, y, z) and an offset (x, y, z) in model units.
@@ -172,8 +174,8 @@ export function newPose() {
   const j = {};
   for (const n of JOINTS) j[n] = new Float32Array(6);
   // spin/pitch: whole-body yaw and pitch. hop/fwd: whole-body offset in model units. look: where the head turns.
-  // bank/climb: how the aircraft leans into a turn and points its nose.
-  return { walk: 0, walkAmp: 0, time: 0, squash: 0, spin: 0, pitch: 0, hop: 0, fwd: 0, roar: 0, hold: 0, look: 0, air: 0, bank: 0, climb: 0, j };
+  // bank/climb: how the aircraft leans into a turn and points its nose. flip: somersault angle of the double jump.
+  return { flip: 0, walk: 0, walkAmp: 0, time: 0, squash: 0, spin: 0, pitch: 0, hop: 0, fwd: 0, roar: 0, hold: 0, look: 0, air: 0, bank: 0, climb: 0, j };
 }
 
 // Body language that is always on: walking, breathing, tail sway, looking at the aim point, tucking in a jump.
@@ -263,6 +265,9 @@ export class Monster {
     this.trampleT = 0; this.shoveT = 0;
     this.lastStep = 0;
     this.grow = 0; // 1 right after a growth, fades out
+    this.jumps = 0; // jumps since the feet last touched the ground (2 = the double jump is used up)
+    this.flipT = -1; // seconds into the somersault, -1 = none
+    this.flipped = false; // this flight included a somersault: the landing hits harder
     this.steer = 0; this.pitchIn = 0; // aircraft controls: turn and climb, -1..1
     this.homing = false; // aircraft has left an island and is turning back
   }
@@ -275,6 +280,7 @@ export class Monster {
   place(x, y, z, heading) {
     this.x = x; this.y = y; this.z = z; this.heading = heading;
     this.vy = 0; this.leaping = null; this.onGround = true;
+    this.jumps = 0; this.flipT = -1; this.flipped = false; this.pose.flip = 0;
     this.h = this.targetHeight();
     if (this.g.progress.species === 'jet') { this.y = y + 40 + this.h; this.onGround = false; } // the aircraft starts in the air
   }
@@ -288,11 +294,22 @@ export class Monster {
   // Big monsters fall faster, so a jump takes about as long at every size instead of floating.
   gravity() { return GRAVITY * 2 * Math.max(1, this.h / 14); }
 
+  // First press: jump from the ground. Second press in the air: one more jump, with a forward somersault.
   jump() {
-    if (!this.onGround) return false;
-    this.vy = Math.sqrt(2 * this.gravity() * this.h * JUMP_HEIGHT);
-    this.onGround = false;
+    if (this.onGround) {
+      this.vy = Math.sqrt(2 * this.gravity() * this.h * JUMP_HEIGHT);
+      this.onGround = false;
+      this.stomping = true;
+      this.jumps = 1;
+      return true;
+    }
+    if (this.leaping || this.jumps >= 2) return false;
+    // Also allowed after walking off an edge: then it is the only jump of that fall.
+    this.vy = Math.sqrt(2 * this.gravity() * this.h * JUMP2_HEIGHT);
+    this.jumps = 2;
     this.stomping = true;
+    this.flipT = 0; this.flipped = true;
+    this.g.onDoubleJump(this);
     return true;
   }
 
@@ -344,6 +361,12 @@ export class Monster {
     pose.roar = Math.max(0, pose.roar - dt * 1.1);
     pose.squash = Math.max(0, pose.squash - dt * 4);
     pose.air += ((this.onGround ? 0 : 1) - pose.air) * Math.min(1, dt * 12);
+    if (this.flipT >= 0) { // somersault: one full forward turn, quick in the middle
+      this.flipT += dt;
+      const t = Math.min(1, this.flipT / FLIP_TIME);
+      pose.flip = Math.PI * 2 * t * t * (3 - 2 * t);
+      if (t >= 1) { this.flipT = -1; pose.flip = 0; }
+    }
 
     const input = Math.hypot(mx, mz), stepH = Math.max(1.5, h * 0.3), r = h * 0.22;
     this.speed = 0;
@@ -401,10 +424,11 @@ export class Monster {
       if (this.y <= gy && this.vy <= 0) {
         this.y = gy;
         this.onGround = true;
+        this.jumps = 0; this.flipT = -1; pose.flip = 0;
         pose.squash = 1;
         if (this.leaping) { this.leaping = null; g.onLeapLand(this); }
         else if (this.stomping) g.onStompLand(this);
-        this.stomping = false;
+        this.stomping = false; this.flipped = false;
       }
     }
 

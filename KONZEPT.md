@@ -82,6 +82,7 @@ Maus und Tastatur haben Vorrang und werden zuerst abgestimmt; Gamepad und Touch 
 | Stufenhöhe | 30 % der Körperhöhe: Schutt und niedrige Mauern werden einfach überstiegen |
 | **Sprunghöhe** | Taste halten: bis **3,2 Körperhöhen**. Kurz tippen: etwa eine Körperhöhe. Loslassen bricht den Aufstieg ab – wie in einem Jump-and-Run |
 | Sprungverlauf | Schneller Aufstieg (0,7 s bis zum Scheitel), noch schnellerer Fall (0,55 s); ein voller Sprung dauert bei jeder Größe rund 1,3 Sekunden |
+| **Doppelsprung** | Ein zweiter Druck in der Luft gibt noch einmal 2,4 Körperhöhen Auftrieb, und die Figur schlägt in 0,55 Sekunden einen Salto vorwärts. Beide Sprünge zusammen reichen bis knapp fünf Körperhöhen. Einen dritten gibt es erst nach der Landung. Wer von einer Kante fällt, hat diesen einen Luftsprung ebenfalls. Die Landung aus dem Salto trifft ein Drittel härter und breiter |
 | Steuerung in der Luft | voll: Man kann gezielt auf ein Dach springen |
 | Landung | Springen kann das Monster von Anfang an. Ab Stufe 2 ist jede Landung ein Stampfer mit Krater und Druckwelle; mit Stufe 1 gibt es nur eine Staubwolke |
 

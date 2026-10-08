@@ -320,6 +320,12 @@ class Game {
 
   onLeapLand() { this.tools.leapLanded(); }
 
+  // The second jump kicks off from thin air: a puff below the feet.
+  onDoubleJump(m) {
+    this.audio.whoosh();
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * 6.283; this.fx.add(m.x, m.y, m.z, Math.cos(a) * m.h * 1.2, -m.h * 0.3, Math.sin(a) * m.h * 1.2, m.h * 0.12 + 0.5, m.h * 0.3, 0.35, 1, 1, 1, 0.7, 0, 0, 2.5); }
+  }
+
   // A storey is about to give way: creaking first.
   onCreak(st, y) {
     this.audio.crack(Math.min(1, st.remaining / 30000));
@@ -736,6 +742,7 @@ class Game {
     m4.translation(out, wrapDelta(x - c.focusX, c.wrap), y, wrapDelta(z - c.focusZ, c.wrap));
     m4.rotateY(out, heading + pose.spin);
     if (pose.pitch) m4.rotateX(out, pose.pitch);
+    if (pose.flip) { m4.translate(out, 0, h * 0.5, 0); m4.rotateX(out, pose.flip); m4.translate(out, 0, -h * 0.5, 0); } // somersault around the body's middle
     m4.scale(out, s * (1 + q * 0.15), s * (1 - q * 0.2), s * (1 + q * 0.15));
     m4.translate(out, 0, pose.hop, pose.fwd);
     return out;

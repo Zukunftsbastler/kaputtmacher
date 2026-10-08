@@ -30,7 +30,7 @@ Dann `http://localhost:8000` öffnen. Es wird nichts installiert und nichts geba
 
 | | |
 |---|---|
-| Bewegen | W/S oder Pfeile vor und zurück, A/D drehen, Umschalt rennen, Leertaste springen (halten = höher) |
+| Bewegen | W/S oder Pfeile vor und zurück, A/D drehen, Umschalt rennen, Leertaste springen (halten = höher, in der Luft noch einmal drücken = Doppelsprung mit Salto) |
 | Angreifen | **Linksklick schnell und schwächer, Rechtsklick langsam und stark.** Tasten 1–4 wählen den Angriff |
 | Kamera | Mittlere Maustaste ziehen; Tab wechselt zur freien Flugkamera |
 | Gamepad, Touch | werden automatisch erkannt (Trigger rechts/links; kurz tippen/halten) |

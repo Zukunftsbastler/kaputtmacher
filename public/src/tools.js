@@ -784,9 +784,9 @@ export class Tools {
 
   // Called when the monster lands after a jump.
   stompLand(m) {
-    const B = this.base();
-    this.blow(m.x, m.y + m.h * 0.05, m.z, m.h * 0.42 + 1, 4 + m.stage * 1.7, true, 0, 0, true);
-    this.shock(m.x, m.y, m.z, m.h * 0.55, m.h * 0.28 + 1, (4 + m.stage * 1.7) * 0.8, 6);
+    const B = this.base(), k = m.flipped ? 1.3 : 1; // coming down out of a somersault hits a third harder and wider
+    this.blow(m.x, m.y + m.h * 0.05, m.z, (m.h * 0.42 + 1) * k, (4 + m.stage * 1.7) * k, true, 0, 0, true);
+    this.shock(m.x, m.y, m.z, m.h * 0.55 * k, m.h * 0.28 + 1, (4 + m.stage * 1.7) * 0.8 * k, m.flipped ? 8 : 6);
     this.g.impactFx(m.x, m.y + 1, m.z, B.H * 0.5, 0.5 + m.stage * 0.1, false);
   }
 
