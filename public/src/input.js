@@ -29,6 +29,13 @@ export class Input {
     this.bind();
   }
 
+  // On-screen attack buttons (touch): attack whatever is straight ahead, a little above the creature.
+  press(heavy) {
+    this.gesture('touch');
+    this.aimX = innerWidth / 2; this.aimY = innerHeight * 0.4;
+    if (heavy) this.heavyPressed = true; else this.firePressed = true;
+  }
+
   gesture(device) {
     this.device = device;
     this.lastActivity = performance.now();

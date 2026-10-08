@@ -26,24 +26,27 @@ export class Autopilot {
     this.moveT = 0; // seconds until another move is selected
     this.flourish = 6; // seconds until the next jump just for show
     this.second = -1; // seconds until the second press of a double jump, -1 = none
+    this.third = false; // a ground pound is planned for this jump
     this.stuckT = 0; this.sx = 0; this.sz = 0; this.stuck = 0;
     this.skip = new Map(); // buildings to leave alone for a while -> time until then
     this.worldT = 0; this.doneT = 0;
     this.rnd = Math.random; // decisions of the autopilot are deliberately not part of the reproducible simulation
   }
 
-  // Chooses the nearest standing building (one of the three nearest, for variety).
+  // Chooses the next building. Usually one of the three nearest; every third time or so one further away,
+  // so that the creature travels and the whole map gets seen.
   pickTarget() {
-    const g = this.g, m = g.monster, size = g.cam.wrap, best = [];
+    const g = this.g, m = g.monster, size = g.cam.wrap, best = [], far = [], roam = this.rnd() < 0.35;
     for (const st of g.hud.major) {
       if (st.done || st.remaining < 20 || (this.skip.get(st) ?? 0) > g.time) continue;
       const d = Math.hypot(wrapDelta((st.x0 + st.x1) / 2 - m.x, size), wrapDelta((st.z0 + st.z1) / 2 - m.z, size));
+      if (d > 140 && d < 460) far.push(st);
       let i = best.length;
       while (i > 0 && best[i - 1].d > d) i--;
       if (i < 3) { best.splice(i, 0, { st, d }); best.length = Math.min(best.length, 3); }
     }
-    this.target = best.length ? best[Math.floor(this.rnd() * best.length)].st : null;
-    this.patience = 30;
+    this.target = roam && far.length ? far[Math.floor(this.rnd() * far.length)] : best.length ? best[Math.floor(this.rnd() * best.length)].st : null;
+    this.patience = roam ? 55 : 30; // a journey takes longer
     this.retarget = 0;
   }
 
@@ -112,13 +115,18 @@ export class Autopilot {
       return;
     }
 
-    const reach = ranged ? 150 : g.tool === 'charge' || g.tool === 'ram' || g.tool === 'pound' ? m.h * 3 + 6 : m.h * 0.9 + 4;
+    // Ranged attackers walk up close as well: within a few body lengths, not from the far end of the street.
+    const reach = ranged ? m.h * 2.5 + 22 : g.tool === 'charge' || g.tool === 'ram' || g.tool === 'pound' ? m.h * 3 + 6 : m.h * 0.9 + 4;
     if (dist > reach) {
       inp.forward = facing ? 1 : 0.25;
       inp.sprint = facing && dist > m.h * 4;
-    } else if (facing && this.cool <= 0 && !g.tools.act && m.onGround) {
-      if (this.rnd() < 0.4) inp.heavyPressed = true; else inp.firePressed = true;
-      this.cool = 0.25 + this.rnd() * 0.5;
+    } else {
+      // Shooters keep strolling towards their target while they fire; brawlers stand and hit.
+      if (ranged && dist > m.h * 1.2 + 6) inp.forward = facing ? 0.45 : 0.2;
+      if (facing && this.cool <= 0 && !g.tools.act && m.onGround) {
+        if (this.rnd() < 0.4) inp.heavyPressed = true; else inp.firePressed = true;
+        this.cool = 0.25 + this.rnd() * 0.5;
+      }
     }
 
     // Not getting anywhere: jump (twice, with the somersault); if that does not help either, try another building.
@@ -131,7 +139,10 @@ export class Autopilot {
     }
     // Every now and then a jump for the joy of it.
     if ((this.flourish -= dt) <= 0 && !g.tools.act && m.onGround) { this.jump(); this.flourish = 9 + this.rnd() * 10; if (this.rnd() < 0.3) g.doAction('roar'); }
-    if (this.second >= 0 && (this.second -= dt) < 0) { g.doAction('stomp'); this.second = -1; }
+    if (this.second >= 0 && (this.second -= dt) < 0) { g.doAction('stomp'); this.second = -1; this.third = this.rnd() < 0.6; }
+    // Often the double jump ends in a ground pound: pressed as soon as the moment has come.
+    if (this.third && m.poundReady()) { g.doAction('stomp'); this.third = false; }
+    if (m.onGround) this.third = false;
   }
 
   jump() {

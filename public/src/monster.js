@@ -30,6 +30,11 @@ const FALL_GRAVITY = 1.7; // extra gravity on the way down
 const SPRINT = 1.75;
 const JUMP2_HEIGHT = 2.4; // extra height of the second jump in mid-air, in monster heights
 const FLIP_TIME = 0.55; // seconds the somersault of the second jump takes
+// Ground pound, as in classic platformers: third press near the top of the double jump.
+const POUND_HANG = 0.2; // seconds the creature hangs and curls up before it drops
+const POUND_SPEED = 2.4; // drop speed, in launch speeds of the first jump
+const POUND_STUN = 0.3; // seconds it stays crouched in its crater afterwards
+const POUND_CHAIN = 8; // how many floors in a row it may smash through
 
 const C = { SKIN: 1, BELLY: 2, DARK: 3, WHITE: 4, EYE: 5, TEETH: 6, ARMOR: 7, GLOW: 8 };
 // Every joint has three rotations (x, y, z) and an offset (x, y, z) in model units.
@@ -268,6 +273,10 @@ export class Monster {
     this.jumps = 0; // jumps since the feet last touched the ground (2 = the double jump is used up)
     this.flipT = -1; // seconds into the somersault, -1 = none
     this.flipped = false; // this flight included a somersault: the landing hits harder
+    this.v2 = 1; // launch speed of the last double jump
+    this.pound = null; // ground pound in progress: { t, falling, chain }
+    this.stun = 0; // seconds the creature cannot move after a ground pound
+    this.cued = false;
     this.steer = 0; this.pitchIn = 0; // aircraft controls: turn and climb, -1..1
     this.homing = false; // aircraft has left an island and is turning back
   }
@@ -281,6 +290,7 @@ export class Monster {
     this.x = x; this.y = y; this.z = z; this.heading = heading;
     this.vy = 0; this.leaping = null; this.onGround = true;
     this.jumps = 0; this.flipT = -1; this.flipped = false; this.pose.flip = 0;
+    this.pound = null; this.stun = 0;
     this.h = this.targetHeight();
     if (this.g.progress.species === 'jet') { this.y = y + 40 + this.h; this.onGround = false; } // the aircraft starts in the air
   }
@@ -303,14 +313,31 @@ export class Monster {
       this.jumps = 1;
       return true;
     }
-    if (this.leaping || this.jumps >= 2) return false;
+    if (this.leaping || this.pound) return false;
+    if (this.jumps >= 2) {
+      // Third press: only at the right moment. Then all steering ends and the creature drops like a stone.
+      if (!this.poundReady()) return false;
+      this.pound = { t: 0, falling: false, chain: 0 };
+      this.jumps = 3; this.flipT = -1; this.vy = 0;
+      this.stomping = false;
+      this.g.onPoundStart(this);
+      return true;
+    }
     // Also allowed after walking off an edge: then it is the only jump of that fall.
-    this.vy = Math.sqrt(2 * this.gravity() * this.h * JUMP2_HEIGHT);
+    this.vy = this.v2 = Math.sqrt(2 * this.gravity() * this.h * JUMP2_HEIGHT);
+    this.cued = false;
     this.jumps = 2;
     this.stomping = true;
     this.flipT = 0; this.flipped = true;
     this.g.onDoubleJump(this);
     return true;
+  }
+
+  // The right moment for the ground pound: around the top of the double jump, from the second half
+  // of the somersault until the creature has started to fall in earnest.
+  poundReady() {
+    return this.jumps === 2 && !this.onGround && !this.leaping && !this.pound &&
+      (this.flipT < 0 || this.flipT > FLIP_TIME * 0.5) && this.vy > -this.v2 * 0.55;
   }
 
   // An aimed leap: flies in an arc to (tx, tz), ignoring what stands in the way, and reports the landing.
@@ -368,6 +395,9 @@ export class Monster {
       if (t >= 1) { this.flipT = -1; pose.flip = 0; }
     }
 
+    this.stun = Math.max(0, this.stun - dt);
+    if (this.pound || this.stun > 0) { mx = 0; mz = 0; } // no steering during a ground pound or while getting up from it
+    if (!this.cued && this.poundReady()) { this.cued = true; g.onPoundCue(this); }
     const input = Math.hypot(mx, mz), stepH = Math.max(1.5, h * 0.3), r = h * 0.22;
     this.speed = 0;
     if (this.leaping) {
@@ -418,17 +448,37 @@ export class Monster {
       else this.y = gy;
     } else {
       // Released early: the rise is cut short. Falling is faster than rising. A leap always flies its full arc.
-      const held = this.jumpHeld || this.leaping;
-      this.vy -= this.gravity() * (this.vy > 0 ? (held ? 1 : JUMP_CUT) : FALL_GRAVITY) * dt;
+      const held = this.jumpHeld || this.leaping, pd = this.pound;
+      if (pd && !pd.falling) { // curl up and hang for a moment, then go straight down at full speed
+        pd.t += dt;
+        this.vy = 0;
+        if (pd.t >= POUND_HANG) { pd.falling = true; this.vy = -Math.sqrt(2 * this.gravity() * h * JUMP_HEIGHT) * POUND_SPEED; }
+      } else if (pd) {
+        this.vy -= this.gravity() * dt;
+        if (g.rng() < 0.7) g.fx.add(this.x + (g.rng() - 0.5) * h * 0.5, this.y + h * (1 + g.rng()), this.z + (g.rng() - 0.5) * h * 0.5, 0, h * 2, 0, h * 0.05 + 0.4, 0, 0.25, 1, 1, 1, 0.6, 1);
+      } else this.vy -= this.gravity() * (this.vy > 0 ? (held ? 1 : JUMP_CUT) : FALL_GRAVITY) * dt;
       this.y += this.vy * dt;
       if (this.y <= gy && this.vy <= 0) {
         this.y = gy;
-        this.onGround = true;
-        this.jumps = 0; this.flipT = -1; pose.flip = 0;
-        pose.squash = 1;
-        if (this.leaping) { this.leaping = null; g.onLeapLand(this); }
-        else if (this.stomping) g.onStompLand(this);
-        this.stomping = false; this.flipped = false;
+        if (pd) {
+          // The whole weight comes down. If that breaks a floor away, the drop goes on into the next one;
+          // on plain ground it ends in a crater instead of digging a shaft.
+          const fx = Math.floor(this.x), fz = Math.floor(this.z), st = fx >= 0 && fz >= 0 && fx < w.sx && fz < w.sz ? w.structures[w.footprint[fx + w.sx * fz]] : null;
+          const onGroundLevel = !st || !st.major || this.y <= st.y0 + 1; // only floors of a building count, never the ground
+          g.onPoundLand(this, pd.chain);
+          let below = 0;
+          for (let i = 0; i < 5; i++) below = Math.max(below, w.heightBelow(this.x + (i === 1 ? r : i === 2 ? -r : 0) * 0.7, this.z + (i === 3 ? r : i === 4 ? -r : 0) * 0.7, this.y + stepH));
+          if (!onGroundLevel && below < this.y - 1 && pd.chain < POUND_CHAIN) { pd.chain++; this.vy *= 0.85; }
+          else { this.pound = null; this.stun = POUND_STUN; this.y = below; }
+        }
+        if (!this.pound) {
+          this.onGround = true;
+          this.jumps = 0; this.flipT = -1; pose.flip = 0;
+          pose.squash = pd ? 1.6 : 1;
+          if (this.leaping) { this.leaping = null; g.onLeapLand(this); }
+          else if (this.stomping) g.onStompLand(this);
+          this.stomping = false; this.flipped = false;
+        }
       }
     }
 
@@ -441,6 +491,28 @@ export class Monster {
     if (species === 'tank') dl = Math.atan2(Math.sin(dl), Math.cos(dl));
     pose.look += dl * Math.min(1, dt * 8);
     locomotion(pose, species);
+    this.poundPose(species);
+  }
+
+  // Body language of the ground pound: curl into a ball with one quick turn while hanging,
+  // then drop seat first, stretched long, arms thrown up; afterwards stay crouched in the crater.
+  poundPose(species) {
+    const pose = this.pose, j = pose.j, pd = this.pound;
+    if (!pd) { if (this.stun > 0) { pose.squash = Math.max(pose.squash, 1.2 * (this.stun / POUND_STUN)); j.torso[0] += 0.35; j.head[0] += 0.2; } return; }
+    if (!pd.falling) {
+      const t = pd.t / POUND_HANG;
+      pose.flip = Math.PI * 2 * t * t * (3 - 2 * t);
+      pose.squash = 0.8 * t; // tucked in tight
+      if (species !== 'tank') { j.legL[0] = j.legR[0] = -1.5 * t; j.armL[0] = j.armR[0] = -1.2 * t; j.torso[0] += 0.5 * t; j.head[0] += 0.4 * t; j.tail[0] += 0.9 * t; j.tail2[0] += 0.7 * t; }
+      return;
+    }
+    pose.flip = 0;
+    pose.squash = -1.1; // stretched by the speed
+    if (species === 'tank') { j.torso[0] = 0; j.barrel[0] -= 0.5; return; }
+    j.legL[0] = j.legR[0] = -1.45; // sitting position: the seat hits first
+    j.armL[0] = j.armR[0] = 0; j.armL[2] = -2.5; j.armR[2] = 2.5;
+    j.torso[0] = -0.12; j.head[0] = 0.35; j.jaw[0] += 0.7;
+    j.tail[0] = 1.1; j.tail2[0] = 0.6;
   }
 
   // True if something solid stands between knee and head height at the given spot.

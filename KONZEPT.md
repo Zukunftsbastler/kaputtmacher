@@ -76,6 +76,20 @@ Maus und Tastatur haben Vorrang und werden zuerst abgestimmt; Gamepad und Touch 
 | Welt neu aufbauen | Knopf | Y halten | Knopf |
 | Weltauswahl | Knopf | – | Knopf |
 
+### 4.1a Bedienung auf dem Handy
+
+Auf Touch-Geräten und in kleinen Fenstern schaltet die Oberfläche in ein kompaktes Layout. Der Grundsatz: Dauerhaft sichtbar ist nur, was die Figur unmittelbar steuert; alles andere liegt hinter einem einzigen Menüknopf.
+
+| Wo | Was |
+|---|---|
+| Unten links | Steuerknüppel: vor/zurück, drehen; ganz durchgedrückt rennt die Figur |
+| Unten rechts, unter dem Daumen | **Springen** (groß; halten = höher, erneut = Doppelsprung, im goldenen Moment = Stampfattacke), **schneller Angriff**, **starker Angriff** (mit Muskelarm-Zeichen), ein kleiner Knopf, der zum **nächsten Angriff** weiterschaltet, und ab Stufe 9 Brüllen |
+| Ins Bild tippen | zielt auf die getippte Stelle: kurz = schnell, halten = stark. Die Angriffsknöpfe greifen geradeaus an |
+| Oben rechts | ein Menüknopf ☰. Darin: Neu aufbauen, Kettenreaktionen, Flugkamera, Weltauswahl, Selbstspiel, Eltern-Ecke und der Link zu Impressum & Datenschutz. Ein Tipp auf einen Eintrag oder ins Spielfeld schließt das Menü |
+| Oben | Macht-Ring und Welt-Balken verkleinert; die Reihe der Gebäudesymbole entfällt |
+
+Weitere Anpassungen: Vorführ-Hinweise erscheinen oben statt unten, damit sie nicht unter den Daumen liegen; zeigt ein Hinweis auf einen Knopf im Menü, pulsiert der Menüknopf. Alle Ränder berücksichtigen Notch und abgerundete Ecken. Menüs lassen sich mit dem Finger scrollen. Im Hochformat rückt die Kamera weiter zurück, weil das Bild schmal ist.
+
 ### 4.2 Bewegung und Sprung
 
 | Größe | Wert |
@@ -85,6 +99,7 @@ Maus und Tastatur haben Vorrang und werden zuerst abgestimmt; Gamepad und Touch 
 | **Sprunghöhe** | Taste halten: bis **3,2 Körperhöhen**. Kurz tippen: etwa eine Körperhöhe. Loslassen bricht den Aufstieg ab – wie in einem Jump-and-Run |
 | Sprungverlauf | Schneller Aufstieg (0,7 s bis zum Scheitel), noch schnellerer Fall (0,55 s); ein voller Sprung dauert bei jeder Größe rund 1,3 Sekunden |
 | **Doppelsprung** | Ein zweiter Druck in der Luft gibt noch einmal 2,4 Körperhöhen Auftrieb, und die Figur schlägt in 0,55 Sekunden einen Salto vorwärts. Beide Sprünge zusammen reichen bis knapp fünf Körperhöhen. Einen dritten gibt es erst nach der Landung. Wer von einer Kante fällt, hat diesen einen Luftsprung ebenfalls. Die Landung aus dem Salto trifft ein Drittel härter und breiter |
+| **Stampfattacke** (dritter Druck) | Wie der Bodenstampfer aus Jump-and-Run-Spielen. **Der richtige Moment** ist der Scheitel des Doppelsprungs: von der zweiten Hälfte des Saltos, bis die Figur merklich fällt. Dann schimmert sie golden und es tickt kurz. Wer jetzt drückt: Die Figur rollt sich mit einer schnellen Drehung zusammen, hängt 0,2 Sekunden in der Luft und saust dann senkrecht nach unten – Sitzfläche voran, lang gestreckt, Arme hochgerissen. **Lenken ist ab dem Druck nicht mehr möglich.** Der Aufschlag wirkt wie der Stampfer einer Figur **eine Stufe höher**, allein durch Gewicht: Krater, zwei Stoßringe, Zeitlupe; was darunter steht, bekommt einen dreifachen Schubs. Trifft sie ein Gebäude, bricht sie Stockwerk für Stockwerk durch (bis zu acht, jedes etwas schwächer); auf freiem Boden bleibt es bei einem Krater. Danach hockt sie 0,3 Sekunden im Krater. Zu früh oder zu spät gedrückt passiert nichts |
 | Steuerung in der Luft | voll: Man kann gezielt auf ein Dach springen |
 | Landung | Springen kann das Monster von Anfang an. Ab Stufe 2 ist jede Landung ein Stampfer mit Krater und Druckwelle; mit Stufe 1 gibt es nur eine Staubwolke |
 
@@ -154,6 +169,7 @@ Die Würfelgröße ist pro Welt fest: 20 cm im Bauklotz-Zimmer, 25 cm in Garten 
 - Sichtbar ist immer eine runde Kappe von 360 Würfeln Radius (180 m) rund um das Monster. Dahinter liegt der Horizont; die äußeren 20 % lösen sich im Dunst auf.
 - Die Größe der sichtbaren Kappe hängt nicht von der Größe der Welt ab. Die Welt kann deshalb viel größer sein als das, was der Rechner gleichzeitig zeichnen muss (12.3).
 - Einschränkung: keine echte Kugel, kein Blick von außen auf den ganzen Planeten.
+- **Strahlen bleiben gerade.** Weil das Bild gekrümmt wird, sähe ein in der Welt gerader Laserstrahl auf dem Schirm aus wie ein Wasserstrahl. Strahlenwaffen (Laserimpulse, Schneidstrahl, Atomstrahl, Bordwaffen) verlaufen deshalb gerade *im Bild*: Der Strahl wird im Bildraum verfolgt und jeder Punkt für die Trefferprüfung in die Welt zurückgerechnet. Er trifft also genau das, worüber er sichtbar hinwegstreicht, auch die Brenntiefe folgt dieser Linie. Geschosse (Raketen, Granaten, Bomben) fliegen weiterhin in der Welt und beschreiben auf dem Schirm einen leichten Bogen.
 
 ### 7.3 Materialien
 
@@ -432,7 +448,7 @@ Lose Trümmer bleiben nicht ewig liegen. Jeder Würfel, der als Schutt zur Ruhe 
 
 - Veröffentlicht wird der Ordner `public/` unverändert (`netlify.toml`). Konzept und Prompts liegen außerhalb.
 - `public/_headers` setzt eine Content-Security-Policy, die nur eigene Dateien erlaubt (mit Trusted Types), schaltet ungenutzte Gerätefunktionen ab und lässt den Browser jede Datei beim Server nachfragen, damit sich nach einem Update nie alte und neue Dateien mischen.
-- **Impressum und Datenschutzerklärung** stehen in `public/impressum.html`, im Spiel jederzeit erreichbar über einen kleinen Textlink unter dem Macht-Ring. Das ist neben der Eltern-Ecke die einzige Textstelle; die Regel „sprachfrei“ tritt hier hinter die gesetzliche Pflicht zurück. „Spielstand und Einstellungen löschen“ in der Eltern-Ecke entfernt alles, was das Spiel im Browser gespeichert hat.
+- **Impressum und Datenschutzerklärung** stehen in `public/impressum.html`, im Spiel jederzeit erreichbar über einen kleinen Textlink unter dem Macht-Ring. Das ist neben der Eltern-Ecke die einzige Textstelle; die Regel „sprachfrei“ tritt hier hinter die gesetzliche Pflicht zurück. **Spielstand löschen:** Auf der Seite „Impressum & Datenschutz“ steht dort, wo die Speicherung erklärt wird, ein Knopf, der alles entfernt, was das Spiel im Browser gespeichert hat. Er ist über den Link im Spiel jederzeit zu finden, liegt aber auf einer eigenen Textseite und verlangt zwei Schritte (erst „löschen …“, dann „Ja, endgültig löschen“ – „Abbrechen“ ist vorausgewählt). Denselben Knopf gibt es in der Eltern-Ecke.
 - Eingaben von außen – Adress-Parameter und der Spielstand im Browser – werden vor der Verwendung geprüft; Einzelheiten in der README, Abschnitt „Sicherheit“.
 
 ### 12.3 Speicher und große Welten
@@ -547,18 +563,20 @@ Reihenfolge nach Wirkung auf das Spielgefühl:
 
 **Was der Autopilot tut.** Er benutzt dieselbe Steuerung wie ein Spieler und kann nichts, was ein Spieler nicht kann.
 
-1. Er wählt eines der drei nächsten Gebäude, die noch stehen.
+1. Er wählt eines der drei nächsten Gebäude, die noch stehen – und etwa jedes dritte Mal stattdessen ein weiter entferntes (70 bis 230 m), damit die Figur reist und die ganze Karte zu sehen ist. Unterwegs trampelt sie nieder, was im Weg steht.
 2. Er sucht daran eine Stelle, die noch fest ist – für Nahangriffe in Reichweite der Figur, für Fernangriffe irgendwo am Gebäude – und sucht alle ein bis zwei Sekunden eine neue.
-3. Er läuft hin (weit entfernt im Sprint) und zielt auf die Stelle. Figuren mit Fernangriff bleiben auf Abstand; der Flieger hält sich knapp über Dachhöhe, feuert im Anflug und wirft Bomben, wenn er nah ist.
+3. Er läuft hin (weit entfernt im Sprint) und zielt auf die Stelle. Auch Figuren mit Fernangriff gehen bis auf wenige Körperlängen heran und schlendern beim Feuern weiter auf ihr Ziel zu; der Flieger hält sich knapp über Dachhöhe, feuert im Anflug und wirft Bomben, wenn er nah ist.
 4. In Reichweite greift er an: zu 60 % schnell, zu 40 % stark.
 5. Alle 5 bis 11 Sekunden wechselt er auf einen anderen freigeschalteten Angriff, damit alle zu sehen sind.
-6. Alle 9 bis 19 Sekunden springt er aus Freude – mit Doppelsprung und Salto, manchmal mit Gebrüll.
+6. Alle 9 bis 19 Sekunden springt er aus Freude – mit Doppelsprung und Salto, in sechs von zehn Fällen mit anschließender Stampfattacke, manchmal mit Gebrüll.
 7. Kommt er nicht voran, springt er; hilft das zweimal nicht, nimmt er ein anderes Gebäude. An einem Gebäude bleibt er höchstens 30 Sekunden.
 8. Sieben Sekunden nach 100 % – oder nach 12 Minuten in derselben Welt – reist er in die nächste Welt der Liste.
 
 Macht und Stufen wachsen dabei ganz normal und werden gespeichert. Figur und Stufe bleiben, wie der Spieler sie gewählt hat. Vorführ-Hinweise und Geister-Monster sind im Idle-Modus ausgeblendet.
 
-**Gemessen** (je 30 bis 45 Sekunden Selbstspiel): Bauklotz-Zimmer mit Dino ab Stufe 3: 68 % der Welt, dabei auf Stufe 4 gewachsen. Dorf mit Roboter auf Stufe 5: 12 Gebäude. Stadt mit Flieger auf Stufe 5: 3 Gebäude. Wolkenkratzer-Stadt mit Panzer ab Stufe 6: 31 Gebäude, dabei brach die Bildrate unter der Last der Einstürze zeitweise auf unter 30 Bilder pro Sekunde ein.
+**Zurückgelegter Weg** in 36 Sekunden Selbstspiel: Roboter in der Wolkenkratzer-Stadt 230 m (12 Gebäude), Panzer im Dorf 370 m (28 Gebäude), Dino in der Stadt 860 m (25 Gebäude). Vor dieser Änderung blieben Roboter und Panzer praktisch stehen.
+
+**Gemessen** (je 30 bis 45 Sekunden Selbstspiel, älterer Stand): Bauklotz-Zimmer mit Dino ab Stufe 3: 68 % der Welt, dabei auf Stufe 4 gewachsen. Dorf mit Roboter auf Stufe 5: 12 Gebäude. Stadt mit Flieger auf Stufe 5: 3 Gebäude. Wolkenkratzer-Stadt mit Panzer ab Stufe 6: 31 Gebäude, dabei brach die Bildrate unter der Last der Einstürze zeitweise auf unter 30 Bilder pro Sekunde ein.
 
 **Grenzen.**
 - Auf Stufe 1 in der Wolkenkratzer-Stadt passiert lange wenig: Die Figur braucht eine Viertelminute aus dem Park heraus und kratzt dann mit schwachen Schlägen an Beton. Für den Hintergrundbetrieb lohnt eine höhere Stufe.

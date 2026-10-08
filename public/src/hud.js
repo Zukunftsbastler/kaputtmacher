@@ -49,6 +49,13 @@ export class Hud {
     this.btnWorlds = this.button(tr, '🌍', () => this.openWorlds());
     this.btnIdle = this.button(tr, '🍿', () => game.setIdle(!game.idle)); // lean back and watch: the game plays itself
     this.btnGear = this.button(tr, '⚙️', null); this.btnGear.id = 'gear';
+    // On small and touch screens everything in this row folds away behind one menu button,
+    // so the playing field stays free. The legal link moves in here as well.
+    this.drawer = tr;
+    const legal2 = el('a', '', tr, 'Impressum & Datenschutz'); legal2.id = 'legal2'; legal2.href = 'impressum.html';
+    this.btnMenu = this.button(root, '☰', () => this.toggleMenu()); this.btnMenu.id = 'menuBtn';
+    tr.addEventListener('click', (e) => { if (e.target.closest('.btn') && !e.target.closest('#gear')) this.toggleMenu(false); });
+    game.canvas.addEventListener('pointerdown', () => this.toggleMenu(false));
     // The parents' corner opens only after holding the gear for three seconds.
     let gearTimer = 0;
     const cancel = () => { clearTimeout(gearTimer); this.btnGear.classList.remove('holding'); };
@@ -58,6 +65,17 @@ export class Hud {
     this.toolbar = el('div', '', root); this.toolbar.id = 'toolbar';
     this.abilities = el('div', '', root); this.abilities.id = 'abilities';
     this.toolButtons = {};
+
+    // Touch only: the buttons under the right thumb. Jump lives in #abilities; here are the two attacks
+    // and one button that steps through the available moves (instead of a whole toolbar).
+    this.touchpad = el('div', '', root); this.touchpad.id = 'touchpad';
+    const hold = (b, fn) => b.addEventListener('pointerdown', (e) => { e.preventDefault(); game.audio.unlock(); fn(); });
+    this.btnLight = el('button', 'btn', this.touchpad); this.btnLight.dataset.id = 'light';
+    this.btnHeavy = el('button', 'btn', this.touchpad); this.btnHeavy.dataset.id = 'heavy';
+    this.btnCycle = el('button', 'btn', this.touchpad, '🔁'); this.btnCycle.dataset.id = 'cycle';
+    hold(this.btnLight, () => game.input.press(false));
+    hold(this.btnHeavy, () => game.input.press(true));
+    hold(this.btnCycle, () => { game.input.gesture('touch'); game.doAction('tool+'); });
 
     this.stick = el('div', 'hidden', root); this.stick.id = 'stick';
     this.stickKnob = el('i', '', this.stick);
@@ -80,6 +98,19 @@ export class Hud {
     this.hintId = null;
     this.shownTools = new Set();
     this.overlay = null;
+  }
+
+  toggleMenu(open = !this.drawer.classList.contains('open')) {
+    this.drawer.classList.toggle('open', open);
+    this.btnMenu.classList.toggle('sel', open);
+  }
+
+  // Layout classes on <body>: the input device, plus "compact" for touch and for small windows.
+  layout() {
+    const dev = this.g.input.device, cls = dev + (dev === 'touch' || innerWidth < 760 || innerHeight < 520 ? ' compact' : '');
+    if (document.body.className === cls) return;
+    document.body.className = cls;
+    if (this.hintBox) this.renderHint(); // the demonstration shows the device in use
   }
 
   button(parent, icon, onClick, key) {
@@ -111,12 +142,19 @@ export class Hud {
         b.addEventListener('pointerdown', () => { g.audio.unlock(); g.input.jumpBtn = true; g.doAction('stomp'); });
         for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => { g.input.jumpBtn = false; });
       }
+      b.dataset.id = a.id;
       this.toolButtons[a.id] = b;
       if (announce && !this.shownTools.has(a.id)) b.classList.add('fresh');
       this.shownTools.add(a.id);
     }
     // A single tool needs no bar.
     this.toolbar.classList.toggle('hidden', n < 2);
+    // Touch buttons show the selected move: plain for the quick version, with a flexed arm for the strong one.
+    const cur = movesFor(g.progress.species).find((t) => t.id === g.tool) ?? movesFor(g.progress.species)[0];
+    this.btnLight.textContent = cur.icon;
+    this.btnHeavy.replaceChildren(cur.icon, el('span', 'badge', null, '💪'));
+    this.btnCycle.classList.toggle('hidden', n < 2);
+    if (announce) { this.btnCycle.classList.remove('fresh'); void this.btnCycle.offsetWidth; this.btnCycle.classList.add('fresh'); }
     this.refreshButtons();
   }
 
@@ -132,7 +170,7 @@ export class Hud {
     this.btnWorlds.classList.toggle('hidden', false); // the world choice is open from the first minute
     this.btnCamera.textContent = this.g.fly ? SPECIES.find((s) => s.id === p.species).icon : '🎥';
     this.face.textContent = SPECIES.find((s) => s.id === p.species).icon;
-    document.body.className = this.g.input.device;
+    this.layout();
   }
 
   // Called every simulation step while something breaks, so the DOM is only touched when the picture changes.
@@ -190,7 +228,7 @@ export class Hud {
   // Per frame: touch stick, gamepad cursor.
   update() {
     const inp = this.g.input, touch = inp.device === 'touch';
-    if (document.body.className !== inp.device) { document.body.className = inp.device; this.renderHint(); }
+    this.layout();
     this.stick.classList.toggle('hidden', !touch);
     if (touch) this.stickKnob.style.transform = `translate(${inp.stick.x * 36}px, ${inp.stick.y * 36}px)`;
     this.cross.classList.toggle('hidden', inp.device !== 'pad');
@@ -221,7 +259,7 @@ export class Hud {
 
   renderHint() {
     const id = this.hintId, box = this.hintBox, dev = this.g.input.device;
-    for (const b of [this.btnRebuild, this.btnCamera, this.btnWorlds, ...Object.values(this.toolButtons)]) b.classList.remove('pulse');
+    for (const b of [this.btnRebuild, this.btnCamera, this.btnWorlds, this.btnMenu, ...Object.values(this.toolButtons)]) b.classList.remove('pulse');
     box.replaceChildren();
     box.classList.toggle('hidden', !id);
     if (!id) return;
@@ -269,6 +307,7 @@ export class Hud {
       // Interface buttons: the button itself pulses, the bubble shows what to press it with.
       const b = { rebuild: this.btnRebuild, camera: this.btnCamera, worlds: this.btnWorlds, next: this.next }[id];
       if (b) { b.classList.add('pulse'); el('span', '', box, b.textContent); }
+      if (b && this.drawer.contains(b)) this.btnMenu.classList.add('pulse'); // in the compact layout the button sits inside the menu
       box.append(dev === 'kbm' ? mouse() : dev === 'pad' ? pad(id === 'rebuild' ? 'Y' : '☰') : finger());
     }
   }

@@ -6,6 +6,7 @@
 import { isTerrain, TYPE_MAT, MAT, RUBBLE } from './materials.js';
 import { clamp, wrapDelta } from './math.js';
 import { GRAVITY, launch } from './particles.js';
+import { stageScale } from './monster.js';
 
 const ease = (x) => x * x * (3 - 2 * x);
 const snap = (x) => 1 - (1 - x) ** 3; // fast start, soft landing: the feel of a blow
@@ -415,6 +416,8 @@ export class Tools {
   constructor(game) {
     this.g = game;
     this.o = [0, 0, 0]; this.hp = [0, 0, 0];
+    this.pa = [0, 0, 0]; this.pb = [0, 0, 0]; this.hit = [0, 0, 0]; this.deep = [0, 0, 0]; // scratch for beams
+    this.pdx = 0; this.pdy = 0; this.pdz = 1; this.hitT = 0;
     this.tgt = { x: 0, y: 0, z: 0 };
     this.opt = { dx: 0, dy: 0.15, dz: 0, impulse: 0, debris: 80, spare: false, blast: 0, quiet: false };
     this.dx = 0; this.dz = 1; // direction of the last blow
@@ -607,47 +610,79 @@ export class Tools {
     if (n) { g.fx.sparks(m.x + Math.sin(a1) * reach * 0.7, y, m.z + Math.cos(a1) * reach * 0.7, 14, 3, 0.4, 0.9, 1); g.audio.sword(); }
   }
 
-  // Marches from o towards the target; leaves the direction in rdx/rdy/rdz and returns the distance
-  // to the first solid thing (helicopters included). hitSolid tells whether anything was found.
+  // The planet is drawn bent, so a line that is straight in the world looks curved on screen like a jet of
+  // water. Beams therefore run straight in the picture instead: the march goes through "picture space"
+  // (positions as drawn), and every sample is converted back to the world for the voxel test.
+  // toPicture/toWorld do the two conversions; on flat islands they change nothing.
+  toPicture(out, x, y, z) {
+    const c = this.g.cam, rx = wrapDelta(x - c.focusX, c.wrap), rz = wrapDelta(z - c.focusZ, c.wrap);
+    out[0] = rx; out[1] = y - (rx * rx + rz * rz) * c.curv; out[2] = rz;
+    return out;
+  }
+  toWorld(out, vx, vy, vz) {
+    const c = this.g.cam;
+    out[0] = c.focusX + vx; out[1] = vy + (vx * vx + vz * vz) * c.curv; out[2] = c.focusZ + vz;
+    return out;
+  }
+
+  // Marches from o towards the target along a line that is straight on screen. Afterwards `hit` holds the
+  // world position of the first solid thing (helicopters included) or of the end of the range, hitSolid
+  // tells which, and rdx/rdy/rdz is the beam's direction in the world at that point.
   trace(o, tx, ty, tz, max) {
-    const g = this.g;
-    let dx = tx - o[0], dy = ty - o[1], dz = tz - o[2];
+    const g = this.g, a = this.toPicture(this.pa, o[0], o[1], o[2]), b = this.toPicture(this.pb, tx, ty, tz), p = this.hit;
+    let dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
     const d = Math.hypot(dx, dy, dz) || 1;
     dx /= d; dy /= d; dz /= d;
-    this.rdx = dx; this.rdy = dy; this.rdz = dz; this.hitSolid = false;
+    this.pdx = dx; this.pdy = dy; this.pdz = dz;
+    this.hitSolid = false;
     let t = 2;
     for (let i = 0; t < max; t += 0.7, i++) {
-      const x = o[0] + dx * t, y = o[1] + dy * t, z = o[2] + dz * t;
-      if (y < 0 || y > g.world.sy + 60) break;
-      if (g.world.get(Math.floor(x), Math.floor(y), Math.floor(z)) || g.bodies.solidAt(x, y, z)) { this.hitSolid = true; break; }
-      if (i % 6 === 0 && g.actors.hitAir(x, y, z, 4)) { this.hitSolid = true; break; }
+      this.toWorld(p, a[0] + dx * t, a[1] + dy * t, a[2] + dz * t);
+      if (p[1] < 0 || p[1] > g.world.sy + 60) break;
+      if (g.world.get(Math.floor(p[0]), Math.floor(p[1]), Math.floor(p[2])) || g.bodies.solidAt(p[0], p[1], p[2])) { this.hitSolid = true; break; }
+      if (i % 6 === 0 && g.actors.hitAir(p[0], p[1], p[2], 4)) { this.hitSolid = true; break; }
     }
+    this.hitT = t;
+    this.toWorld(p, a[0] + dx * t, a[1] + dy * t, a[2] + dz * t);
+    const q = this.toWorld(this.deep, a[0] + dx * (t + 1), a[1] + dy * (t + 1), a[2] + dz * (t + 1));
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) || 1;
+    this.rdx = (q[0] - p[0]) / l; this.rdy = (q[1] - p[1]) / l; this.rdz = (q[2] - p[2]) / l;
     return t;
+  }
+
+  // World position `depth` further along the last traced beam: how deep it burns in.
+  beyond(depth) {
+    const a = this.pa, t = this.hitT + depth;
+    return this.toWorld(this.deep, a[0] + this.pdx * t, a[1] + this.pdy * t, a[2] + this.pdz * t);
   }
 
   // A short laser pulse: a flash of light and a small, deep hole.
   bolt(o, aim, radius, depth, r, gr, b) {
-    const g = this.g, t = this.trace(o, aim.x, aim.y, aim.z, 520);
-    const bx = o[0] + this.rdx * t, by = o[1] + this.rdy * t, bz = o[2] + this.rdz * t, opt = this.opt;
+    const g = this.g, opt = this.opt;
+    this.trace(o, aim.x, aim.y, aim.z, 520);
+    const bx = this.hit[0], by = this.hit[1], bz = this.hit[2];
     this.rays.push({ ax: o[0], ay: o[1], az: o[2], bx, by, bz, w: radius * 0.9, r, g: gr, b, life: 0.07 });
     if (!this.hitSolid) return;
     opt.dx = this.rdx; opt.dz = this.rdz; opt.impulse = launch(8); opt.debris = 8; opt.spare = false; opt.blast = 0;
     g.lastHit.dx = this.rdx; g.lastHit.dz = this.rdz;
-    g.destruction.capsule(bx, by, bz, bx + this.rdx * depth, by + this.rdy * depth, bz + this.rdz * depth, radius, 60, opt);
+    const e = this.beyond(depth);
+    g.destruction.capsule(bx, by, bz, e[0], e[1], e[2], radius, 60, opt);
     g.fx.sparks(bx, by, bz, 16, 4, r, gr, b);
     if (g.rng() < 0.4) g.fire.igniteSphere(bx + this.rdx * 2, by + this.rdy * 2, bz + this.rdz * 2, radius + 2.5, 5);
   }
 
   // A continuous beam for one simulation step: burns deeper every step, sets fire, leaves glowing spots.
   ray(o, aim, radius, depth, r, gr, b, burn, dt) {
-    const g = this.g, t = this.trace(o, aim.x, aim.y, aim.z, 560), opt = this.opt;
-    const bx = o[0] + this.rdx * t, by = o[1] + this.rdy * t, bz = o[2] + this.rdz * t;
+    const g = this.g, opt = this.opt;
+    this.trace(o, aim.x, aim.y, aim.z, 560);
+    const bx = this.hit[0], by = this.hit[1], bz = this.hit[2];
     this.rays.push({ ax: o[0], ay: o[1], az: o[2], bx, by, bz, w: radius, r, g: gr, b, life: dt * 1.6 });
     g.audio.laser();
     if (!this.hitSolid) return;
     opt.dx = this.rdx; opt.dz = this.rdz; opt.impulse = launch(10 + radius * 3); opt.debris = 6; opt.spare = false; opt.blast = 0; opt.quiet = true;
     g.lastHit.dx = this.rdx; g.lastHit.dz = this.rdz;
-    g.destruction.capsule(bx, by, bz, bx + this.rdx * depth, by + this.rdy * depth, bz + this.rdz * depth, radius, 70, opt);
+    const e = this.beyond(depth);
+    g.destruction.capsule(bx, by, bz, e[0], e[1], e[2], radius, 70, opt);
     opt.quiet = false;
     if (g.rng() < 0.6) g.fx.sparks(bx, by, bz, 18, 3, r, gr, b);
     if (burn && g.rng() < 0.35) g.fire.igniteSphere(bx + this.rdx * 2, by + this.rdy * 2, bz + this.rdz * 2, radius + 3, 6);
@@ -788,6 +823,19 @@ export class Tools {
     this.blow(m.x, m.y + m.h * 0.05, m.z, (m.h * 0.42 + 1) * k, (4 + m.stage * 1.7) * k, true, 0, 0, true);
     this.shock(m.x, m.y, m.z, m.h * 0.55 * k, m.h * 0.28 + 1, (4 + m.stage * 1.7) * 0.8 * k, m.flipped ? 8 : 6);
     this.g.impactFx(m.x, m.y + 1, m.z, B.H * 0.5, 0.5 + m.stage * 0.1, false);
+  }
+
+  // Ground pound landing. Size and stage are those of a creature one stage higher; the blow is pure weight:
+  // a crater under the seat and two rings running outwards. Each further floor of a chain hits a little softer.
+  poundLand(m, chain) {
+    const g = this.g, w = g.world, S = m.stage + 1, k = 0.88 ** chain;
+    const H = Math.min(w.monsterBase * stageScale(S), w.sy * 0.92), P = (4 + S * 1.7) * 1.25 * k, x = m.x, y = m.y, z = m.z;
+    this.blow(x, y + H * 0.05, z, H * 0.45 + 1, P, true, 0, 0, true, 200);
+    this.shock(x, y, z, H * 0.6, H * 0.28 + 1, P * 0.8, 8);
+    if (chain === 0) this.later(0.1, () => this.shock(x, y, z, H * 1.1, H * 0.24 + 1, P * 0.6, 12, true));
+    g.impactFx(x, y + 1, z, H * 0.6, 0.9 + S * 0.1, true);
+    g.debris.blast(x, y, z, H * 2, launch(H * 1.5));
+    g.audio.boom(0.8 + S * 0.08);
   }
 
   roar() {

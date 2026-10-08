@@ -72,10 +72,20 @@
         ist dafür nicht nötig.
       </p>
       <p>
-        Sie können den Spielstand jederzeit löschen: im Spiel über die Eltern-Ecke (Zahnrad drei Sekunden gedrückt
-        halten, dann „Fortschritt zurücksetzen“) oder über die Funktion Ihres Browsers zum Löschen von
-        Website-Daten.
+        Sie können den Spielstand jederzeit löschen: direkt hier, im Spiel über die Eltern-Ecke (Zahnrad drei
+        Sekunden gedrückt halten, dann „Spielstand und Einstellungen löschen“) oder über die Funktion Ihres
+        Browsers zum Löschen von Website-Daten.
       </p>
+      <div class="save" id="save" hidden>
+        <p id="save-status" role="status"></p>
+        <button type="button" id="save-delete">Spielstand und Einstellungen löschen …</button>
+        <div id="save-confirm" hidden>
+          <p><strong>Wirklich löschen?</strong> Erreichte Stufe, Sticker und Einstellungen gehen verloren. Das lässt
+            sich nicht rückgängig machen.</p>
+          <button type="button" id="save-no">Abbrechen</button>
+          <button type="button" id="save-yes" class="danger">Ja, endgültig löschen</button>
+        </div>
+      </div>
       <h3>Schriften, Symbole und Ton</h3>
       <p>
         Es werden keine Schriftarten nachgeladen; das Spiel nutzt die Schriften und Emoji-Symbole Ihres Geräts (keine
@@ -98,5 +108,6 @@
       </p>
     </section>
   </main>
+  <script type="module" src="legal.js"></script>
 </body>
 </html>

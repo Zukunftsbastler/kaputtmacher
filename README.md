@@ -30,11 +30,12 @@ Dann `http://localhost:8000` öffnen. Es wird nichts installiert und nichts geba
 
 | | |
 |---|---|
-| Bewegen | W/S oder Pfeile vor und zurück, A/D drehen, Umschalt rennen, Leertaste springen (halten = höher, in der Luft noch einmal drücken = Doppelsprung mit Salto) |
+| Bewegen | W/S oder Pfeile vor und zurück, A/D drehen, Umschalt rennen, Leertaste springen (halten = höher, in der Luft noch einmal drücken = Doppelsprung mit Salto; am höchsten Punkt, wenn die Figur golden schimmert, ein drittes Mal = Stampfattacke senkrecht nach unten) |
 | Angreifen | **Linksklick schnell und schwächer, Rechtsklick langsam und stark.** Tasten 1–4 wählen den Angriff |
 | Kamera | Mittlere Maustaste ziehen; Tab wechselt zur freien Flugkamera |
 | Zusehen | Popcorn-Knopf oder Taste I: das Spiel spielt sich selbst |
-| Gamepad, Touch | werden automatisch erkannt (Trigger rechts/links; kurz tippen/halten) |
+| Gamepad | wird automatisch erkannt (Trigger rechts/links) |
+| Handy, Tablet | Steuerknüppel links; rechts Knöpfe für Springen, schnellen und starken Angriff und Angriffswechsel; alles Übrige im Menü ☰ oben rechts. Ins Bild tippen zielt (kurz = schnell, halten = stark) |
 
 **Fünf Figuren, fünf Arten zu zerstören.** Jede hat vier Angriffe (ab Stufe 1, 3, 5, 7), jeden in einer schnellen und einer starken Fassung:
 
@@ -81,7 +82,7 @@ KONZEPT.md          Spielkonzept und Umsetzungsstand
 PROMPTS/            alle Prompts des Autors
 public/
   index.html, style.css, _headers
-  impressum.html, legal.css   Impressum und Datenschutzerklärung
+  impressum.html, legal.css, legal.js   Impressum, Datenschutzerklärung und der Knopf zum Löschen des Spielstands
   src/              22 ES-Module, siehe unten
 ```
 
@@ -133,8 +134,11 @@ Ein Simulationsschritt (`Game.step`), Reihenfolge ist wichtig: Figur bewegen →
 - **Die Simulation benutzt `game.rng`,** nie `Math.random` (nur Kamerawackeln und Ton dürfen das). Feste Zeitschritte und reproduzierbarer Zufall sind Voraussetzung für die geplante Zeitlupe und das Zurückspulen.
 - **Keine Speicheranforderung im Spielverlauf,** wo es sich vermeiden lässt: Schutt, Effekte und Zwischenpuffer sind feste Vorräte.
 - **Zusammengefasste Flächen sind auf Planeten waagerecht höchstens 4 Würfel lang** (`meshChunk`), sonst klaffen sie durch die Krümmung auseinander.
+- **Strahlen verlaufen gerade im Bild, nicht in der Welt** (`Tools.trace`, `toPicture`/`toWorld`). Wer eine neue Strahlenwaffe baut, benutzt `bolt` oder `ray` und liest Treffpunkt und Richtung aus `this.hit` und `rdx/rdy/rdz`, statt selbst entlang einer Weltgeraden zu rechnen.
 - **Vertex-Positionen sind 16-Bit-Ganzzahlen;** der Farbton je Würfel entsteht erst im Fragment-Shader.
 - **Browser-Cache:** siehe „Starten“. Nach Änderungen an mehreren Modulen immer mit `serve.py` testen. Auf Netlify sorgt `Cache-Control: no-cache` in `_headers` dafür, dass der Browser bei jeder Datei nachfragt.
+- **Kompaktes Layout** (`Hud.layout`, CSS-Klassen `compact` und `touch` am `<body>`): Dieselben Knöpfe werden per CSS umsortiert, nichts ist doppelt gebaut. `#topright` wird zum aufklappbaren Menü, die Werkzeugleiste weicht auf Touch den Daumenknöpfen in `#touchpad`. Neue Knöpfe, die die Figur nicht direkt steuern, gehören in `#topright`.
+- **`touch-action`** steht nur auf der Zeichenfläche auf `none`; auf `<body>` würde es das Scrollen der Menüs mit dem Finger verhindern.
 - **Tastatur gehört dem Spiel nur ohne offenes Menü** (`forGame` in `input.js`), sonst wären Regler und Knöpfe der Eltern-Ecke nicht per Tastatur bedienbar.
 - **`game.lastHit`** (Richtung und Hochwurf des letzten Treffers) bestimmt, wohin abgetrennte Teile kippen. Vor einem Schaden setzen.
 - **Hindernisprüfung der Figur:** sowohl am nächsten Schritt als auch etwas dahinter prüfen (siehe `Monster.update`); einzeln führte jedes zu einem Stillstand, einmal bei hohem Tempo, einmal vor dünnen Pfosten.
@@ -150,6 +154,7 @@ Das Spiel ist rein statisch und spricht nach dem Laden mit keinem Server. Was es
 | Adresszeile | Die Test-Parameter (`?stage=` …) werden gegen Wertebereiche und feste Listen geprüft (`cleanStage`, `cleanSpecies`, `cleanQuality` in `progress.js`) und nie gespeichert. Ein präparierter Link kann das Spiel weder zum Absturz bringen noch Speicher fressen lassen |
 | Spielstand | `localStorage` gilt als nicht vertrauenswürdig: `sanitize()` in `progress.js` baut aus beliebigem Inhalt einen gültigen Spielstand; Unbekanntes wird verworfen. Ein beschädigter Spielstand kann das Spiel nicht dauerhaft lahmlegen |
 | Gerätefunktionen | Per Permissions-Policy abgeschaltet, bis auf Gamepad und Vollbild |
+| Spielstand löschen | Knopf auf der Seite „Impressum & Datenschutz“ (`legal.js`, zwei Schritte) und in der Eltern-Ecke. Der Schlüssel `kaputtmacher.v1` steht in `progress.js` und in `legal.js` – wird er umbenannt, dann an beiden Stellen |
 | Veröffentlichter Umfang | Nur `public/`. Konzept, Prompts, README und `serve.py` werden nicht ausgeliefert |
 
 Regeln, damit das so bleibt: kein `innerHTML` und keine Inline-Styles im Markup; jeder neue Adress-Parameter und jedes neue Feld im Spielstand bekommt eine Prüfung in `progress.js`; keine externen Ressourcen.
@@ -173,7 +178,7 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 
 Der Autopilot tut nichts, was ein Spieler nicht auch könnte: Er füllt einmal pro Bild den Zustand von `Input` (`forward`, `turn`, `sprint`, `aimX/aimY`, `firePressed`, `heavyPressed`) und wählt Angriffe über `game.selectTool`. Die Simulation weiß nicht, wer spielt.
 
-- **Ablauf:** nächstes stehendes Gebäude wählen (eines der drei nächsten) → eine noch feste Stelle daran suchen (`pickSpot`) → hinlaufen oder hinfliegen und über `game.project()` darauf zielen → in Reichweite abwechselnd schnell und stark angreifen → alle 5 bis 11 Sekunden den Angriff wechseln → bei Stillstand springen, dann anderes Ziel.
+- **Ablauf:** nächstes stehendes Gebäude wählen (eines der drei nächsten, jedes dritte Mal ein fernes, damit die Karte erkundet wird) → eine noch feste Stelle daran suchen (`pickSpot`) → hinlaufen oder hinfliegen und über `game.project()` darauf zielen → in Reichweite abwechselnd schnell und stark angreifen → alle 5 bis 11 Sekunden den Angriff wechseln → bei Stillstand springen, dann anderes Ziel.
 - **Weltwechsel:** 7 Sekunden nach 100 % oder nach 12 Minuten in derselben Welt, reihum durch `WORLDS`.
 - **Ein und aus:** `game.setIdle(on)`; Knopf 🍿, Taste I, Adresse `?idle=1`, optional automatisch nach 2 Minuten ohne Eingabe (Eltern-Ecke). Jede echte Eingabe schaltet ab (`input.onActivity`).
 - **Zufall:** Die Entscheidungen des Autopiloten nutzen `Math.random`, gehören also bewusst nicht zur reproduzierbaren Simulation.

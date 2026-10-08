@@ -343,6 +343,23 @@ class Game {
 
   onLeapLand() { this.tools.leapLanded(); }
 
+  // The moment for the ground pound has come: a glint and a short tick.
+  onPoundCue(m) {
+    this.audio.tick();
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * 6.283; this.fx.add(m.x + Math.cos(a) * m.h * 0.5, m.y + m.h * 0.5, m.z + Math.sin(a) * m.h * 0.5, Math.cos(a) * m.h, 0, Math.sin(a) * m.h, m.h * 0.08 + 0.4, 0, 0.3, 1, 0.95, 0.4, 1, 1); }
+  }
+
+  onPoundStart() {
+    this.audio.whoosh();
+    this.emit('ability', 'stomp');
+  }
+
+  // Ground pound landing: the damage of a creature one stage bigger, done by weight alone.
+  onPoundLand(m, chain) {
+    this.tools.poundLand(m, chain);
+    this.onShove(m, m.x, m.z, 0, 0, 3); // whatever it lands on gets the full weight
+  }
+
   // The second jump kicks off from thin air: a puff below the feet.
   onDoubleJump(m) {
     this.audio.whoosh();
@@ -622,7 +639,9 @@ class Game {
     const yaw = this.camYaw, pitch = this.fly ? this.flyPitch : -this.camPitch, cp = Math.cos(pitch);
     c.fwd[0] = Math.sin(yaw) * cp; c.fwd[1] = Math.sin(pitch); c.fwd[2] = Math.cos(yaw) * cp;
     if (this.fly) { c.focusX = this.flyPos[0]; c.focusZ = this.flyPos[2]; ty = this.flyPos[1]; }
-    else { c.focusX = m.x; c.focusZ = m.z; ty = m.y + m.h * (this.progress.species === 'jet' ? 0.5 : 1.3); dist = m.h * 3.4 + 12; }
+    // On an upright phone the picture is narrow, so the camera steps back to keep the surroundings in view.
+    const narrow = clamp(1.2 * cv.clientHeight / Math.max(1, cv.clientWidth), 1, 2.2);
+    if (!this.fly) { c.focusX = m.x; c.focusZ = m.z; ty = m.y + m.h * (this.progress.species === 'jet' ? 0.5 : 1.3); dist = (m.h * 3.4 + 12) * narrow; }
     c.eye[0] = tx - c.fwd[0] * dist; c.eye[1] = ty - c.fwd[1] * dist; c.eye[2] = tz - c.fwd[2] * dist;
     this.shakeAmt = Math.max(0, this.shakeAmt - dt * 1.8);
     if (this.shakeAmt > 0.01) {
@@ -824,7 +843,9 @@ class Game {
 
     r.setHole(0, 0, 0, 0, 0);
     this.monsterBase(base, m.x, m.y, m.z, m.heading, m.h, m.pose);
-    this.drawMonster(base, m.pose, 1, m.grow > 0 ? [1, 1, 0.8, m.grow * 0.7] : null);
+    // A golden shimmer shows the moment in which the third press turns the jump into a ground pound.
+    const tint = m.grow > 0 ? [1, 1, 0.8, m.grow * 0.7] : m.poundReady() ? [1, 0.85, 0.2, 0.3 + 0.2 * Math.sin(this.last * 0.03)] : null;
+    this.drawMonster(base, m.pose, 1, tint);
 
     let o = this.debris.write(this.cubeBuf, 0);
     o = this.tools.write(this.cubeBuf, o, this.time);
@@ -836,10 +857,14 @@ class Game {
     let n = this.fx.write(this.billBuf);
     const bb = this.billBuf;
     for (const ray of this.tools.rays) { // beams: chains of glowing dots with a bright end
-      const len = Math.hypot(ray.bx - ray.ax, ray.by - ray.ay, ray.bz - ray.az), cnt = Math.min(140, Math.ceil(len / Math.max(1.2, ray.w * 1.1)));
+      // The dots are lined up straight in the picture. The planet's bend, which the shader applies to
+      // everything, is added to each dot beforehand, so that it cancels out and the beam stays straight.
+      const ax = wrapDelta(ray.ax - c.focusX, c.wrap), az = wrapDelta(ray.az - c.focusZ, c.wrap), bx = wrapDelta(ray.bx - c.focusX, c.wrap), bz = wrapDelta(ray.bz - c.focusZ, c.wrap);
+      const ay = ray.ay - (ax * ax + az * az) * c.curv, by = ray.by - (bx * bx + bz * bz) * c.curv;
+      const len = Math.hypot(bx - ax, by - ay, bz - az), cnt = Math.min(140, Math.ceil(len / Math.max(1.2, ray.w * 1.1)));
       for (let i = 0; i <= cnt && n < bb.length / 9 - 1; i++, n++) {
-        const t = i / cnt, q = n * 9;
-        bb[q] = ray.ax + (ray.bx - ray.ax) * t; bb[q + 1] = ray.ay + (ray.by - ray.ay) * t; bb[q + 2] = ray.az + (ray.bz - ray.az) * t;
+        const t = i / cnt, q = n * 9, x = ax + (bx - ax) * t, z = az + (bz - az) * t;
+        bb[q] = c.focusX + x; bb[q + 1] = ay + (by - ay) * t + (x * x + z * z) * c.curv; bb[q + 2] = c.focusZ + z;
         bb[q + 3] = i === cnt ? ray.w * 3 : ray.w * 1.4; bb[q + 4] = ray.r; bb[q + 5] = ray.g; bb[q + 6] = ray.b; bb[q + 7] = 0.95; bb[q + 8] = 0.5;
       }
     }

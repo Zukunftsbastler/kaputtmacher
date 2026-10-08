@@ -6,8 +6,11 @@
   --btn: 64px;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); user-select: none; -webkit-user-select: none; touch-action: none; }
-#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
+/* Buttons react at once (no double-tap zoom); menus can be scrolled with a finger. */
+#hud .btn, #hud a { touch-action: manipulation; }
+.overlay, .sheet { touch-action: pan-y; overscroll-behavior: contain; }
 #hud { position: fixed; inset: 0; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 #hud > * { position: absolute; }
 .hidden { display: none !important; }
@@ -103,13 +106,51 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 .parent button.danger { border-color: #c0392b; color: #c0392b; }
 .parent input[type=checkbox] { width: 24px; height: 24px; }
 
-@media (max-height: 520px), (max-width: 700px) {
-  :root { --btn: 50px; }
-  #power { width: 70px; height: 70px; }
-  #legal { top: 92px; font-size: 10px; }
-  #power .face { font-size: 30px; }
-  #worldbar { width: 38vw; }
-  #worldbar .icons { font-size: 14px; }
-  .tile { --btn: 84px; }
-  #abilities { bottom: calc(var(--btn) + 26px); flex-direction: column; }
-}
+#menuBtn, #legal2, #touchpad { display: none; }
+.btn .badge { position: absolute; right: -4px; top: -6px; font-size: 0.5em; }
+
+/* ---------------------------------------------------------------------------------------------
+   Compact layout: touch devices and small windows. The playing field comes first:
+   - everything that does not steer the creature folds into one menu (top right),
+   - the counters shrink, the row of building icons and the hint bubble move out of the way,
+   - on touch, the toolbar is replaced by three buttons under the right thumb next to "jump".
+   All positions respect the notch and the rounded corners (safe areas).
+   --------------------------------------------------------------------------------------------- */
+body.compact { --btn: 46px; --sl: calc(8px + env(safe-area-inset-left)); --sr: calc(8px + env(safe-area-inset-right)); --st: calc(8px + env(safe-area-inset-top)); --sb: calc(8px + env(safe-area-inset-bottom)); }
+.compact #power { left: var(--sl); top: var(--st); width: 52px; height: 52px; }
+.compact #power .face { font-size: 24px; }
+.compact #power .stage { min-width: 22px; height: 22px; font-size: 13px; border-width: 2px; right: -6px; bottom: -4px; }
+.compact #legal { display: none; }
+.compact #worldbar { top: var(--st); width: min(34vw, 300px); }
+.compact #worldbar .track { height: 18px; border-width: 2px; }
+.compact #worldbar .pct { font-size: 12px; }
+.compact #worldbar .icons { display: none; }
+.compact #bcount { font-size: 14px; padding: 3px 7px 4px; border-width: 2px; border-radius: 12px; gap: 5px; }
+.compact #bcount .ico { font-size: 20px; }
+.compact #bcount .bar { width: 44px; height: 8px; }
+.compact #stamp { font-size: 56px; }
+.compact #next { width: 96px; height: 96px; font-size: 50px; border-radius: 28px; }
+.compact #hint { bottom: auto; top: calc(var(--st) + 30px); padding: 6px 12px; gap: 8px; font-size: 26px; border-width: 2px; border-radius: 16px; transform: translateX(-50%) scale(0.8); transform-origin: top center; }
+
+.compact #menuBtn { display: grid; right: var(--sr); top: var(--st); }
+.compact #topright { display: none; }
+.compact #topright.open { display: grid; grid-template-columns: repeat(3, var(--btn)); gap: 10px; right: var(--sr); top: calc(var(--st) + var(--btn) + 10px); padding: 12px; background: var(--panel); border: 3px solid #fff; border-radius: 20px; box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18); pointer-events: auto; --btn: 52px; }
+.compact #topright.open #legal2 { display: block; grid-column: 1 / -1; text-align: center; font-size: 13px; color: var(--ink); padding: 8px 4px 2px; }
+.compact #toolbar { bottom: var(--sb); gap: 6px; }
+.compact #abilities { right: var(--sr); bottom: var(--sb); gap: 6px; }
+.compact .tile { --btn: 72px; }
+.compact .sheet { padding: 14px; gap: 10px; border-radius: 20px; max-height: 92vh; max-height: 92dvh; }
+.compact .mixer { font-size: 20px; gap: 4px 8px; }
+
+/* Touch: stick under the left thumb, action buttons under the right one. */
+.touch #toolbar { display: none; }
+.touch #stick { left: calc(var(--sl) + 10px); bottom: calc(var(--sb) + 10px); width: 104px; height: 104px; background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.5); }
+.touch #stick i { width: 46px; height: 46px; margin: -23px; }
+.touch #touchpad, .touch #abilities { display: block; right: var(--sr); bottom: var(--sb); width: 0; height: 0; }
+.touch #touchpad .btn, .touch #abilities .btn { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.72); }
+.touch #abilities .btn[data-id=stomp] { --btn: 76px; right: 0; bottom: 0; }
+.touch #touchpad .btn[data-id=light] { --btn: 66px; right: 86px; bottom: 6px; }
+.touch #touchpad .btn[data-id=heavy] { --btn: 62px; right: 8px; bottom: 86px; }
+.touch #touchpad .btn[data-id=cycle] { --btn: 44px; right: 84px; bottom: 82px; }
+.touch #abilities .btn[data-id=roar] { --btn: 44px; right: 138px; bottom: 76px; }
+
