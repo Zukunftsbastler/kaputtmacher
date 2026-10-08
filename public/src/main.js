@@ -180,7 +180,6 @@ class Game {
     this.hud.showNext(false);
     this.hud.refreshTools();
     this.hud.setPower(p.power / stageNeed(p.stage), p.stage);
-    if (p.stage >= 2) this.hud.requestHint('camera');
     this.meshBudget = 60;
   }
 
@@ -261,14 +260,10 @@ class Game {
     const list = this.unlockedTools();
     if (a === 'stomp') this.tools.stomp();
     else if (a === 'idle') { if (performance.now() - this.idleOff > 300) this.setIdle(!this.idle); } // the key press itself has just stopped it
-    else if (a === 'cascade') { const s = this.progress.settings; s.cascade = !s.cascade; saveProgress(this.progress); this.hud.refreshButtons(); }
     else if (a === 'roar') this.tools.roar();
-    else if (a === 'rebuild') { this.hud.doneHint('rebuild'); this.loadWorld(this.progress.world); }
     else if (a === 'camera') {
-      if (!this.allUnlocked && this.progress.stage < 2) return;
       this.fly = !this.fly;
       if (this.fly) this.flyPos = [this.monster.x - Math.sin(this.camYaw) * 30, this.monster.y + this.monster.h * 1.5 + 25, this.monster.z - Math.cos(this.camYaw) * 30];
-      this.hud.doneHint('camera');
       this.hud.refreshButtons();
     } else if (a === 'tool+' || a === 'tool-') this.selectTool(list[(list.indexOf(this.tool) + (a === 'tool+' ? 1 : list.length - 1)) % list.length]);
     else if (a.startsWith('tool:')) { const id = list[Number(a.slice(5))]; if (id) this.selectTool(id); }
@@ -493,7 +488,6 @@ class Game {
     if (fresh) this.tool = fresh.id; // the new move is selected right away
     this.hud.refreshTools(true);
     if (fresh) { this.hud.requestHint('light', true); this.hud.requestHint('heavy', true); }
-    if (m.stage === 2) this.hud.requestHint('camera'); // the fly camera button appears with stage 2
   }
 
   structureDone(st) {
@@ -504,7 +498,6 @@ class Game {
     this.audio.fanfare();
     if (this.project((st.x0 + st.x1) / 2, st.top * 0.5 + 6, (st.z0 + st.z1) / 2, v3)) this.hud.stamp(st, v3[0], v3[1]);
     if (!p.stickers.includes(st.icon)) p.stickers.push(st.icon);
-    if (!p.seen.rebuildShown) { p.seen.rebuildShown = true; this.hud.refreshButtons(); this.hud.requestHint('rebuild'); }
     if (!this.worldDone && this.hud.major.every((s) => s.done)) {
       this.worldDone = true;
       this.fireworks = 7;
@@ -879,7 +872,7 @@ class Game {
   // Show, don't tell: a see-through twin of the creature performs the action that is being introduced.
   drawGhost() {
     const id = this.hud.hintId, m = this.monster, species = this.progress.species;
-    if (!id || this.fly || ['rebuild', 'camera', 'worlds', 'next'].includes(id) || species === 'jet' || this.idle) return; // no twin for the aircraft
+    if (!id || this.fly || ['worlds', 'next'].includes(id) || species === 'jet' || this.idle) return; // no twin for the aircraft
     const g = this.ghost, p = g.pose, dt = 1 / 60;
     g.t += dt;
     p.time += dt;

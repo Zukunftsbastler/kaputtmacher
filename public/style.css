@@ -28,13 +28,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 #toolbar { left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 10px; }
 #abilities { right: 14px; bottom: 14px; display: flex; gap: 10px; }
 #topright { right: 14px; top: 14px; display: flex; gap: 10px; }
-#gear { opacity: 0.55; }
 #hud.idle #hint { display: none; }
 .btn.off { filter: grayscale(1); opacity: 0.5; }
 #hint .finger.hold { animation: hold 1.4s ease-in-out infinite; }
 @keyframes hold { 0%, 15%, 100% { transform: translateY(-8px); } 30%, 85% { transform: translateY(4px) scale(0.9); } }
-#gear.holding { animation: spin 3s linear; opacity: 1; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 #power { left: 14px; top: 14px; width: 96px; height: 96px; }
 #power svg { width: 100%; height: 100%; transform: rotate(-90deg); }
@@ -104,6 +101,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 .parent label { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .parent button { font: inherit; padding: 10px 14px; border-radius: 12px; border: 2px solid var(--ink); background: #fff; cursor: pointer; }
 .parent button.danger { border-color: #c0392b; color: #c0392b; }
+.parent button.danger.solid { background: #c0392b; color: #fff; }
+.parent .note { margin: 6px 0 0; font-size: 14px; max-width: 420px; }
+.parent .row { justify-content: stretch; }
+.parent .row button { flex: 1; }
+.parent label { text-align: left; }
 .parent input[type=checkbox] { width: 24px; height: 24px; }
 
 #menuBtn, #legal2, #touchpad { display: none; }

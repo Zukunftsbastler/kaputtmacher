@@ -53,7 +53,7 @@ Zielspieler ist ein 5-jähriges Kind, das baut, um zu zerstören.
 - Dritte-Person-Ansicht von schräg hinten. Fünf Figuren: Dino, Gorilla, Roboter, Panzer, Flieger. Sie sehen nicht nur anders aus, sie zerstören grundverschieden (Abschnitt 9).
 - Unverwundbar. Trümmer prallen ab.
 - Laufen zerstört bereits: Was schwächer ist als das Monster, bricht beim Durchlaufen.
-- **Flugkamera** als zweiter Modus (ab Stufe 2): frei fliegen und alle freigeschalteten Werkzeuge direkt abfeuern.
+- **Flugkamera** als zweiter Modus: frei fliegen und direkt feuern. Selten gebraucht, deshalb nicht auf dem Bildschirm, sondern in den Einstellungen (oder Taste Tab). Solange sie an ist, zeigt ein Knopf mit dem Bild der Figur den Weg zurück.
 
 ### 4.1 Steuerung
 
@@ -71,9 +71,8 @@ Maus und Tastatur haben Vorrang und werden zuerst abgestimmt; Gamepad und Touch 
 | Springen und Stampfen | Leertaste | A | Knopf rechts |
 | Brüllen | R | X | Knopf rechts |
 | Angriff wechseln | Leiste, Tasten 1–4, Mausrad | Schultertasten | Leiste |
-| Monster / Flugkamera | Knopf, Tab | Select | Knopf |
+| Monster / Flugkamera | Einstellungen, Tab | Select | Einstellungen |
 | Flughöhe (Flugkamera) | Q, E | Steuerkreuz | – |
-| Welt neu aufbauen | Knopf | Y halten | Knopf |
 | Weltauswahl | Knopf | – | Knopf |
 
 ### 4.1a Bedienung auf dem Handy
@@ -82,10 +81,10 @@ Auf Touch-Geräten und in kleinen Fenstern schaltet die Oberfläche in ein kompa
 
 | Wo | Was |
 |---|---|
-| Unten links | Steuerknüppel: vor/zurück, drehen; ganz durchgedrückt rennt die Figur |
+| Unten links | Steuerknüppel: vor/zurück, drehen; ganz durchgedrückt rennt die Figur. (Auf iPhones blieb die Figur anfangs trotz bewegtem Knüppel stehen: Das Spiel hielt negative Berührungs-Kennungen, wie iOS sie vergibt, für „kein Finger“. Behoben.) |
 | Unten rechts, unter dem Daumen | **Springen** (groß; halten = höher, erneut = Doppelsprung, im goldenen Moment = Stampfattacke), **schneller Angriff**, **starker Angriff** (mit Muskelarm-Zeichen), ein kleiner Knopf, der zum **nächsten Angriff** weiterschaltet, und ab Stufe 9 Brüllen |
 | Ins Bild tippen | zielt auf die getippte Stelle: kurz = schnell, halten = stark. Die Angriffsknöpfe greifen geradeaus an |
-| Oben rechts | ein Menüknopf ☰. Darin: Neu aufbauen, Kettenreaktionen, Flugkamera, Weltauswahl, Selbstspiel, Eltern-Ecke und der Link zu Impressum & Datenschutz. Ein Tipp auf einen Eintrag oder ins Spielfeld schließt das Menü |
+| Oben rechts | ein Menüknopf ☰. Darin: Weltauswahl, Selbstspiel, Einstellungen und der Link zu Impressum & Datenschutz. Ein Tipp auf einen Eintrag oder ins Spielfeld schließt das Menü |
 | Oben | Macht-Ring und Welt-Balken verkleinert; die Reihe der Gebäudesymbole entfällt |
 
 Weitere Anpassungen: Vorführ-Hinweise erscheinen oben statt unten, damit sie nicht unter den Daumen liegen; zeigt ein Hinweis auf einen Knopf im Menü, pulsiert der Menüknopf. Alle Ränder berücksichtigen Notch und abgerundete Ecken. Menüs lassen sich mit dem Finger scrollen. Im Hochformat rückt die Kamera weiter zurück, weil das Bild schmal ist.
@@ -121,7 +120,7 @@ Zerstören → Macht sammeln → wachsen → Größeres zerstören können → m
 - Jeder zerstörte Würfel gibt Macht nach Material (7.3). Ein vollständig zerstörtes Gebäude gibt 25 % seines Werts als Bonus.
 - Macht fliegt als Leuchtpunkte vom Trümmerort zum Monster.
 - Ist der Ring voll, folgt der **Wachstumsmoment**: Brüllen, Aufleuchten, sichtbares Wachsen, Druckwelle, Fanfare. Zwischen zwei Wachstumsmomenten liegen mindestens 2 Sekunden, damit jeder einzeln wirkt.
-- Macht geht nie verloren, auch nicht beim Neu-Aufbauen oder Weltwechsel.
+- Macht geht nie verloren, auch nicht beim Weltwechsel – außer man beginnt in den Einstellungen bewusst von vorn.
 
 ### 5.2 Woran man Macht sieht
 
@@ -132,7 +131,7 @@ Größe · detailreicheres Modell je Stufe (Rückenstacheln ab 2, Hörner ab 4, 
 | Stufe | Höhe | Macht bis zur nächsten | Neu freigeschaltet |
 |---|---|---|---|
 | 1 | 1,8 m (Auto) | 1 200 | Laufen, Rennen, Springen, erster Angriff (schnell und stark) |
-| 2 | 2,9 m (Garage) | 8 000 | Landung wird zum Stampfer, Flugkamera |
+| 2 | 2,9 m (Garage) | 8 000 | Landung wird zum Stampfer |
 | 3 | 4,7 m (Haus) | 40 000 | zweiter Angriff |
 | 4 | 6,8 m | 120 000 | **Kettenreaktionen** (Upgrade, abschaltbar) |
 | 5 | 10,8 m | 320 000 | dritter Angriff |
@@ -217,7 +216,7 @@ Inhalt:
 - **Fabrik:** Hallen mit Maschinen, über 40 m hohe Schornsteine, Tanks, Silos.
 - **Wolkenkratzer-Stadt:** das Hauptszenario, eine Szene wie Manhattan oder Tokio; Aufbau in 7.6. Ein neues Spiel beginnt hier, und sie ist die erste Kachel der Weltauswahl.
 
-Alle Welten entstehen aus Bauplänen im Code mit festem Startwert: „Neu aufbauen“ liefert dieselbe Welt wieder.
+Alle Welten entstehen aus Bauplänen im Code mit festem Startwert: Wer eine Welt in der Weltauswahl erneut wählt, bekommt dieselbe Welt heil zurück. Einen eigenen Neu-aufbauen-Knopf gibt es nicht mehr.
 
 ### 7.5 Weltauswahl
 
@@ -262,7 +261,7 @@ Acht Schieberegler mit Bildsymbolen an beiden Enden: Weltgröße (128 / 256 / 51
 
 ## 8. Leben in der Welt
 
-Standardmäßig an, in der Eltern-Ecke abschaltbar.
+Standardmäßig an, in den Einstellungen abschaltbar.
 
 - **Bewohner:** bis zu rund 1 000 Figuren pro Planet. Sie spazieren, fliehen mit erhobenen Armen, sobald das Monster näher als etwa drei Körperhöhen kommt, werden von Explosionen weggeschleudert, purzeln, stehen auf und rennen weiter.
 - **Hubschrauber:** Sobald zerstört wird, kommen sie – einer nach dem anderen, bis zu vier, wenn etwa ein Prozent der Welt in Trümmern liegt. Sie kreisen in respektvollem Abstand etwas über Kopfhöhe um den Kaputtmacher, mit Suchscheinwerfer und Rotorgeräusch, und schießen nicht. Alles, was sie trifft – Schlag, Geschoss, Strahl, Explosion –, holt sie vom Himmel: Sie trudeln ab und explodieren am Boden. Beruhigt sich die Lage, fliegen sie davon.
@@ -351,9 +350,9 @@ Spätere Kandidaten: Abrissbirne, Meteor, Tornado, schwarzes Loch, Riesenmagnet.
 4. **Nachmachen beendet die Vorführung** dauerhaft.
 5. **Sanfte Erinnerung** nach 25 Sekunden ohne Eingabe.
 6. **Neues kommt einzeln.** Ein neues Werkzeug springt mit dem Wachstumsmoment in die Leiste, liegt sofort in der Hand und wird vorgeführt.
-7. **Knöpfe erscheinen, wenn sie gebraucht werden:** Neu aufbauen nach dem ersten zerstörten Gebäude, Flugkamera ab Stufe 2. Der jeweilige Knopf pulsiert.
+7. **Wenige Knöpfe.** Auf dem Bildschirm stehen neben der Steuerung nur drei: Weltauswahl, Selbstspiel und Einstellungen.
 
-Reihenfolge: Laufen → Schlag → Springen → Zähler füllt sich → Macht fliegt zum Monster → erstes Wachstum → Stampfen → Neu aufbauen → Flugkamera → weitere Werkzeuge → Weltauswahl bei 100 %.
+Reihenfolge: Laufen → Schlag → Springen → Zähler füllt sich → Macht fliegt zum Monster → erstes Wachstum → Stampfen → weitere Angriffe → Weltauswahl bei 100 %.
 
 ## 11. Zerstörungs- und Physikmodell
 
@@ -403,7 +402,7 @@ Rennt das Monster (Umschalt) gegen ein Gebäude, das es nicht einfach durchbrich
 
 ### 11.6 Kettenreaktionen (Upgrade)
 
-- **Freischaltung** mit Stufe 4 als Knopf mit Kettensymbol; ein Druck schaltet sie aus und wieder ein. Zusätzlich in der Eltern-Ecke.
+- **Freischaltung** mit Stufe 4. Es gibt dafür keinen eigenen Knopf mehr (das Kettensymbol war nicht verständlich); ab- und anschalten lassen sie sich in den Einstellungen, dort mit erklärendem Satz.
 - **Wirkung:** Stürzt ein Gebäude ein oder ist es vollständig zerstört, läuft nach gut einer halben Sekunde ein Stoß zu den Nachbarn im Umkreis von etwa einem Häuserblock. Er beißt sichtbar in deren Fuß und schwächt sie dauerhaft – um 24 Prozentpunkte auf Stufe 4, bis 55 ab Stufe 10.
 - **Domino:** Fällt ein Nachbar dadurch, gibt er den Stoß weiter, jede Generation mit 88 % der Stärke. Holzbauten fallen schon beim ersten Stoß, Ziegelbauten nach einem starken oder zweien, Betontürme erst, wenn sie angeschlagen sind oder mehrere Nachbarn gefallen sind. Mit jeder Stufe reißt eine Kette also weiter.
 - Dazu kommt, was ohnehin gilt: Ein kippender Turm zerschlägt, worauf er fällt.
@@ -448,7 +447,7 @@ Lose Trümmer bleiben nicht ewig liegen. Jeder Würfel, der als Schutt zur Ruhe 
 
 - Veröffentlicht wird der Ordner `public/` unverändert (`netlify.toml`). Konzept und Prompts liegen außerhalb.
 - `public/_headers` setzt eine Content-Security-Policy, die nur eigene Dateien erlaubt (mit Trusted Types), schaltet ungenutzte Gerätefunktionen ab und lässt den Browser jede Datei beim Server nachfragen, damit sich nach einem Update nie alte und neue Dateien mischen.
-- **Impressum und Datenschutzerklärung** stehen in `public/impressum.html`, im Spiel jederzeit erreichbar über einen kleinen Textlink unter dem Macht-Ring. Das ist neben der Eltern-Ecke die einzige Textstelle; die Regel „sprachfrei“ tritt hier hinter die gesetzliche Pflicht zurück. **Spielstand löschen:** Auf der Seite „Impressum & Datenschutz“ steht dort, wo die Speicherung erklärt wird, ein Knopf, der alles entfernt, was das Spiel im Browser gespeichert hat. Er ist über den Link im Spiel jederzeit zu finden, liegt aber auf einer eigenen Textseite und verlangt zwei Schritte (erst „löschen …“, dann „Ja, endgültig löschen“ – „Abbrechen“ ist vorausgewählt). Denselben Knopf gibt es in der Eltern-Ecke.
+- **Impressum und Datenschutzerklärung** stehen in `public/impressum.html`, im Spiel jederzeit erreichbar über einen kleinen Textlink unter dem Macht-Ring. Das ist neben den Einstellungen die einzige Textstelle; die Regel „sprachfrei“ tritt hier hinter die gesetzliche Pflicht zurück. **Spielstand löschen:** Auf der Seite „Impressum & Datenschutz“ steht dort, wo die Speicherung erklärt wird, ein Knopf, der alles entfernt, was das Spiel im Browser gespeichert hat. Er ist über den Link im Spiel jederzeit zu finden, liegt aber auf einer eigenen Textseite und verlangt zwei Schritte (erst „löschen …“, dann „Ja, endgültig löschen“ – „Abbrechen“ ist vorausgewählt). Denselben Zweck erfüllt „Von vorn beginnen“ in den Einstellungen.
 - Eingaben von außen – Adress-Parameter und der Spielstand im Browser – werden vor der Verwendung geprüft; Einzelheiten in der README, Abschnitt „Sicherheit“.
 
 ### 12.3 Speicher und große Welten
@@ -484,9 +483,11 @@ Nächste Größenstufe: 1 km Kantenlänge braucht die Lauflängen-Kodierung, son
 
 **Ton:** Bruchklang je Materialfamilie, abhängig von der Größe des Ereignisses. Ein Einsturz klingt nach seinen Vorgängen: **Beton knackt**, wenn sich ein großes Teil löst; **Stahl ächzt** mit einem langen, schwankenden Ton, solange ein großes Teil fällt; beim Aufschlag **bröckelt Mauerwerk** in vielen kurzen Stößen auf einem tiefen Schlag, **Glasfassaden regnen** als Klirr-Schauer herab, Blech und Stahl scheppern, Holz kracht. Welche Geräusche fallen, richtet sich danach, woraus das Bruchstück tatsächlich besteht. Dazu Feuerknistern, das mit der Menge des Brennenden lauter wird, Schritte, Brüllen, Rufe der Bewohner, Fanfaren.
 
-**Oberfläche:** unten Werkzeugleiste, rechts unten Stampfen und Brüllen, oben Welt-Zähler, links oben Macht-Ring mit Stufe, rechts oben Neu aufbauen, Flugkamera, Weltauswahl, Zahnrad.
+**Oberfläche:** unten Werkzeugleiste, rechts unten Springen und Brüllen, oben Welt-Zähler, links oben Macht-Ring mit Stufe, rechts oben Weltauswahl, Selbstspiel und Einstellungen.
 
-**Eltern-Ecke** (Zahnrad 3 Sekunden halten, einziger Ort mit Text): Lautstärke, Grafikqualität, Kamerawackeln, Leben an/aus, alles freischalten, Vollbild, Fortschritt zurücksetzen.
+**Einstellungen** (Zahnrad, ein gewöhnlicher Knopf; neben dem Impressum-Link der einzige Ort mit Text): Lautstärke, Grafikqualität, Kamerawackeln, Leben an/aus, Kettenreaktionen, Selbstspiel nach 2 Minuten, alles freischalten, Vollbild, freie Flugkamera – und **„Von vorn beginnen“**. Früher öffnete sich das Zahnrad erst nach drei Sekunden Halten und war blass dargestellt; das wirkte wie abgeschaltet und ließ sich nicht entdecken.
+
+**Von vorn beginnen.** Auf jedem Gerät lässt sich die Progression neu starten: Der Knopf löscht Stufe, Macht, abgeschlossene Welten, Sticker und Einstellungen auf diesem Gerät, und das Spiel beginnt wieder bei Stufe 1. Er verlangt zwei Schritte („Von vorn beginnen …“, dann „Ja, alles löschen“) und steht zusätzlich auf der Seite „Impressum & Datenschutz“.
 
 ## 14. Nächste Schritte
 
@@ -558,7 +559,7 @@ Reihenfolge nach Wirkung auf das Spielgefühl:
 |---|---|
 | Einschalten | Popcorn-Knopf oben rechts, Taste I, oder `?idle=1` in der Adresse |
 | Ausschalten | jede eigene Eingabe: Taste, Klick ins Spiel, Berührung, Gamepad. Mausbewegung allein schaltet nicht ab |
-| Von selbst | optional nach 2 Minuten ohne Eingabe (Eltern-Ecke, standardmäßig aus) |
+| Von selbst | optional nach 2 Minuten ohne Eingabe (Einstellungen, standardmäßig aus) |
 | Bildschirm | bleibt im Idle-Modus wach, soweit der Browser es erlaubt |
 
 **Was der Autopilot tut.** Er benutzt dieselbe Steuerung wie ein Spieler und kann nichts, was ein Spieler nicht kann.

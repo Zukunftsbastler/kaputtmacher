@@ -43,24 +43,18 @@ export class Hud {
     this.icons = el('div', 'icons', this.worldbar);
 
     const tr = el('div', '', root); tr.id = 'topright';
-    this.btnRebuild = this.button(tr, '🔄', () => game.doAction('rebuild'));
-    this.btnCascade = this.button(tr, '⛓️', () => game.doAction('cascade'));
+    // Only shown while the free camera is on (it is switched on in the settings): the way back to the creature.
     this.btnCamera = this.button(tr, '🎥', () => game.doAction('camera'));
     this.btnWorlds = this.button(tr, '🌍', () => this.openWorlds());
     this.btnIdle = this.button(tr, '🍿', () => game.setIdle(!game.idle)); // lean back and watch: the game plays itself
-    this.btnGear = this.button(tr, '⚙️', null); this.btnGear.id = 'gear';
+    this.btnGear = this.button(tr, '⚙️', () => this.openParent()); this.btnGear.id = 'gear';
     // On small and touch screens everything in this row folds away behind one menu button,
     // so the playing field stays free. The legal link moves in here as well.
     this.drawer = tr;
     const legal2 = el('a', '', tr, 'Impressum & Datenschutz'); legal2.id = 'legal2'; legal2.href = 'impressum.html';
     this.btnMenu = this.button(root, '☰', () => this.toggleMenu()); this.btnMenu.id = 'menuBtn';
-    tr.addEventListener('click', (e) => { if (e.target.closest('.btn') && !e.target.closest('#gear')) this.toggleMenu(false); });
+    tr.addEventListener('click', (e) => { if (e.target.closest('.btn')) this.toggleMenu(false); });
     game.canvas.addEventListener('pointerdown', () => this.toggleMenu(false));
-    // The parents' corner opens only after holding the gear for three seconds.
-    let gearTimer = 0;
-    const cancel = () => { clearTimeout(gearTimer); this.btnGear.classList.remove('holding'); };
-    this.btnGear.addEventListener('pointerdown', () => { this.btnGear.classList.add('holding'); gearTimer = setTimeout(() => { cancel(); this.openParent(); }, 3000); });
-    for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) this.btnGear.addEventListener(ev, cancel);
 
     this.toolbar = el('div', '', root); this.toolbar.id = 'toolbar';
     this.abilities = el('div', '', root); this.abilities.id = 'abilities';
@@ -159,16 +153,12 @@ export class Hud {
   }
 
   refreshButtons() {
-    const p = this.g.progress, all = p.settings.unlockAll;
-    this.btnRebuild.classList.toggle('hidden', !all && !p.seen.rebuildShown);
-    this.btnCamera.classList.toggle('hidden', !all && p.stage < 2);
-    // Chain reactions are an upgrade that arrives with stage 4 and can be switched off again.
-    this.btnCascade.classList.toggle('hidden', !all && p.stage < 4);
-    this.btnCascade.classList.toggle('off', !p.settings.cascade);
+    const p = this.g.progress;
+    this.btnCamera.classList.toggle('hidden', !this.g.fly);
     this.btnIdle.classList.toggle('sel', this.g.idle);
     this.root.classList.toggle('idle', this.g.idle); // no demonstrations while the game plays itself
     this.btnWorlds.classList.toggle('hidden', false); // the world choice is open from the first minute
-    this.btnCamera.textContent = this.g.fly ? SPECIES.find((s) => s.id === p.species).icon : '🎥';
+    this.btnCamera.textContent = SPECIES.find((s) => s.id === p.species).icon;
     this.face.textContent = SPECIES.find((s) => s.id === p.species).icon;
     this.layout();
   }
@@ -259,7 +249,7 @@ export class Hud {
 
   renderHint() {
     const id = this.hintId, box = this.hintBox, dev = this.g.input.device;
-    for (const b of [this.btnRebuild, this.btnCamera, this.btnWorlds, this.btnMenu, ...Object.values(this.toolButtons)]) b.classList.remove('pulse');
+    for (const b of [this.btnCamera, this.btnWorlds, this.btnMenu, ...Object.values(this.toolButtons)]) b.classList.remove('pulse');
     box.replaceChildren();
     box.classList.toggle('hidden', !id);
     if (!id) return;
@@ -305,10 +295,10 @@ export class Hud {
       this.toolButtons[tool]?.classList.add('pulse');
     } else {
       // Interface buttons: the button itself pulses, the bubble shows what to press it with.
-      const b = { rebuild: this.btnRebuild, camera: this.btnCamera, worlds: this.btnWorlds, next: this.next }[id];
+      const b = { worlds: this.btnWorlds, next: this.next }[id];
       if (b) { b.classList.add('pulse'); el('span', '', box, b.textContent); }
       if (b && this.drawer.contains(b)) this.btnMenu.classList.add('pulse'); // in the compact layout the button sits inside the menu
-      box.append(dev === 'kbm' ? mouse() : dev === 'pad' ? pad(id === 'rebuild' ? 'Y' : '☰') : finger());
+      box.append(dev === 'kbm' ? mouse() : dev === 'pad' ? pad('☰') : finger());
     }
   }
 
@@ -376,7 +366,7 @@ export class Hud {
   // The only place with text; meant for grown-ups.
   openParent() {
     const g = this.g, p = g.progress, s = p.settings, sheet = this.open('parent');
-    el('h2', '', sheet, 'Eltern-Ecke');
+    el('h2', '', sheet, 'Einstellungen');
     const row = (label, input) => { const l = el('label', '', sheet, label); l.appendChild(input); return input; };
     const check = (label, key) => {
       const c = document.createElement('input');
@@ -395,16 +385,21 @@ export class Hud {
     row('Grafikqualität', q);
     check('Kamerawackeln', 'shake');
     check('Leben in der Welt (Bewohner, Hubschrauber)', 'life');
-    check('Kettenreaktionen', 'cascade');
+    check('Kettenreaktionen: einstürzende Gebäude reißen ihre Nachbarn mit (wirkt ab Stufe 4)', 'cascade');
     check('Selbstspiel nach 2 Minuten ohne Eingabe', 'autoIdle');
     check('Alles freischalten', 'unlockAll');
     const full = el('button', '', sheet, 'Vollbild an/aus');
     full.addEventListener('click', () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.()));
-    const reset = el('button', 'danger', sheet, 'Spielstand und Einstellungen löschen');
-    reset.addEventListener('click', () => {
-      if (reset.dataset.armed) { resetProgress(p); location.reload(); }
-      else { reset.dataset.armed = '1'; reset.textContent = 'Wirklich alles löschen? Nochmal tippen'; }
-    });
+    // Rarely needed, so it lives here instead of on the screen: fly around freely without the creature.
+    const cam = el('button', '', sheet, g.fly ? 'Zurück zur Figur' : 'Freie Flugkamera');
+    cam.addEventListener('click', () => { this.close(); g.doAction('camera'); });
+    // Starting over: stage, power, finished worlds, stickers and settings are wiped; the game begins at stage 1.
+    el('p', 'note', sheet, 'Von vorn beginnen: Stufe, Macht, abgeschlossene Welten, Sticker und Einstellungen werden auf diesem Gerät gelöscht. Das Spiel startet danach wieder bei Stufe 1.');
+    const reset = el('button', 'danger', sheet, 'Von vorn beginnen …');
+    const sure = el('div', 'row hidden', sheet);
+    el('button', '', sure, 'Abbrechen').addEventListener('click', () => { sure.classList.add('hidden'); reset.classList.remove('hidden'); });
+    el('button', 'danger solid', sure, 'Ja, alles löschen').addEventListener('click', () => { resetProgress(p); location.reload(); });
+    reset.addEventListener('click', () => { reset.classList.add('hidden'); sure.classList.remove('hidden'); });
     el('button', '', sheet, 'Schließen').addEventListener('click', () => this.close());
   }
 }

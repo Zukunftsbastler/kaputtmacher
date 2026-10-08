@@ -19,8 +19,9 @@ export class Input {
     this.touchT = 0; this.touchHeavy = false;
     this.dragX = 0; this.dragY = 0; // camera drag since last read
     this.actions = []; // queued one-shot actions: 'stomp', 'roar', 'camera', 'tool+', 'tool-', 'tool:3'
-    this.stick = { id: -1, x: 0, y: 0, ox: 0, oy: 0 };
-    this.fireTouch = -1;
+    // Touch identifiers can be any number - iOS hands out negative ones - so "in use" is a flag of its own.
+    this.stick = { on: false, id: 0, x: 0, y: 0, ox: 0, oy: 0 };
+    this.fireOn = false; this.fireTouch = 0;
     this.padPrev = [];
     this.padHold = 0;
     this.onFirstGesture = null;
@@ -81,10 +82,10 @@ export class Input {
     c.addEventListener('touchstart', (e) => {
       this.gesture('touch');
       for (const t of e.changedTouches) {
-        if (this.stick.id < 0 && t.clientX < innerWidth * 0.35 && t.clientY > innerHeight * 0.4) {
-          Object.assign(this.stick, { id: t.identifier, ox: t.clientX, oy: t.clientY, x: 0, y: 0 });
-        } else if (this.fireTouch < 0) {
-          this.fireTouch = t.identifier;
+        if (!this.stick.on && t.clientX < innerWidth * 0.35 && t.clientY > innerHeight * 0.4) {
+          Object.assign(this.stick, { on: true, id: t.identifier, ox: t.clientX, oy: t.clientY, x: 0, y: 0 });
+        } else if (!this.fireOn) {
+          this.fireOn = true; this.fireTouch = t.identifier;
           this.aimX = t.clientX; this.aimY = t.clientY;
           // A short tap is the light attack, holding the finger down the heavy one.
           this.fire = true; this.touchT = performance.now(); this.touchHeavy = false;
@@ -94,17 +95,17 @@ export class Input {
     }, { passive: false });
     c.addEventListener('touchmove', (e) => {
       for (const t of e.changedTouches) {
-        if (t.identifier === this.stick.id) {
+        if (this.stick.on && t.identifier === this.stick.id) {
           this.stick.x = clamp((t.clientX - this.stick.ox) / 50, -1, 1);
           this.stick.y = clamp((t.clientY - this.stick.oy) / 50, -1, 1);
-        } else if (t.identifier === this.fireTouch) { this.aimX = t.clientX; this.aimY = t.clientY; }
+        } else if (this.fireOn && t.identifier === this.fireTouch) { this.aimX = t.clientX; this.aimY = t.clientY; }
       }
       e.preventDefault();
     }, { passive: false });
     const end = (e) => {
       for (const t of e.changedTouches) {
-        if (t.identifier === this.stick.id) { this.stick.id = -1; this.stick.x = this.stick.y = 0; }
-        else if (t.identifier === this.fireTouch) { this.fireTouch = -1; this.fire = false; if (!this.touchHeavy) this.firePressed = true; }
+        if (this.stick.on && t.identifier === this.stick.id) { this.stick.on = false; this.stick.x = this.stick.y = 0; }
+        else if (this.fireOn && t.identifier === this.fireTouch) { this.fireOn = false; this.fire = false; if (!this.touchHeavy) this.firePressed = true; }
       }
     };
     c.addEventListener('touchend', end);
@@ -117,9 +118,9 @@ export class Input {
     let f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
     let t = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
     let l = (k.has('KeyE') ? 1 : 0) - (k.has('KeyQ') ? 1 : 0);
-    if (this.stick.id >= 0) { f -= this.stick.y; t += this.stick.x; }
-    if (this.fireTouch >= 0 && !this.touchHeavy && performance.now() - this.touchT > 380) { this.touchHeavy = true; this.heavyPressed = true; }
-    let sprint = k.has('ShiftLeft') || k.has('ShiftRight') || (this.stick.id >= 0 && Math.hypot(this.stick.x, this.stick.y) > 0.97);
+    if (this.stick.on) { f -= this.stick.y; t += this.stick.x; }
+    if (this.fireOn && !this.touchHeavy && performance.now() - this.touchT > 380) { this.touchHeavy = true; this.heavyPressed = true; }
+    let sprint = k.has('ShiftLeft') || k.has('ShiftRight') || (this.stick.on && Math.hypot(this.stick.x, this.stick.y) > 0.97);
 
     let pad = null;
     if (navigator.getGamepads) { const pads = navigator.getGamepads(); for (let i = 0; i < pads.length && !pad; i++) if (pads[i] && pads[i].connected) pad = pads[i]; }
@@ -144,9 +145,6 @@ export class Input {
       if (hit(4)) this.actions.push('tool-');
       if (hit(5)) this.actions.push('tool+');
       if (hit(8)) this.actions.push('camera');
-      // Rebuilding needs a long press so it cannot happen by accident.
-      this.padHold = b[3] ? this.padHold + dt : 0;
-      if (b[3] && this.padHold > 0.8 && this.padHold - dt <= 0.8) this.actions.push('rebuild');
       this.padPrev = b;
     }
     this.jumpHeld = k.has('Space') || this.jumpBtn || (pad ? pad.buttons[0]?.pressed : false);

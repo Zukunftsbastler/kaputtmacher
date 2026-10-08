@@ -8,7 +8,7 @@ import { SPECIES } from './monster.js';
 const KEY = 'kaputtmacher.v1';
 export const MAX_STAGE = 30; // far beyond what any world can show; keeps model building and maths bounded
 export const QUALITIES = ['auto', 'high', 'low'];
-const HINTS = ['move', 'light', 'heavy', 'stomp', 'roar', 'rebuild', 'rebuildShown', 'camera', 'worlds', 'next']; // demonstrations that can be marked as seen
+const HINTS = ['move', 'light', 'heavy', 'stomp', 'roar', 'worlds', 'next']; // demonstrations that can be marked as seen
 
 const DEFAULTS = {
   stage: 1, // highest stage reached

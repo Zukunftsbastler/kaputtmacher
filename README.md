@@ -32,7 +32,8 @@ Dann `http://localhost:8000` öffnen. Es wird nichts installiert und nichts geba
 |---|---|
 | Bewegen | W/S oder Pfeile vor und zurück, A/D drehen, Umschalt rennen, Leertaste springen (halten = höher, in der Luft noch einmal drücken = Doppelsprung mit Salto; am höchsten Punkt, wenn die Figur golden schimmert, ein drittes Mal = Stampfattacke senkrecht nach unten) |
 | Angreifen | **Linksklick schnell und schwächer, Rechtsklick langsam und stark.** Tasten 1–4 wählen den Angriff |
-| Kamera | Mittlere Maustaste ziehen; Tab wechselt zur freien Flugkamera |
+| Kamera | Mittlere Maustaste ziehen. Die freie Flugkamera steht in den Einstellungen (oder Tab) |
+| Von vorn beginnen | Einstellungen (Zahnrad) → „Von vorn beginnen“: löscht den Spielstand auf diesem Gerät |
 | Zusehen | Popcorn-Knopf oder Taste I: das Spiel spielt sich selbst |
 | Gamepad | wird automatisch erkannt (Trigger rechts/links) |
 | Handy, Tablet | Steuerknüppel links; rechts Knöpfe für Springen, schnellen und starken Angriff und Angriffswechsel; alles Übrige im Menü ☰ oben rechts. Ins Bild tippen zielt (kurz = schnell, halten = stark) |
@@ -67,7 +68,7 @@ Spielbar. Geprüft wurde bisher fast nur automatisiert (Durchläufe im Browser m
 
 1. **Keine Abhängigkeiten, kein Build.** Kein npm, kein Framework, keine Engine, kein CDN. Der Inhalt von `public/` wird unverändert ausgeliefert (Netlify, `netlify.toml`). Grund: möglichst kleine Angriffsfläche.
 2. **Strenge Content-Security-Policy** (`public/_headers`): nur eigene Dateien, keine Inline-Skripte, keine Inline-Style-Attribute im Markup (Setzen über `element.style` ist erlaubt), keine Netzwerkzugriffe.
-3. **Quellcode englisch,** Spieloberfläche sprachfrei (Emoji als Symbole). Text gibt es nur an zwei Stellen, beide auf Deutsch: in der Eltern-Ecke und als Link „Impressum & Datenschutz“ (rechtlich nötig, führt zu `public/impressum.html`).
+3. **Quellcode englisch,** Spieloberfläche sprachfrei (Emoji als Symbole). Text gibt es nur an zwei Stellen, beide auf Deutsch: in den Einstellungen und als Link „Impressum & Datenschutz“ (rechtlich nötig, führt zu `public/impressum.html`).
    Wer ändert, was das Spiel speichert oder lädt, muss die Datenschutzerklärung in `public/impressum.html` anpassen – sie beschreibt den Ist-Zustand genau.
 4. **Jeder Prompt des Autors wird wörtlich abgelegt** als `PROMPTS/PROMPTnn.md` (nächste freie Nummer).
 5. **KONZEPT.md ist die Spezifikation** und wird bei jeder Änderung mitgeführt, einschließlich ehrlichem Umsetzungsstand in Abschnitt 16.
@@ -110,7 +111,7 @@ public/
 | `autopilot.js` | Idle-Modus: füllt den Eingabezustand, wählt Ziele, Angriffe und Welten |
 | `audio.js` | Erzeugter Ton (Web Audio), keine Dateien |
 | `input.js` | Maus/Tastatur, Gamepad, Touch → ein gemeinsamer Zustand |
-| `hud.js` | Oberfläche aus DOM-Elementen, Vorführ-Hinweise, Weltauswahl, Eltern-Ecke |
+| `hud.js` | Oberfläche aus DOM-Elementen, Vorführ-Hinweise, Weltauswahl, Einstellungen |
 | `progress.js` | Spielstand und Einstellungen in `localStorage` |
 
 ### Datenmodell
@@ -139,7 +140,8 @@ Ein Simulationsschritt (`Game.step`), Reihenfolge ist wichtig: Figur bewegen →
 - **Browser-Cache:** siehe „Starten“. Nach Änderungen an mehreren Modulen immer mit `serve.py` testen. Auf Netlify sorgt `Cache-Control: no-cache` in `_headers` dafür, dass der Browser bei jeder Datei nachfragt.
 - **Kompaktes Layout** (`Hud.layout`, CSS-Klassen `compact` und `touch` am `<body>`): Dieselben Knöpfe werden per CSS umsortiert, nichts ist doppelt gebaut. `#topright` wird zum aufklappbaren Menü, die Werkzeugleiste weicht auf Touch den Daumenknöpfen in `#touchpad`. Neue Knöpfe, die die Figur nicht direkt steuern, gehören in `#topright`.
 - **`touch-action`** steht nur auf der Zeichenfläche auf `none`; auf `<body>` würde es das Scrollen der Menüs mit dem Finger verhindern.
-- **Tastatur gehört dem Spiel nur ohne offenes Menü** (`forGame` in `input.js`), sonst wären Regler und Knöpfe der Eltern-Ecke nicht per Tastatur bedienbar.
+- **Tastatur gehört dem Spiel nur ohne offenes Menü** (`forGame` in `input.js`), sonst wären Regler und Knöpfe der Einstellungen nicht per Tastatur bedienbar.
+- **Berührungs-Kennungen (`Touch.identifier`) sind beliebige Zahlen,** auf iOS auch negative. Nie mit `>= 0` prüfen, ob ein Finger aktiv ist; dafür gibt es eigene Flags (`stick.on`, `fireOn` in `input.js`).
 - **`game.lastHit`** (Richtung und Hochwurf des letzten Treffers) bestimmt, wohin abgetrennte Teile kippen. Vor einem Schaden setzen.
 - **Hindernisprüfung der Figur:** sowohl am nächsten Schritt als auch etwas dahinter prüfen (siehe `Monster.update`); einzeln führte jedes zu einem Stillstand, einmal bei hohem Tempo, einmal vor dünnen Pfosten.
 
@@ -154,7 +156,7 @@ Das Spiel ist rein statisch und spricht nach dem Laden mit keinem Server. Was es
 | Adresszeile | Die Test-Parameter (`?stage=` …) werden gegen Wertebereiche und feste Listen geprüft (`cleanStage`, `cleanSpecies`, `cleanQuality` in `progress.js`) und nie gespeichert. Ein präparierter Link kann das Spiel weder zum Absturz bringen noch Speicher fressen lassen |
 | Spielstand | `localStorage` gilt als nicht vertrauenswürdig: `sanitize()` in `progress.js` baut aus beliebigem Inhalt einen gültigen Spielstand; Unbekanntes wird verworfen. Ein beschädigter Spielstand kann das Spiel nicht dauerhaft lahmlegen |
 | Gerätefunktionen | Per Permissions-Policy abgeschaltet, bis auf Gamepad und Vollbild |
-| Spielstand löschen | Knopf auf der Seite „Impressum & Datenschutz“ (`legal.js`, zwei Schritte) und in der Eltern-Ecke. Der Schlüssel `kaputtmacher.v1` steht in `progress.js` und in `legal.js` – wird er umbenannt, dann an beiden Stellen |
+| Spielstand löschen | Knopf auf der Seite „Impressum & Datenschutz“ (`legal.js`, zwei Schritte) und als „Von vorn beginnen“ in den Einstellungen. Der Schlüssel `kaputtmacher.v1` steht in `progress.js` und in `legal.js` – wird er umbenannt, dann an beiden Stellen |
 | Veröffentlichter Umfang | Nur `public/`. Konzept, Prompts, README und `serve.py` werden nicht ausgeliefert |
 
 Regeln, damit das so bleibt: kein `innerHTML` und keine Inline-Styles im Markup; jeder neue Adress-Parameter und jedes neue Feld im Spielstand bekommt eine Prüfung in `progress.js`; keine externen Ressourcen.
@@ -180,7 +182,7 @@ Der Autopilot tut nichts, was ein Spieler nicht auch könnte: Er füllt einmal p
 
 - **Ablauf:** nächstes stehendes Gebäude wählen (eines der drei nächsten, jedes dritte Mal ein fernes, damit die Karte erkundet wird) → eine noch feste Stelle daran suchen (`pickSpot`) → hinlaufen oder hinfliegen und über `game.project()` darauf zielen → in Reichweite abwechselnd schnell und stark angreifen → alle 5 bis 11 Sekunden den Angriff wechseln → bei Stillstand springen, dann anderes Ziel.
 - **Weltwechsel:** 7 Sekunden nach 100 % oder nach 12 Minuten in derselben Welt, reihum durch `WORLDS`.
-- **Ein und aus:** `game.setIdle(on)`; Knopf 🍿, Taste I, Adresse `?idle=1`, optional automatisch nach 2 Minuten ohne Eingabe (Eltern-Ecke). Jede echte Eingabe schaltet ab (`input.onActivity`).
+- **Ein und aus:** `game.setIdle(on)`; Knopf 🍿, Taste I, Adresse `?idle=1`, optional automatisch nach 2 Minuten ohne Eingabe (Einstellungen). Jede echte Eingabe schaltet ab (`input.onActivity`).
 - **Zufall:** Die Entscheidungen des Autopiloten nutzen `Math.random`, gehören also bewusst nicht zur reproduzierbaren Simulation.
 - **Erweitern:** neue Angriffe mit Fernwirkung in die Liste `RANGED` eintragen, sonst läuft der Autopilot damit bis an das Ziel heran.
 
