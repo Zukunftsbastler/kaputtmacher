@@ -13,6 +13,7 @@ import { Monster, buildModel, partMatrix, stageNeed, newPose, locomotion, MODEL_
 import { Stability } from './stability.js';
 import { Fire } from './fire.js';
 import { Sweeper } from './sweeper.js';
+import { Autopilot } from './autopilot.js';
 import { Tools, movesFor } from './tools.js';
 import { WORLDS } from './worldgen.js';
 import { Audio } from './audio.js';
@@ -87,14 +88,20 @@ class Game {
     this.activeSt = null; this.activeT = 0;
     this.growCool = 0;
     this.worldDone = false; this.fireworks = 0;
-    this.walked = 0; this.idle = 0;
+    this.walked = 0; this.quietT = 0; // quietT: seconds without input, for the reminder demonstration
     this.frameMs = 16; this.governT = 0;
     this.ghost = { pose: newPose(), t: 0, len: 1 };
+
+    this.autopilot = new Autopilot(this);
+    this.idle = false; // idle mode: the game plays itself
+    this.idleOff = 0;
+    this.input.onActivity = () => { if (this.idle) this.setIdle(false); };
 
     this.hud = new Hud(this);
     this.loadWorld(params.get('world') ?? this.progress.world);
     if (params.has('tool') && this.unlockedTools().includes(params.get('tool'))) this.tool = params.get('tool');
     if (params.has('fly')) this.fly = true;
+    if (params.has('idle')) this.setIdle(true);
     this.hud.refreshTools();
     this.hud.requestHint('move');
 
@@ -224,6 +231,21 @@ class Game {
 
   get allUnlocked() { return this.progress.settings.unlockAll; }
 
+  // Idle mode on or off. Any real input switches it off again (see input.onActivity).
+  setIdle(on) {
+    if (on === this.idle) return;
+    this.idle = on;
+    if (on) { this.autopilot.reset(); this.hud.close(); }
+    else { this.idleOff = performance.now(); this.pitchOffset = 0; this.input.jumpHeld = false; }
+    this.input.lastActivity = performance.now();
+    this.hud.refreshButtons();
+    // Keep the screen awake while the game is running as a backdrop, where the browser allows it.
+    try {
+      if (on) navigator.wakeLock?.request('screen').then((lock) => { this.wakeLock = lock; if (!this.idle) lock.release(); }, () => {});
+      else { this.wakeLock?.release(); this.wakeLock = null; }
+    } catch { /* not available: the screen follows the system's settings */ }
+  }
+
   unlockedTools() {
     const stage = this.allUnlocked ? 99 : this.monster.stage;
     return movesFor(this.progress.species).filter((t) => t.stage <= stage).map((t) => t.id);
@@ -238,6 +260,7 @@ class Game {
   doAction(a) {
     const list = this.unlockedTools();
     if (a === 'stomp') this.tools.stomp();
+    else if (a === 'idle') { if (performance.now() - this.idleOff > 300) this.setIdle(!this.idle); } // the key press itself has just stopped it
     else if (a === 'cascade') { const s = this.progress.settings; s.cascade = !s.cascade; saveProgress(this.progress); this.hud.refreshButtons(); }
     else if (a === 'roar') this.tools.roar();
     else if (a === 'rebuild') { this.hud.doneHint('rebuild'); this.loadWorld(this.progress.world); }
@@ -255,7 +278,7 @@ class Game {
     if (name === 'tool' || name === 'ability') this.hud.doneHint(data);
     if (data === 'light') this.hud.requestHint('heavy');
     if (data === 'heavy' && this.progress.species !== 'jet') this.hud.requestHint('stomp');
-    this.idle = 0;
+    this.quietT = 0;
   }
 
   shake(a) {
@@ -578,9 +601,9 @@ class Game {
     }
 
     // After a long pause the current tool is demonstrated once more.
-    this.idle += dt;
-    if (inp.forward || inp.turn || inp.fire) this.idle = 0;
-    if (this.idle > 25 && !this.hud.hintId) { this.idle = 0; this.hud.requestHint(this.progress.seen.move ? 'light' : 'move', true); }
+    this.quietT += dt;
+    if (inp.forward || inp.turn || inp.fire || this.idle) this.quietT = 0;
+    if (this.quietT > 25 && !this.hud.hintId) { this.quietT = 0; this.hud.requestHint(this.progress.seen.move ? 'light' : 'move', true); }
   }
 
   // Camera and picking -------------------------------------------------------------
@@ -663,6 +686,8 @@ class Game {
     this.frameMs += (dt * 1000 - this.frameMs) * 0.05;
     this.input.poll(dt);
     for (const a of this.input.actions.splice(0)) if (!this.paused) this.doAction(a);
+    if (!this.idle && this.progress.settings.autoIdle && !this.paused && now - this.input.lastActivity > 120000) this.setIdle(true);
+    if (this.idle && !this.paused) this.autopilot.update(dt);
     this.updateCamera(dt);
     this.pick();
     if (!this.paused) {
@@ -829,7 +854,7 @@ class Game {
   // Show, don't tell: a see-through twin of the creature performs the action that is being introduced.
   drawGhost() {
     const id = this.hud.hintId, m = this.monster, species = this.progress.species;
-    if (!id || this.fly || ['rebuild', 'camera', 'worlds', 'next'].includes(id) || species === 'jet') return; // no twin for the aircraft
+    if (!id || this.fly || ['rebuild', 'camera', 'worlds', 'next'].includes(id) || species === 'jet' || this.idle) return; // no twin for the aircraft
     const g = this.ghost, p = g.pose, dt = 1 / 60;
     g.t += dt;
     p.time += dt;

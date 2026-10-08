@@ -24,7 +24,7 @@ Dann `http://localhost:8000` öffnen. Es wird nichts installiert und nichts geba
 - **Für ein Kind gedacht.** Auslöser war ein Fünfjähriger, der Bauklotz-Türme baut, um sie umzuwerfen. Deshalb ist das Spiel sprachfrei (nur Bilder und Ziffern), führt jede Bedienung einmal vor, statt sie zu erklären, und zeigt niemanden, der zu Schaden kommt.
 - **Ein Lernprojekt für Voxel.** Der Autor will den Umgang mit Voxeln besser verstehen: Speicherung, Meshing, Zerstörung, Physik. Anlass war, dass 3D-Gestaltung mit aktuellen KI-Modellen gut möglich geworden ist. Deshalb ist alles selbst gebaut, ohne Engine und ohne Bibliotheken.
 - **Eine Hypothese zum Zusehen.** Im direkt zuvor entstandenen Spiel „Fördeland“, in dem eine Welt aufgebaut wird, ließen Studierende den Selbstspiel-Modus im Hintergrund laufen und empfanden das als entspannend und anregend. Nachdem es in einer Vorlesung kurz gezeigt worden war, kam die Bitte, es künftig immer mitlaufen zu lassen; der Vergleich war TikTok-Videos, bei denen der Ton von einem nicht verwandten Bild begleitet wird. Kaputtmacher soll prüfen, ob das Gegenteil – die Ästhetik der Zerstörung – denselben Effekt hat. Die Vermutung: Veränderung, der man zusehen kann, beruhigt und regt an, egal in welche Richtung sie läuft.
-- **Geplant: ein Idle-Modus,** in dem das Spiel selbst entscheidet, was als Nächstes zerstört wird, sodass es im Hintergrund laufen kann. Er ist noch nicht gebaut; Teil 2 nennt die Stelle, an der er ansetzen würde.
+- **Idle-Modus:** Mit dem Popcorn-Knopf (oder der Taste I) spielt das Spiel sich selbst: Es sucht sich Gebäude, zerlegt sie mit wechselnden Angriffen und reist nach einer fertigen Welt in die nächste. Jede eigene Eingabe übernimmt wieder. Für den Dauerbetrieb im Hintergrund startet `?idle=1` in der Adresse direkt im Idle-Modus.
 
 ### Was man tut
 
@@ -33,6 +33,7 @@ Dann `http://localhost:8000` öffnen. Es wird nichts installiert und nichts geba
 | Bewegen | W/S oder Pfeile vor und zurück, A/D drehen, Umschalt rennen, Leertaste springen (halten = höher, in der Luft noch einmal drücken = Doppelsprung mit Salto) |
 | Angreifen | **Linksklick schnell und schwächer, Rechtsklick langsam und stark.** Tasten 1–4 wählen den Angriff |
 | Kamera | Mittlere Maustaste ziehen; Tab wechselt zur freien Flugkamera |
+| Zusehen | Popcorn-Knopf oder Taste I: das Spiel spielt sich selbst |
 | Gamepad, Touch | werden automatisch erkannt (Trigger rechts/links; kurz tippen/halten) |
 
 **Fünf Figuren, fünf Arten zu zerstören.** Jede hat vier Angriffe (ab Stufe 1, 3, 5, 7), jeden in einer schnellen und einer starken Fassung:
@@ -81,7 +82,7 @@ PROMPTS/            alle Prompts des Autors
 public/
   index.html, style.css, _headers
   impressum.html, legal.css   Impressum und Datenschutzerklärung
-  src/              21 ES-Module, siehe unten
+  src/              22 ES-Module, siehe unten
 ```
 
 ### Module (`public/src`)
@@ -105,6 +106,7 @@ public/
 | `monster.js` | Gelenkmodelle der fünf Figuren je Stufe, Körpersprache (`locomotion`), Steuerung am Boden und in der Luft (`Monster`) |
 | `tools.js` | Angriffe: Tabelle `MOVES` je Figur (leicht/schwer, Pose, Wirkung) und die Bausteine dafür (`blow`, `shock`, `bolt`, `ray`, `rocket`, `bomb`, `grab` …) |
 | `actors.js` | Bewohner und Hubschrauber |
+| `autopilot.js` | Idle-Modus: füllt den Eingabezustand, wählt Ziele, Angriffe und Welten |
 | `audio.js` | Erzeugter Ton (Web Audio), keine Dateien |
 | `input.js` | Maus/Tastatur, Gamepad, Touch → ein gemeinsamer Zustand |
 | `hud.js` | Oberfläche aus DOM-Elementen, Vorführ-Hinweise, Weltauswahl, Eltern-Ecke |
@@ -156,7 +158,7 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 
 ### Testen ohne Testframework
 
-- **Adress-Parameter** (speichern keinen Fortschritt): `?world=skyline|blocks|garden|house|toyland|village|park|city|factory|random`, `?stage=7`, `?species=dino|gorilla|robot|tank|jet`, `?tool=<Angriffs-Id>`, `?unlock=1`, `?quality=low`, `?fly=1`.
+- **Adress-Parameter** (speichern keinen Fortschritt): `?world=skyline|blocks|garden|house|toyland|village|park|city|factory|random`, `?stage=7`, `?species=dino|gorilla|robot|tank|jet`, `?tool=<Angriffs-Id>`, `?unlock=1`, `?quality=low`, `?fly=1`, `?idle=1`.
 - **`window.game`** gibt in der Browser-Konsole Zugriff auf alles, z. B. `game.tools.use(game.tool, true)` oder `game.gain += 1e6`.
 - Die Module ohne WebGL (`world`, `worldgen`, `destruction`, `bodies`, `particles`, `mesher`) laufen auch in Node, wenn man sie in einen Ordner mit `{"type":"module"}` kopiert.
 
@@ -167,9 +169,15 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 - **Neue Welt:** in `worldgen.js` eine Bauplan-Funktion (liefert eine `World`) und einen Eintrag in `WORLDS`. Für Städte genügt ein neuer Parametersatz für `town()`.
 - **Neues Material oder neuer Voxel-Typ:** `materials.js`; höchstens 127 Typen.
 
-### Wo der Idle-Modus ansetzen würde
+### Idle-Modus (`autopilot.js`)
 
-Die gesamte Simulation liest nur den Zustand von `Input` (`forward`, `turn`, `sprint`, `aimX/aimY`, `firePressed`, `heavyPressed`, `jumpHeld`, `actions`). Ein Autopilot kann diese Felder füllen, ohne dass sonst etwas geändert werden muss. Was er zum Entscheiden braucht, liegt vor: die Gebäudeliste mit Lage, Restbestand und Zustand (`game.hud.major`, Felder `x0…z1`, `remaining`, `done`), die freigeschalteten Angriffe (`game.unlockedTools()`) und `game.project()`, um einen Weltpunkt in Bildschirmkoordinaten für das Zielen umzurechnen. Für den Hintergrundbetrieb kämen dazu: Wechsel der Welt bei 100 %, gelegentlicher Wechsel von Figur und Kameraführung.
+Der Autopilot tut nichts, was ein Spieler nicht auch könnte: Er füllt einmal pro Bild den Zustand von `Input` (`forward`, `turn`, `sprint`, `aimX/aimY`, `firePressed`, `heavyPressed`) und wählt Angriffe über `game.selectTool`. Die Simulation weiß nicht, wer spielt.
+
+- **Ablauf:** nächstes stehendes Gebäude wählen (eines der drei nächsten) → eine noch feste Stelle daran suchen (`pickSpot`) → hinlaufen oder hinfliegen und über `game.project()` darauf zielen → in Reichweite abwechselnd schnell und stark angreifen → alle 5 bis 11 Sekunden den Angriff wechseln → bei Stillstand springen, dann anderes Ziel.
+- **Weltwechsel:** 7 Sekunden nach 100 % oder nach 12 Minuten in derselben Welt, reihum durch `WORLDS`.
+- **Ein und aus:** `game.setIdle(on)`; Knopf 🍿, Taste I, Adresse `?idle=1`, optional automatisch nach 2 Minuten ohne Eingabe (Eltern-Ecke). Jede echte Eingabe schaltet ab (`input.onActivity`).
+- **Zufall:** Die Entscheidungen des Autopiloten nutzen `Math.random`, gehören also bewusst nicht zur reproduzierbaren Simulation.
+- **Erweitern:** neue Angriffe mit Fernwirkung in die Liste `RANGED` eintragen, sonst läuft der Autopilot damit bis an das Ziel heran.
 
 ### Bekannte Lücken
 

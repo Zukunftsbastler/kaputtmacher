@@ -1,8 +1,10 @@
-# Kaputtmacher – Spielkonzept (Entwurf 7)
+# Kaputtmacher – Spielkonzept (Entwurf 8)
 
 Status: in Umsetzung. Dieser Entwurf nennt überall konkrete Zahlen; sie entsprechen dem Stand im Code. Was fehlt oder abweicht, steht in Abschnitt 16.
 
-**Neu gegenüber Entwurf 6:** der Flieger als fünfte Figur (9.2), lose Trümmer räumen sich selbst weg (11.8), geplanter Idle-Modus und der Hintergrund des Projekts (14, README), Entwicklungsserver ohne Cache (16).
+**Neu gegenüber Entwurf 7:** Doppelsprung mit Salto (4.2), Idle-Modus (17), Impressum und Datenschutzerklärung (12.2).
+
+**Neu in Entwurf 7 war:** der Flieger als fünfte Figur (9.2), lose Trümmer räumen sich selbst weg (11.8), geplanter Idle-Modus und der Hintergrund des Projekts (14, README), Entwicklungsserver ohne Cache (16).
 
 **Neu in Entwurf 6 war:** vier Figuren mit völlig verschiedenen Angriffen, jeder in einer schnellen und einer langsamen, starken Fassung (9), Gelenkmodelle und ausgearbeitete Animationen (9.3), Gebäude geben je nach Material früher nach (11.4), Schubsen im Sprint (11.5), Kettenreaktionen als Upgrade (11.6), Hubschrauber (8).
 
@@ -482,7 +484,7 @@ Reihenfolge nach Wirkung auf das Spielgefühl:
 | 4 | Fahrender Verkehr, Vögel, Hunde | Mehr Leben |
 | 5 | Schlagschatten | Tiefe und Größe werden lesbarer |
 | 6 | Lauflängen-Kodierung, vereinfachte Ferne | Voraussetzung für 1-km-Planeten und größere Monster |
-| 7 | **Idle-Modus:** Das Spiel entscheidet selbst, was als Nächstes zerstört wird, und läuft im Hintergrund. Ansatzpunkt und Begründung stehen in der README | Kernabsicht des Projekts: prüfen, ob Zerstörung beim Zusehen ebenso entspannt wie Aufbau |
+| 7 | Idle-Modus verfeinern: Kamerafahrten, Wechsel der Figur, klügere Zielwahl | Der Modus ist da (Abschnitt 17); ob er beim Zusehen trägt, muss sich im Einsatz zeigen |
 | 8 | Zeitlupe, Zurückspulen; Feuer auch an fallenden Bruchstücken | Vom Auftraggeber als spätere Optionen gewünscht |
 | 9 | „Welt wehrt sich“ | Zuschaltbare Herausforderung, klar nachrangig |
 
@@ -519,6 +521,7 @@ Reihenfolge nach Wirkung auf das Spielgefühl:
 | Wolkenkratzer-Stadt unter Volllast | Im Test mit Stufe-9-Monster, Dauerraketen und 5 400 fliegenden Würfeln 18 bis 19 ms pro Bild, also knapp unter 60 Bildern pro Sekunde; die Qualitätsanpassung greift dann ein |
 | Brüllen vor Stufe 9 | Die Taste R brüllt schon, aber ohne Wirkung und ohne Knopf |
 | Speicherverfahren | Drei Punkte offen, siehe 12.3 |
+| Idle-Modus | Vorhanden, siehe Abschnitt 17; nur automatisiert und kurz geprüft, nicht über Stunden |
 | Zeitlupe, Zurückspulen, „Welt wehrt sich“ | Nicht begonnen; feste Zeitschritte und Akteur-System sind als Vorbereitung da |
 | Feuer in Hochhäusern | Beton, Glas und Stahl brennen nicht. Dort gibt es Brandherde mit Flammen und Rauch, aber kein Feuer, das sich durchs Gebäude frisst |
 | Fahrzeuge | Explodieren nicht, auch nicht an der Tankstelle geparkte |
@@ -528,3 +531,38 @@ Reihenfolge nach Wirkung auf das Spielgefühl:
 **Geprüft** (automatisierte Browser-Durchläufe mit Bildschirmfotos auf dem Entwicklungsrechner, dabei 60 Bilder pro Sekunde): alle Welttypen erzeugen und zeichnen, Laufen über einen Planeten mit Nachladen der Oberfläche, Faust, Raketen, Stampfen und Sprung, Wachstum, Weltauswahl, Welt-Abschluss, Handy-Bildformat, Betrieb unter den Sicherheits-Headern, Einsturz und Kippen unter der neuen Schwerkraft, Trümmerfontänen bei Faust, Stampfen, Dynamit und Raketen, Wolkenkratzer-Stadt aus Straßenhöhe mit Stufe 1 und als Riese mit Stufe 9, Start im Zentralpark, Allee und Ladenzeile, Schwanzschlag im Bauklotz-Zimmer, Sprung, Feuer und Rauch nach Raketen im Garten.
 
 **Nicht geprüft:** Spielen von Hand, **sämtlicher Ton** (die neuen Einsturz- und Feuergeräusche sind erzeugt, aber von niemandem angehört worden), echtes Handy, echtes Gamepad, echte Touch-Bedienung, schwächere Rechner. Greifen/Werfen, Schwert, Laserstrahl und Brüllen liefen fehlerfrei durch, ihre Wirkung wurde aber nicht einzeln begutachtet. Die Spielbalance ist geschätzt.
+
+## 17. Idle-Modus: das Spiel spielt sich selbst
+
+**Zweck.** Das Spiel soll als bewegter Hintergrund laufen können, etwa auf einem zweiten Bildschirm oder während einer Vorlesung. Dahinter steht die Vermutung, dass Veränderung, der man zusehen kann, beruhigt und anregt – beim Aufbau (Fördeland) wie bei der Zerstörung.
+
+**Ein und aus.**
+
+| | |
+|---|---|
+| Einschalten | Popcorn-Knopf oben rechts, Taste I, oder `?idle=1` in der Adresse |
+| Ausschalten | jede eigene Eingabe: Taste, Klick ins Spiel, Berührung, Gamepad. Mausbewegung allein schaltet nicht ab |
+| Von selbst | optional nach 2 Minuten ohne Eingabe (Eltern-Ecke, standardmäßig aus) |
+| Bildschirm | bleibt im Idle-Modus wach, soweit der Browser es erlaubt |
+
+**Was der Autopilot tut.** Er benutzt dieselbe Steuerung wie ein Spieler und kann nichts, was ein Spieler nicht kann.
+
+1. Er wählt eines der drei nächsten Gebäude, die noch stehen.
+2. Er sucht daran eine Stelle, die noch fest ist – für Nahangriffe in Reichweite der Figur, für Fernangriffe irgendwo am Gebäude – und sucht alle ein bis zwei Sekunden eine neue.
+3. Er läuft hin (weit entfernt im Sprint) und zielt auf die Stelle. Figuren mit Fernangriff bleiben auf Abstand; der Flieger hält sich knapp über Dachhöhe, feuert im Anflug und wirft Bomben, wenn er nah ist.
+4. In Reichweite greift er an: zu 60 % schnell, zu 40 % stark.
+5. Alle 5 bis 11 Sekunden wechselt er auf einen anderen freigeschalteten Angriff, damit alle zu sehen sind.
+6. Alle 9 bis 19 Sekunden springt er aus Freude – mit Doppelsprung und Salto, manchmal mit Gebrüll.
+7. Kommt er nicht voran, springt er; hilft das zweimal nicht, nimmt er ein anderes Gebäude. An einem Gebäude bleibt er höchstens 30 Sekunden.
+8. Sieben Sekunden nach 100 % – oder nach 12 Minuten in derselben Welt – reist er in die nächste Welt der Liste.
+
+Macht und Stufen wachsen dabei ganz normal und werden gespeichert. Figur und Stufe bleiben, wie der Spieler sie gewählt hat. Vorführ-Hinweise und Geister-Monster sind im Idle-Modus ausgeblendet.
+
+**Gemessen** (je 30 bis 45 Sekunden Selbstspiel): Bauklotz-Zimmer mit Dino ab Stufe 3: 68 % der Welt, dabei auf Stufe 4 gewachsen. Dorf mit Roboter auf Stufe 5: 12 Gebäude. Stadt mit Flieger auf Stufe 5: 3 Gebäude. Wolkenkratzer-Stadt mit Panzer ab Stufe 6: 31 Gebäude, dabei brach die Bildrate unter der Last der Einstürze zeitweise auf unter 30 Bilder pro Sekunde ein.
+
+**Grenzen.**
+- Auf Stufe 1 in der Wolkenkratzer-Stadt passiert lange wenig: Die Figur braucht eine Viertelminute aus dem Park heraus und kratzt dann mit schwachen Schlägen an Beton. Für den Hintergrundbetrieb lohnt eine höhere Stufe.
+- Ohne vorherige Eingabe (Start über `?idle=1`) bleibt das Spiel stumm, weil Browser Ton erst nach einer Nutzeraktion erlauben. Beim Start über den Knopf ist der Ton an.
+- In einem Tab, der nicht sichtbar ist, hält der Browser das Spiel an.
+- Die Kamera folgt wie im normalen Spiel; es gibt keine eigenen Kamerafahrten.
+

@@ -20,7 +20,7 @@ const DEFAULTS = {
   stickers: [], // icons of structure kinds destroyed completely at least once
   seen: {}, // demonstrations already understood
   mixSeed: 0, // seed of the last randomly mixed world
-  settings: { volume: 0.8, quality: 'auto', shake: true, life: true, unlockAll: false, cascade: true },
+  settings: { volume: 0.8, quality: 'auto', shake: true, life: true, unlockAll: false, cascade: true, autoIdle: false },
   mix: { ...DEFAULT_MIX },
 };
 
@@ -53,7 +53,7 @@ function sanitize(raw) {
   for (const k of HINTS) if (Object.hasOwn(seen, k) && seen[k] === true) d.seen[k] = true;
   d.settings.volume = num(set.volume, 0, 1, d.settings.volume);
   d.settings.quality = cleanQuality(set.quality);
-  for (const k of ['shake', 'life', 'unlockAll', 'cascade']) if (typeof set[k] === 'boolean') d.settings[k] = set[k];
+  for (const k of ['shake', 'life', 'unlockAll', 'cascade', 'autoIdle']) if (typeof set[k] === 'boolean') d.settings[k] = set[k];
   for (const k of Object.keys(DEFAULT_MIX)) d.mix[k] = num(mix[k], 0, 1, DEFAULT_MIX[k]);
   return d;
 }

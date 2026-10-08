@@ -26,6 +26,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 #abilities { right: 14px; bottom: 14px; display: flex; gap: 10px; }
 #topright { right: 14px; top: 14px; display: flex; gap: 10px; }
 #gear { opacity: 0.55; }
+#hud.idle #hint { display: none; }
 .btn.off { filter: grayscale(1); opacity: 0.5; }
 #hint .finger.hold { animation: hold 1.4s ease-in-out infinite; }
 @keyframes hold { 0%, 15%, 100% { transform: translateY(-8px); } 30%, 85% { transform: translateY(4px) scale(0.9); } }

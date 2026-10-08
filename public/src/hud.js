@@ -47,6 +47,7 @@ export class Hud {
     this.btnCascade = this.button(tr, '⛓️', () => game.doAction('cascade'));
     this.btnCamera = this.button(tr, '🎥', () => game.doAction('camera'));
     this.btnWorlds = this.button(tr, '🌍', () => this.openWorlds());
+    this.btnIdle = this.button(tr, '🍿', () => game.setIdle(!game.idle)); // lean back and watch: the game plays itself
     this.btnGear = this.button(tr, '⚙️', null); this.btnGear.id = 'gear';
     // The parents' corner opens only after holding the gear for three seconds.
     let gearTimer = 0;
@@ -126,6 +127,8 @@ export class Hud {
     // Chain reactions are an upgrade that arrives with stage 4 and can be switched off again.
     this.btnCascade.classList.toggle('hidden', !all && p.stage < 4);
     this.btnCascade.classList.toggle('off', !p.settings.cascade);
+    this.btnIdle.classList.toggle('sel', this.g.idle);
+    this.root.classList.toggle('idle', this.g.idle); // no demonstrations while the game plays itself
     this.btnWorlds.classList.toggle('hidden', false); // the world choice is open from the first minute
     this.btnCamera.textContent = this.g.fly ? SPECIES.find((s) => s.id === p.species).icon : '🎥';
     this.face.textContent = SPECIES.find((s) => s.id === p.species).icon;
@@ -354,6 +357,7 @@ export class Hud {
     check('Kamerawackeln', 'shake');
     check('Leben in der Welt (Bewohner, Hubschrauber)', 'life');
     check('Kettenreaktionen', 'cascade');
+    check('Selbstspiel nach 2 Minuten ohne Eingabe', 'autoIdle');
     check('Alles freischalten', 'unlockAll');
     const full = el('button', '', sheet, 'Vollbild an/aus');
     full.addEventListener('click', () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.()));

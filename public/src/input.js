@@ -24,12 +24,16 @@ export class Input {
     this.padPrev = [];
     this.padHold = 0;
     this.onFirstGesture = null;
+    this.onActivity = null;
+    this.lastActivity = performance.now(); // time of the last real key press, click, touch or gamepad input
     this.bind();
   }
 
   gesture(device) {
     this.device = device;
+    this.lastActivity = performance.now();
     if (this.onFirstGesture) { this.onFirstGesture(); }
+    if (this.onActivity) this.onActivity(); // a real player has taken over
   }
 
   bind() {
@@ -44,6 +48,7 @@ export class Input {
       if (e.code === 'Space') this.actions.push('stomp');
       else if (e.code === 'KeyR') this.actions.push('roar');
       else if (e.code === 'Tab') this.actions.push('camera');
+      else if (e.code === 'KeyI') this.actions.push('idle');
       else if (/^Digit[1-9]$/.test(e.code)) this.actions.push('tool:' + (Number(e.code[5]) - 1));
       if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     });
