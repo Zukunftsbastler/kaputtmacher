@@ -61,9 +61,10 @@
       <p>
         Das Spiel läuft vollständig in Ihrem Browser. Damit der Fortschritt beim nächsten Besuch erhalten bleibt,
         speichert es im lokalen Speicher Ihres Browsers (Local Storage) unter dem Eintrag
-        „kaputtmacher.v1“ ausschließlich Spieldaten: die erreichte Stufe und gesammelte Macht, die zuletzt gespielte
-        Welt und Figur, abgeschlossene Welten, gesammelte Sticker, bereits gezeigte Bedienhinweise sowie die
-        Einstellungen (Lautstärke, Grafikqualität und Ähnliches).
+        „kaputtmacher.v1“ ausschließlich Spieldaten: die erreichte Stufe und gesammelte Macht jeder Figur, die zuletzt
+        gespielte Welt und Figur, abgeschlossene Welten, gesammelte Sticker, erreichte Erfolge und die Zähler dahinter
+        (zum Beispiel die Zahl zerstörter Gebäude, gesprungener Sprünge und die Spielzeit in Sekunden), bereits
+        gezeigte Bedienhinweise sowie die Einstellungen (Lautstärke, Grafikstufe und Ähnliches).
       </p>
       <p>
         Diese Daten enthalten keine Angaben zu Ihrer Person, verlassen Ihr Gerät nicht und werden weder an uns noch
@@ -79,7 +80,7 @@
         <p id="save-status" role="status"></p>
         <button type="button" id="save-delete">Spielstand und Einstellungen löschen …</button>
         <div id="save-confirm" hidden>
-          <p><strong>Wirklich löschen?</strong> Erreichte Stufe, Sticker und Einstellungen gehen verloren. Das lässt
+          <p><strong>Wirklich löschen?</strong> Erreichte Stufen, Sticker, Erfolge und Einstellungen gehen verloren. Das lässt
             sich nicht rückgängig machen.</p>
           <button type="button" id="save-no">Abbrechen</button>
           <button type="button" id="save-yes" class="danger">Ja, endgültig löschen</button>

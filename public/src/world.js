@@ -85,6 +85,14 @@ export class World {
     this.dirty.add(cx + this.ncx * (cz + this.ncz * cy));
   }
 
+  // The building or prop that owns the column at (x, z), or null for open ground.
+  structureAt(x, z) {
+    x = Math.floor(x); z = Math.floor(z);
+    if (this.wrap) { x &= this.mx; z &= this.mz; } else if (x < 0 || z < 0 || x >= this.sx || z >= this.sz) return null;
+    const id = this.footprint[x + this.sx * z];
+    return id ? this.structures[id] : null;
+  }
+
   // Flat voxel index, used by the support search.
   index(x, y, z) {
     if (this.wrap) { x &= this.mx; z &= this.mz; }

@@ -31,7 +31,7 @@ export const TYPE_FLAGS = new Uint8Array(256);
 let nextType = 1;
 function def(mat, hex, flags = 0, emissive = 0) {
   const id = nextType++;
-  if (id > 127) throw new Error('too many voxel types');
+  if (id > 124) throw new Error('too many voxel types'); // 125..127 would collide with SOOT, CHAR and EMBER as rubble twins
   TYPE_MAT[id] = mat;
   TYPE_FLAGS[id] = flags;
   TYPE_RGBA.set([(hex >> 16) & 255, (hex >> 8) & 255, hex & 255, emissive], id * 4);
@@ -54,6 +54,7 @@ export const T = {
   PAVE: def(MAT.EARTH, 0xc9c5ba, F_TERRAIN),
   PAVE2: def(MAT.EARTH, 0xb3aea2, F_TERRAIN),
   PAVE_RED: def(MAT.EARTH, 0xb9715e, F_TERRAIN),
+  SCORCH: def(MAT.EARTH, 0x2b2622, F_TERRAIN), // ground that fire has passed over
 
   BRICK_RED: def(MAT.BRICK, 0xb5503c),
   BRICK_DARK: def(MAT.BRICK, 0x8f3f31),
@@ -92,6 +93,7 @@ export const T = {
   NEON_PINK: def(MAT.GLASS, 0xff5fd2, 0, 230),
   NEON_YELLOW: def(MAT.GLASS, 0xffe14d, 0, 230),
   WATER: def(MAT.GLASS, 0x4fb6e8, 0, 60),
+  HYDRANT: def(MAT.SHEET, 0xe0301e), // breaks into a fountain, see reactions.js
 
   WOOD: def(MAT.WOOD, 0xa9744a),
   WOOD_DARK: def(MAT.WOOD, 0x6e4a2e),
@@ -156,6 +158,17 @@ for (let i = 1; i < 128; i++) {
 export const EMBER = 255, CHAR = 254;
 TYPE_MAT[EMBER] = MAT.WOOD; TYPE_FLAGS[EMBER] = F_RUBBLE; TYPE_RGBA.set([255, 120, 20, 255], EMBER * 4);
 TYPE_MAT[CHAR] = MAT.LEAF; TYPE_FLAGS[CHAR] = F_RUBBLE; TYPE_RGBA.set([38, 34, 32, 0], CHAR * 4);
+// SOOT: what heat leaves of things that cannot burn (stone, metal). Still solid, but no longer counted.
+export const SOOT = 253;
+TYPE_MAT[SOOT] = MAT.CONCRETE; TYPE_FLAGS[SOOT] = F_RUBBLE; TYPE_RGBA.set([46, 42, 40, 0], SOOT * 4);
+// Flash point per material: how much heat a voxel has to take before it reacts (see fire.js).
+// Leaves and cloth catch at the first spark, wood needs a real fire next to it, glass bursts,
+// metal and stone never burn but turn black under a flame thrower. 0 = never reacts.
+export const FLASH = [0, 0, 3, 4, 1, 2.5, 6, 7, 9, 5, 1, 1];
+// Seconds a burning voxel lasts (minimum, random extra), the heat it gives off per spread attempt,
+// how often a charred rest stays behind, and spread attempts per second. Leaves flare up and pass the
+// fire on quickly, so a tree burns down; wood burns long but needs several flames next to it.
+export const BURN = { [MAT.WOOD]: [4.5, 4.5, 1.5, 0.5, 0.9], [MAT.LEAF]: [1.1, 1.6, 1.1, 0.08, 2.6], [MAT.FABRIC]: [1.2, 1.5, 1.1, 0.05, 2] };
 // Materials that catch fire.
 export const flammable = (t) => t > 0 && t < 128 && (TYPE_MAT[t] === MAT.WOOD || TYPE_MAT[t] === MAT.LEAF || TYPE_MAT[t] === MAT.FABRIC);
 

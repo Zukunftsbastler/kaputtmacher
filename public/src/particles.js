@@ -112,6 +112,8 @@ export class Fx {
     this.g = game;
     this.max = max;
     this.limit = max;
+    this.thin = 1; // share of the ambient effects (dust, smoke, spray) that is actually produced; set by the detail level
+    this.arrived = 0; // power orbs that have reached the creature since this was last read
     this.n = 0;
     this.d = new Float32Array(max * FS);
   }
@@ -129,6 +131,7 @@ export class Fx {
 
   dust(x, y, z, radius, r, g, b, count) {
     const rnd = this.g.rng;
+    count = Math.ceil(count * this.thin);
     for (let i = 0; i < count; i++) {
       const a = rnd() * 6.28, s = radius * (0.5 + rnd());
       this.add(x + Math.cos(a) * radius * rnd(), y + (rnd() - 0.3) * radius, z + Math.sin(a) * radius * rnd(),
@@ -159,10 +162,14 @@ export class Fx {
     this.sparks(x, y, z, radius * 4, 16);
   }
 
-  // Glowing point that flies to the monster: makes "destruction feeds power" visible.
-  orb(x, y, z) {
-    const rnd = this.g.rng;
-    this.add(x, y, z, (rnd() - 0.5) * 20, 14 + rnd() * 16, (rnd() - 0.5) * 20, 1.4, 0, 1.6, 1, 0.85, 0.25, 1, 1, 0, 0, 1);
+  // Power made visible: a glowing ball bursts out of what was destroyed, hangs for a moment and then
+  // flies into the creature. size: scales with the creature, so the balls stay visible next to a giant.
+  // burst: how hard it is thrown out (a finished building throws its power far).
+  orb(x, y, z, size, burst = 1) {
+    const rnd = this.g.rng, a = rnd() * 6.283, s = (8 + rnd() * 14) * burst * (0.5 + size * 0.5);
+    const vx = Math.cos(a) * s, vy = (12 + rnd() * 18) * burst * (0.5 + size * 0.5), vz = Math.sin(a) * s, life = 2.2 + rnd() * 0.5;
+    this.add(x, y, z, vx, vy, vz, 1.5 * size, 0, life, 1, 0.92, 0.45, 1, 1, 0, 0, 1); // bright core: counts when it arrives
+    this.add(x, y, z, vx, vy, vz, 4 * size, 0, life, 1, 0.7, 0.15, 0.35, 1, 0, 0, 2); // soft halo around it
   }
 
   firework(x, y, z, size) {
@@ -174,20 +181,21 @@ export class Fx {
     }
   }
 
-  update(dt, hx, hy, hz) {
+  // hx, hy, hz: where homing particles fly to. hr: how close counts as arrived.
+  update(dt, hx, hy, hz, hr = 3) {
     const d = this.d, size = this.g.world.wrap ? this.g.world.sx : 0;
     for (let i = this.n - 1; i >= 0; i--) {
       const o = i * FS;
       d[o + 8] -= dt;
       let dead = d[o + 8] <= 0;
       if (d[o + 17] && !dead) {
-        // Homing: steer towards the target, faster the older the orb is.
-        const age = d[o + 9] - d[o + 8];
+        // Homing: after a short moment of flying free, steer towards the target, faster the older the orb is.
+        const age = Math.max(0, d[o + 9] - d[o + 8] - 0.35);
         const dx = wrapDelta(hx - d[o], size), dy = hy - d[o + 1], dz = wrapDelta(hz - d[o + 2], size);
         const dist = Math.hypot(dx, dy, dz);
-        if (dist < 3) dead = true;
+        if (dist < hr) { dead = true; if (d[o + 17] === 1) this.arrived++; }
         else {
-          const k = Math.min(1, age * 2.2), sp = 40 + age * 260;
+          const k = Math.min(1, age * 2.5), sp = 30 + age * 300 + dist * age;
           d[o + 3] += ((dx / dist) * sp - d[o + 3]) * k; d[o + 4] += ((dy / dist) * sp - d[o + 4]) * k; d[o + 5] += ((dz / dist) * sp - d[o + 5]) * k;
         }
       }

@@ -51,6 +51,70 @@ export class Audio {
     heli.start(); lfo.start();
   }
 
+  // Water under pressure: level 0..1.
+  hiss(level) {
+    if (!this.ctx || this.ctx.state !== 'running') return;
+    if (!this.hissGain) {
+      const src = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter();
+      src.buffer = this.noiseBuf; src.loop = true;
+      f.type = 'highpass'; f.frequency.value = 2200;
+      this.hissGain = this.ctx.createGain();
+      this.hissGain.gain.value = 0;
+      src.connect(f).connect(this.hissGain).connect(this.master);
+      src.start();
+    }
+    this.hissGain.gain.setTargetAtTime(level * 0.2, this.ctx.currentTime, 0.2);
+  }
+
+  // Sirens of police cars and fire engines: a two-tone horn, level 0..1 by distance.
+  siren(level) {
+    if (!this.ctx || this.ctx.state !== 'running') return;
+    if (!this.sirenGain) {
+      const ctx = this.ctx, osc = ctx.createOscillator(), lfo = ctx.createOscillator(), depth = ctx.createGain(), f = ctx.createBiquadFilter();
+      osc.type = 'triangle'; osc.frequency.value = 560;
+      lfo.type = 'square'; lfo.frequency.value = 1.1; depth.gain.value = 110;
+      lfo.connect(depth).connect(osc.frequency);
+      f.type = 'lowpass'; f.frequency.value = 1800;
+      this.sirenGain = ctx.createGain();
+      this.sirenGain.gain.value = 0;
+      osc.connect(f).connect(this.sirenGain).connect(this.master);
+      osc.start(); lfo.start();
+    }
+    this.sirenGain.gain.setTargetAtTime(level * level * 0.07, this.ctx.currentTime, 0.4);
+  }
+
+  // A fighter jet passes overhead.
+  flyby() {
+    if (!this.ok('flyby', 1.5)) return;
+    this.noise(2.2, 500, 0.8, 0.5, 'bandpass', 5);
+    this.noise(1.6, 2400, 1, 0.18, 'bandpass', 0.3);
+  }
+
+  // A burst from a helicopter's gun: a quick rattle.
+  burst() {
+    if (!this.ok('burst', 0.5)) return;
+    for (let i = 0; i < 5; i++) this.tone('square', 220, 120, 0.04, 0.07, i * 0.07);
+  }
+
+  // An achievement: two bright notes and a sparkle on top.
+  achieve() {
+    if (!this.ok('achieve', 0.4)) return;
+    [784, 1175, 1568].forEach((f, i) => this.tone('sine', f, f, 0.3, 0.16, i * 0.1));
+    this.tone('triangle', 2349, 2349, 0.4, 0.07, 0.3);
+  }
+
+  // Power arrives at the creature: a soft, rising blip.
+  absorb() {
+    if (this.ok('absorb', 0.06)) this.tone('sine', 520 + Math.random() * 200, 1250, 0.09, 0.07);
+  }
+
+  // A lamp or neon sign shorting out.
+  zap() {
+    if (!this.ok('zap', 0.1)) return;
+    this.tone('square', 1800 + Math.random() * 900, 140, 0.09, 0.1);
+    this.noise(0.08, 5000, 2, 0.12, 'highpass');
+  }
+
   // level 0..1: how close the nearest helicopter is.
   heli(level) {
     if (this.ctx && this.ctx.state === 'running') this.heliGain.gain.setTargetAtTime(level * 0.35, this.ctx.currentTime, 0.4);

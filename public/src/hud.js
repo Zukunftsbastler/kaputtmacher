@@ -4,7 +4,8 @@
 import { ABILITIES, movesFor } from './tools.js';
 import { SPECIES } from './monster.js';
 import { WORLDS } from './worldgen.js';
-import { saveProgress, resetProgress } from './progress.js';
+import { saveProgress, resetProgress, MAX_DETAIL } from './progress.js';
+import { ACHIEVEMENTS, achievementProgress } from './achievements.js';
 
 function el(tag, cls, parent, text) {
   const e = document.createElement(tag);
@@ -41,12 +42,16 @@ export class Hud {
     this.fill = el('div', 'fill', track);
     this.pct = el('div', 'pct', track);
     this.icons = el('div', 'icons', this.worldbar);
+    this.wanted = el('div', 'wanted hidden', this.worldbar); // alarm level of police and army, in stars
+    this.toasts = el('div', '', root); this.toasts.id = 'toasts';
+    this.toastQueue = []; this.toastN = 0; this.gainT = 0;
 
     const tr = el('div', '', root); tr.id = 'topright';
     // Only shown while the free camera is on (it is switched on in the settings): the way back to the creature.
     this.btnCamera = this.button(tr, '🎥', () => game.doAction('camera'));
     this.btnWorlds = this.button(tr, '🌍', () => this.openWorlds());
     this.btnIdle = this.button(tr, '🍿', () => game.setIdle(!game.idle)); // lean back and watch: the game plays itself
+    this.btnTrophy = this.button(tr, '🏆', () => this.openAchievements());
     this.btnGear = this.button(tr, '⚙️', () => this.openParent()); this.btnGear.id = 'gear';
     // On small and touch screens everything in this row folds away behind one menu button,
     // so the playing field stays free. The legal link moves in here as well.
@@ -215,6 +220,50 @@ export class Hud {
 
   showNext(on) { this.next.classList.toggle('hidden', !on); }
 
+  // Alarm level 0..5 as a row of stars under the world bar.
+  setWanted(level) {
+    this.wanted.classList.toggle('hidden', !level);
+    this.wanted.textContent = '⭐'.repeat(level);
+    if (level) { this.wanted.classList.remove('pop'); void this.wanted.offsetWidth; this.wanted.classList.add('pop'); }
+  }
+
+  // An achievement has been reached: a small card slides in for a few seconds. Several wait their turn.
+  toast(a) {
+    this.toastQueue.push(a);
+    this.nextToast();
+  }
+
+  nextToast() {
+    if (this.toastN >= 2 || !this.toastQueue.length) return;
+    const a = this.toastQueue.shift(), t = el('div', 'toast', this.toasts);
+    el('span', 'ico', t, a.icon);
+    const txt = el('div', '', t);
+    el('b', '', txt, a.name);
+    el('small', '', txt, a.text);
+    el('span', 'cup', t, '🏆');
+    this.toastN++;
+    // With many waiting (e.g. after a long chain reaction) each one stays only briefly.
+    const ms = this.toastQueue.length > 3 ? 1800 : 4200;
+    t.style.animationDuration = ms + 'ms';
+    setTimeout(() => { t.remove(); this.toastN--; this.nextToast(); }, ms);
+  }
+
+  // Power has reached the creature at screen position (x, y): a spark flies on to the ring, which bumps.
+  gain(x, y) {
+    const now = performance.now();
+    if (now - this.gainT < 140) return;
+    this.gainT = now;
+    const r = this.power.getBoundingClientRect(), s = el('i', 'spark', this.root);
+    s.style.left = Math.round(x) + 'px'; s.style.top = Math.round(y) + 'px';
+    void s.offsetWidth; // start the transition from the creature's position
+    s.style.left = Math.round(r.left + r.width / 2) + 'px'; s.style.top = Math.round(r.top + r.height / 2) + 'px';
+    s.classList.add('go');
+    setTimeout(() => {
+      s.remove();
+      this.power.classList.remove('gain'); void this.power.offsetWidth; this.power.classList.add('gain');
+    }, 420);
+  }
+
   // Per frame: touch stick, gamepad cursor.
   update() {
     const inp = this.g.input, touch = inp.device === 'touch';
@@ -337,6 +386,8 @@ export class Hud {
     for (const s of SPECIES) {
       const b = this.button(mons, s.icon, () => { g.setSpecies(s.id); this.openWorlds(); });
       if (s.id === p.species) b.classList.add('sel');
+      // Every creature has its own stage.
+      el('span', 'key ok', b, String(s.id === p.species ? p.stage : p.creatures[s.id].stage));
     }
     // Any stage reached so far can be played again, e.g. to take a house apart from the inside.
     if (p.stage > 1) {
@@ -363,6 +414,22 @@ export class Hud {
     this.button(sheet, '✖️', () => this.close()).classList.add('small');
   }
 
+  // All achievements: reached ones in colour, the others with how far they have come.
+  openAchievements() {
+    const p = this.g.progress, sheet = this.open('trophies');
+    el('h2', '', sheet, `🏆 ${p.achieved.length} / ${ACHIEVEMENTS.length}`);
+    const grid = el('div', 'grid', sheet);
+    for (const a of ACHIEVEMENTS) {
+      const got = p.achieved.includes(a.id), c = el('div', 'card' + (got ? ' got' : ''), grid);
+      el('span', 'ico', c, a.icon);
+      const txt = el('div', '', c);
+      el('b', '', txt, a.name);
+      el('small', '', txt, a.text);
+      if (!got) el('i', '', el('div', 'bar', txt)).style.width = Math.round(achievementProgress(p, a) * 100) + '%';
+    }
+    this.button(sheet, '✖️', () => this.close()).classList.add('small');
+  }
+
   // The only place with text; meant for grown-ups.
   openParent() {
     const g = this.g, p = g.progress, s = p.settings, sheet = this.open('parent');
@@ -378,13 +445,21 @@ export class Hud {
     vol.type = 'range'; vol.min = 0; vol.max = 1; vol.step = 0.05; vol.value = s.volume;
     vol.addEventListener('input', () => { s.volume = Number(vol.value); saveProgress(p); g.applySettings('volume'); });
     row('Lautstärke', vol);
-    const q = document.createElement('select');
-    for (const [v, t] of [['auto', 'Automatisch'], ['high', 'Hoch'], ['low', 'Niedrig']]) { const o = el('option', '', q, t); o.value = v; }
-    q.value = s.quality;
-    q.addEventListener('change', () => { s.quality = q.value; saveProgress(p); g.applySettings('quality'); });
-    row('Grafikqualität', q);
+    // One slider between speed and detail; nobody has to know what their device can do.
+    el('p', 'note', sheet, 'Grafik: links läuft das Spiel flüssiger (kleinerer Ausschnitt, weniger Trümmer, Staub, Feuer und Fahrzeuge), rechts sieht es reicher aus. Ruckelt es, schiebe den Regler nach links. Die Welt wird dabei neu aufgebaut.');
+    const auto = document.createElement('input'), q = document.createElement('input');
+    auto.type = 'checkbox'; auto.checked = !s.detail;
+    q.type = 'range'; q.min = 1; q.max = MAX_DETAIL; q.step = 1; q.value = g.detail; q.disabled = auto.checked;
+    const apply = () => { s.detail = auto.checked ? 0 : Number(q.value); q.disabled = auto.checked; saveProgress(p); g.applySettings('detail'); q.value = g.detail; };
+    auto.addEventListener('change', apply);
+    q.addEventListener('change', apply);
+    row('Grafik automatisch wählen', auto);
+    row('Schnell ⟷ Schön', q);
+    check('Staub- und Rauchwolken', 'smoke');
+    check('Feuer breitet sich aus', 'fireSpread');
+    check('Einsatzkräfte (Polizei, Feuerwehr, Reporter, Militär)', 'units');
     check('Kamerawackeln', 'shake');
-    check('Leben in der Welt (Bewohner, Hubschrauber)', 'life');
+    check('Bewohner', 'life');
     check('Kettenreaktionen: einstürzende Gebäude reißen ihre Nachbarn mit (wirkt ab Stufe 4)', 'cascade');
     check('Selbstspiel nach 2 Minuten ohne Eingabe', 'autoIdle');
     check('Alles freischalten', 'unlockAll');
@@ -394,7 +469,7 @@ export class Hud {
     const cam = el('button', '', sheet, g.fly ? 'Zurück zur Figur' : 'Freie Flugkamera');
     cam.addEventListener('click', () => { this.close(); g.doAction('camera'); });
     // Starting over: stage, power, finished worlds, stickers and settings are wiped; the game begins at stage 1.
-    el('p', 'note', sheet, 'Von vorn beginnen: Stufe, Macht, abgeschlossene Welten, Sticker und Einstellungen werden auf diesem Gerät gelöscht. Das Spiel startet danach wieder bei Stufe 1.');
+    el('p', 'note', sheet, 'Von vorn beginnen: Stufen und Macht aller Figuren, abgeschlossene Welten, Sticker, Erfolge und Einstellungen werden auf diesem Gerät gelöscht. Das Spiel startet danach wieder bei Stufe 1.');
     const reset = el('button', 'danger', sheet, 'Von vorn beginnen …');
     const sure = el('div', 'row hidden', sheet);
     el('button', '', sure, 'Abbrechen').addEventListener('click', () => { sure.classList.add('hidden'); reset.classList.remove('hidden'); });

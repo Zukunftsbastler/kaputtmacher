@@ -204,6 +204,7 @@ function car(g, x, y, z, alongX, big = false) {
   const c = big ? g.pick([T.CAR_YELLOW, T.CAR_RED, T.CAR_WHITE]) : g.pick(CARS);
   const b = (a, yy, bz, l, h, w, t) => (alongX ? g.box(x + a, yy, z + bz, l, h, w, t) : g.box(x + bz, yy, z + a, w, h, l, t));
   b(0, y + wr, 0, L, h1, W, c);
+  if (W > 2 && g.chance(0.3)) b(1, y + wr, 1, 1, 1, 1, T.GAS); // every third car has fuel in the tank and goes up when it is wrecked
   const c0 = big ? 0 : Math.max(1, L >> 2), cl = big ? L : L - c0 - Math.max(1, L >> 3);
   b(c0, y + wr + h1, 0, cl, h2, W, T.GLASS_DARK);
   b(c0, y + wr + h1 + h2, 0, cl, 1, W, c);
@@ -274,6 +275,7 @@ function waterTower(g, x, y, z) {
   for (const [a, b] of [[-r, -r], [r, -r], [-r, r], [r, r]]) g.box(x + a, y, z + b, 1, leg, 1, T.STEEL);
   for (let i = g.m(2); i < leg; i += g.m(2)) { g.box(x - r, y + i, z - r, 2 * r + 1, 1, 1, T.STEEL); g.box(x - r, y + i, z + r, 2 * r + 1, 1, 1, T.STEEL); g.box(x - r, y + i, z - r, 1, 1, 2 * r + 1, T.STEEL); g.box(x + r, y + i, z - r, 1, 1, 2 * r + 1, T.STEEL); }
   g.cyl(x, z, r + 1, y + leg, 1, T.STEEL);
+  g.cyl(x, z, r + 1, y + leg + 1, g.m(3), T.WATER); // full of water: it pours out when the tank breaks
   g.cyl(x, z, r + 1, y + leg + 1, g.m(3), T.SHEET_BLUE, true);
   g.cyl(x, z, r + 1, y + leg + 1 + g.m(3), 1, T.SHEET_BLUE);
 }
@@ -713,7 +715,8 @@ function town(seed, p) {
     g.begin('lamp', '💡', {});
     lamp(g, bx + rwx, G, bz + rwz + 20);
     lamp(g, bx + rwx + 30, G, bz + rwz);
-    if (metro) { trafficLight(g, bx + rwx, G, bz + rwz); if (g.chance(0.4)) hydrant(g, bx + rwx + 1, G, bz + rwz + 12); if (g.chance(0.3)) busStop(g, bx + rwx + 14, G, bz + rwz); }
+    if (!metro && g.chance(0.35)) hydrant(g, bx + rwx + 1, G, bz + rwz + 12);
+    if (metro) { trafficLight(g, bx + rwx, G, bz + rwz); if (g.chance(0.8)) hydrant(g, bx + rwx + 1, G, bz + rwz + 12); if (g.chance(0.3)) busStop(g, bx + rwx + 14, G, bz + rwz); }
     g.end();
     if (g.chance(p.cars * 0.6)) car(g, bx + rwx + 16 + g.int(0, 18), G, bz + 1, true, g.chance(0.12));
     if (g.chance(p.cars * 0.6)) car(g, bx + 1, G, bz + rwz + 16 + g.int(0, 18), false);

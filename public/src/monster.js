@@ -18,8 +18,10 @@ export const SPECIES = [
 const SCALE = [1, 1.6, 2.6, 3.8, 6, 9, 14, 20, 30];
 export const stageScale = (s) => (s <= 9 ? SCALE[s - 1] : 30 * 1.25 ** (s - 9));
 // Power needed to leave a stage. The first growth comes quickly; after that the steps follow the size of the worlds.
-const NEED = [1200, 8000, 40000, 120000, 320000, 800000, 2000000, 4500000];
-export const stageNeed = (s) => (s <= 8 ? NEED[s - 1] : 4500000 * 1.7 ** (s - 8));
+// Tuned so that every stage lasts about as long (roughly 100 s of steady play): measured income in the
+// skyscraper city jumps from about 100 power/s on stage 3 to several thousand once chain reactions start.
+const NEED = [1200, 4500, 12000, 380000, 900000, 1500000, 2800000, 4700000];
+export const stageNeed = (s) => (s <= 8 ? NEED[s - 1] : 4700000 * 1.7 ** (s - 8));
 
 export const MODEL_HEIGHT = 28;
 // Jumping works like in a classic platformer: hold the button for the full height, tap for a hop,
@@ -38,7 +40,10 @@ const POUND_CHAIN = 8; // how many floors in a row it may smash through
 
 const C = { SKIN: 1, BELLY: 2, DARK: 3, WHITE: 4, EYE: 5, TEETH: 6, ARMOR: 7, GLOW: 8 };
 // Every joint has three rotations (x, y, z) and an offset (x, y, z) in model units.
-export const JOINTS = ['torso', 'head', 'jaw', 'armL', 'armR', 'legL', 'legR', 'tail', 'tail2', 'turret', 'barrel', 'pods'];
+export const JOINTS = ['torso', 'head', 'jaw', 'armL', 'armR', 'legL', 'legR', 'tail', 'tail2', 'turret', 'barrel', 'pods', 'bay', 'rack'];
+// The aircraft carries one piece of gear under its belly, depending on the selected weapon. Turret and
+// rocket launcher turn towards the aim point; the aircraft itself always flies nose first.
+export const JET_GEAR = { guns: 'turret', rockets: 'pods', carpet: 'bay', heavy: 'rack' };
 
 function palette(sp, stage) {
   const p = new Uint8Array(1024), t = clamp((stage - 1) / 8, 0, 1);
@@ -80,6 +85,14 @@ export function buildModel(speciesId, stage) {
     if (stage >= 5) { b('torso', -13, 2, -9, -10, 5, 1, C.ARMOR); b('torso', 10, 2, -9, 13, 5, 1, C.ARMOR); b('torso', -13, 2, -10, -10, 5, -9, C.GLOW); b('torso', 10, 2, -10, 13, 5, -9, C.GLOW); }
     if (stage >= 7) { b('torso', -19, 6, -5, -18, 9, 4, C.BELLY); b('torso', 18, 6, -5, 19, 9, 4, C.BELLY); b('torso', -3, 3, -16, 3, 4, 10, C.ARMOR); }
     if (stage >= 8) { b('torso', -19, 6, 3, 19, 7, 4, C.GLOW); }
+    // Gear under the belly, one piece per weapon (see JET_GEAR); only the selected one is drawn.
+    part('turret', [0, 3, 4], 'torso'); part('barrel', [0, 2.5, 5], 'turret'); part('pods', [0, 3, 0], 'torso'); part('bay', [0, 3, 0], 'torso'); part('rack', [0, 3, 0], 'torso');
+    b('turret', -2, 1, 2, 2, 4, 6, C.ARMOR); b('turret', -1, 0, 3, 1, 1, 5, C.DARK);
+    b('barrel', -2, 2, 6, -1, 3, 12, C.DARK); b('barrel', 1, 2, 6, 2, 3, 12, C.DARK); b('barrel', -2, 2, 12, -1, 3, 13, C.EYE); b('barrel', 1, 2, 12, 2, 3, 13, C.EYE);
+    b('pods', -4, 2, -1, 4, 3, 2, C.ARMOR); b('pods', -1, 3, -1, 1, 4, 2, C.ARMOR);
+    for (const x of [-7, 4]) { b('pods', x, 1, -4, x + 3, 4, 4, C.DARK); b('pods', x, 1, 4, x + 3, 4, 5, C.EYE); }
+    for (const z of [-10, -4, 2]) { b('bay', -1, 1, z, 1, 3, z + 5, C.DARK); b('bay', -1, 1, z + 4, 1, 3, z + 5, C.GLOW); b('bay', -2, 2, z, 2, 3, z + 1, C.ARMOR); }
+    for (const x of [-4, 1]) { b('rack', x, 0, -7, x + 3, 3, 6, C.GLOW); b('rack', x, 0, -3, x + 3, 3, -2, C.DARK); b('rack', x, 0, 2, x + 3, 3, 3, C.DARK); b('rack', x + 1, 1, 6, x + 2, 2, 8, C.DARK); }
   } else if (sp.id === 'tank') {
     part('torso', [0, 6, 0]); part('turret', [0, 12, -1], 'torso'); part('barrel', [0, 13, 5], 'turret');
     b('torso', -8, 3, -12, 8, 10, 12, C.SKIN); b('torso', -8, 6, 12, 8, 9, 14, C.SKIN); b('torso', -6, 10, -11, 6, 11, 9, C.BELLY);
@@ -180,7 +193,7 @@ export function newPose() {
   for (const n of JOINTS) j[n] = new Float32Array(6);
   // spin/pitch: whole-body yaw and pitch. hop/fwd: whole-body offset in model units. look: where the head turns.
   // bank/climb: how the aircraft leans into a turn and points its nose. flip: somersault angle of the double jump.
-  return { flip: 0, walk: 0, walkAmp: 0, time: 0, squash: 0, spin: 0, pitch: 0, hop: 0, fwd: 0, roar: 0, hold: 0, look: 0, air: 0, bank: 0, climb: 0, j };
+  return { flip: 0, walk: 0, walkAmp: 0, time: 0, squash: 0, spin: 0, pitch: 0, hop: 0, fwd: 0, roar: 0, hold: 0, look: 0, aimPitch: 0, air: 0, bank: 0, climb: 0, j };
 }
 
 // Body language that is always on: walking, breathing, tail sway, looking at the aim point, tucking in a jump.
@@ -192,6 +205,7 @@ export function locomotion(pose, species) {
   const breathe = Math.sin(t * 1.7);
   if (species === 'jet') { // leans into turns, lifts or drops its nose, floats gently on the air
     j.torso[2] = pose.bank; j.torso[0] = pose.climb;
+    j.turret[1] = pose.look; j.pods[1] = pose.look; j.barrel[0] = pose.aimPitch;
     pose.hop = Math.sin(t * 2.1) * 0.4;
     return;
   }
@@ -311,6 +325,7 @@ export class Monster {
       this.onGround = false;
       this.stomping = true;
       this.jumps = 1;
+      this.g.stat('jumps');
       return true;
     }
     if (this.leaping || this.pound) return false;
@@ -353,7 +368,7 @@ export class Monster {
 
   // The aircraft is always moving: it turns with `steer`, climbs or dives with `pitchIn`,
   // skims over whatever is below it and ploughs through whatever is in front of it.
-  flyPlane(dt) {
+  flyPlane(dt, aimX, aimZ) {
     const g = this.g, w = g.world, h = this.h, pose = this.pose;
     const v = (42 + h * 1.3) * (this.sprint ? 1.7 : 1), fx = Math.sin(this.heading), fz = Math.cos(this.heading);
     this.speed = v; this.onGround = false;
@@ -375,6 +390,12 @@ export class Monster {
     pose.bank += (this.steer * 0.75 - pose.bank) * Math.min(1, dt * 5);
     pose.climb += (-this.pitchIn * 0.4 - pose.climb) * Math.min(1, dt * 5);
     pose.air = 0; pose.walkAmp = 0;
+    // The gear under the belly follows the aim point, all the way round and down.
+    const size = w.wrap ? w.sx : 0, ax = wrapDelta(aimX - this.x, size), az = wrapDelta(aimZ - this.z, size);
+    let dl = Math.atan2(ax, az) - this.heading - pose.look;
+    dl = Math.atan2(Math.sin(dl), Math.cos(dl));
+    pose.look += dl * Math.min(1, dt * 10);
+    pose.aimPitch += (clamp(Math.atan2(this.y - g.aim.y, Math.hypot(ax, az)), -0.15, 1.4) - pose.aimPitch) * Math.min(1, dt * 10);
     locomotion(pose, 'jet');
   }
 
@@ -384,7 +405,7 @@ export class Monster {
     this.h += (this.targetHeight() - h) * Math.min(1, dt * 2.5);
     this.grow = Math.max(0, this.grow - dt * 0.7);
     pose.time += dt;
-    if (species === 'jet') { pose.roar = Math.max(0, pose.roar - dt * 1.1); pose.squash = 0; this.flyPlane(dt); return; }
+    if (species === 'jet') { pose.roar = Math.max(0, pose.roar - dt * 1.1); pose.squash = 0; this.flyPlane(dt, aimX, aimZ); return; }
     pose.roar = Math.max(0, pose.roar - dt * 1.1);
     pose.squash = Math.max(0, pose.squash - dt * 4);
     pose.air += ((this.onGround ? 0 : 1) - pose.air) * Math.min(1, dt * 12);

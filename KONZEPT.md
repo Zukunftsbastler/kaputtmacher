@@ -1,8 +1,12 @@
-# Kaputtmacher – Spielkonzept (Entwurf 8)
+# Kaputtmacher – Spielkonzept (Entwurf 10)
 
 Status: in Umsetzung. Dieser Entwurf nennt überall konkrete Zahlen; sie entsprechen dem Stand im Code. Was fehlt oder abweicht, steht in Abschnitt 16.
 
-**Neu gegenüber Entwurf 7:** Doppelsprung mit Salto (4.2), Idle-Modus (17), Impressum und Datenschutzerklärung (12.2).
+**Neu gegenüber Entwurf 9:** 117 Erfolge mit Einblendung (18), eigene Progression je Figur (5.4), deutlich sichtbare Macht-Kugeln (5.1), Flieger mit drehbarem Anbauteil statt drehendem Rumpf (9.2), Polizei, Feuerwehr, Reporter und Militär (8), Feuer mit Flammpunkten, Ruß und Löschen (11.7), Grafik-Regler und abschaltbare Effekte (12.4).
+
+**Neu in Entwurf 9 war:** großes Sichtfenster um die Figur (4.3), gleichmäßigere Progression (5.1, 5.3), Wucht fallender Gebäude nach Masse (11.6a), Staubwolken (11.7), Reaktionen der Welt wie Hydranten-Fontänen (11.7a).
+
+**Neu in Entwurf 8 war:** Doppelsprung mit Salto (4.2), Idle-Modus (17), Impressum und Datenschutzerklärung (12.2).
 
 **Neu in Entwurf 7 war:** der Flieger als fünfte Figur (9.2), lose Trümmer räumen sich selbst weg (11.8), geplanter Idle-Modus und der Hintergrund des Projekts (14, README), Entwicklungsserver ohne Cache (16).
 
@@ -108,7 +112,7 @@ Damit sich ein 50 Meter hohes Monster nicht träge anfühlt, wächst seine eigen
 
 - Abstand 3,4 Körperhöhen. Auf Planeten richtet sich die Neigung nach der Größe: Ein kleines Monster zwischen hohen Häusern blickt fast waagerecht und an den Fassaden hoch, ein Riese blickt von oben auf seinen Planeten. Mit der rechten Maustaste lässt sich die Neigung jederzeit nachstellen.
 - Zum Rand des sichtbaren Ausschnitts hin löst sich alles im Horizontdunst auf, damit hohe Türme nicht plötzlich auftauchen.
-- **Guckloch:** Was zwischen Kamera und Monster steht (Hochhäuser), wird rund um das Monster ausgeschnitten. Das Monster ist nie verdeckt.
+- **Sichtfenster:** Was zwischen Kamera und Monster steht (Hochhäuser, Bäume), wird in einem großen Kreis um das Monster ausgeschnitten. Der Kreis reicht gut zwei Körperhöhen plus 8 m in jede Richtung, damit nicht nur die Figur, sondern auch ihre Umgebung frei zu sehen ist. Die inneren 60 % sind ganz offen, zum Rand hin wird das Hindernis in vier Rasterstufen dichter, damit keine harte Kante entsteht.
 - Flugkamera: Höhe begrenzt, nie im Boden oder in Gebäuden.
 
 ## 5. Macht und Wachstum
@@ -118,7 +122,9 @@ Damit sich ein 50 Meter hohes Monster nicht träge anfühlt, wächst seine eigen
 Zerstören → Macht sammeln → wachsen → Größeres zerstören können → mehr Macht.
 
 - Jeder zerstörte Würfel gibt Macht nach Material (7.3). Ein vollständig zerstörtes Gebäude gibt 25 % seines Werts als Bonus.
-- Macht fliegt als Leuchtpunkte vom Trümmerort zum Monster.
+- **Was nur mitfällt, zählt weniger:** Würfel, die das Monster selbst wegschlägt, zählen voll. Würfel, die bei einem Einsturz ihren Halt verlieren oder im nachgebenden Stockwerk zerdrückt werden, zählen nur zu 30 %. Ohne diese Regel brachte ein einziger gefällter Turm samt Kettenreaktion mehrere Stufen auf einmal.
+- **Macht ist sichtbar.** Wo etwas zerbricht, platzen leuchtende Kugeln mit Lichthof heraus, fliegen eine Drittelsekunde frei auseinander und ziehen dann zum Monster. Ihre Größe wächst mit dem Monster (0,7 + 4,5 % der Körperhöhe), damit sie auch neben einem Riesen auffallen. Ist ein Gebäude vollständig zerstört, schleudert es 10 bis 28 große Kugeln auf einmal heraus; gibt ein Stockwerk nach, sind es acht.
+- **Macht kommt an.** Erreicht eine Kugel das Monster, leuchtet es kurz golden auf, ein Ton steigt an, und ein Funke fliegt vom Monster zum Macht-Ring oben links, der dabei zuckt und sich füllt. So ist zu sehen, wohin die Macht geht und was sie bewirkt.
 - Ist der Ring voll, folgt der **Wachstumsmoment**: Brüllen, Aufleuchten, sichtbares Wachsen, Druckwelle, Fanfare. Zwischen zwei Wachstumsmomenten liegen mindestens 2 Sekunden, damit jeder einzeln wirkt.
 - Macht geht nie verloren, auch nicht beim Weltwechsel – außer man beginnt in den Einstellungen bewusst von vorn.
 
@@ -131,19 +137,23 @@ Größe · detailreicheres Modell je Stufe (Rückenstacheln ab 2, Hörner ab 4, 
 | Stufe | Höhe | Macht bis zur nächsten | Neu freigeschaltet |
 |---|---|---|---|
 | 1 | 1,8 m (Auto) | 1 200 | Laufen, Rennen, Springen, erster Angriff (schnell und stark) |
-| 2 | 2,9 m (Garage) | 8 000 | Landung wird zum Stampfer |
-| 3 | 4,7 m (Haus) | 40 000 | zweiter Angriff |
-| 4 | 6,8 m | 120 000 | **Kettenreaktionen** (Upgrade, abschaltbar) |
-| 5 | 10,8 m | 320 000 | dritter Angriff |
-| 6 | 16 m (Wohnblock) | 800 000 | stärkere Kettenreaktionen |
-| 7 | 25 m (Kirchturm) | 2 000 000 | vierter Angriff |
-| 8 | 36 m (Hochhaus) | 4 500 000 | Leuchtstreifen, Aura |
+| 2 | 2,9 m (Garage) | 4 500 | Landung wird zum Stampfer |
+| 3 | 4,7 m (Haus) | 12 000 | zweiter Angriff |
+| 4 | 6,8 m | 380 000 | **Kettenreaktionen** (Upgrade, abschaltbar) |
+| 5 | 10,8 m | 900 000 | dritter Angriff |
+| 6 | 16 m (Wohnblock) | 1 500 000 | stärkere Kettenreaktionen |
+| 7 | 25 m (Kirchturm) | 2 800 000 | vierter Angriff |
+| 8 | 36 m (Hochhaus) | 4 700 000 | Leuchtstreifen, Aura |
 | 9 | 54 m | × 1,7 je Stufe | Brüllen als Waffe |
 | 10+ | × 1,25 je Stufe | × 1,7 je Stufe | mehr Wucht |
 
-- Das erste Wachstum kommt absichtlich nach rund einer Minute. Danach richten sich die Schritte nach der Größe der Welten: Das Bauklotz-Zimmer bringt ein Monster etwa bis Stufe 4, ein Planet zwei bis drei Stufen weiter.
+- Das erste Wachstum kommt absichtlich nach rund einer Minute. Danach sind die Schwellen so gewählt, dass jede Stufe ungefähr gleich lang dauert (Ziel: rund 100 Sekunden zügiges Spiel). Grundlage sind Messungen im Idle-Modus in der Wolkenkratzer-Stadt, je 55 Sekunden pro Stufe: etwa 7, 40 und 110 Macht pro Sekunde auf den Stufen 1 bis 3, dann mit den Kettenreaktionen sprunghaft 4 000 (Stufe 4), 7 000 bis 8 000 (5 und 6), 28 000, 47 000 und 82 000 (7 bis 9). Daher der große Schritt von Stufe 3 zu 4. Die Messwerte streuen stark (ein einzelner Turm mehr oder weniger ändert viel); die Schwellen sind also eine begründete Schätzung, kein exakter Abgleich.
 - Erreichte Stufen bleiben erhalten. In der Weltauswahl kann jede bereits erreichte kleinere Stufe gewählt werden.
 - Grenze: Das Monster wird bei 92 % der Welthöhe gedeckelt. Das sind 58 m auf normalen Planeten, 118 m in der Stadt und 235 m in der Wolkenkratzer-Stadt – dort ist Platz bis etwa Stufe 15.
+
+### 5.4 Jede Figur wächst für sich
+
+Dino, Gorilla, Roboter, Panzer und Flieger haben jeweils eine eigene Stufe und eigene Macht. Wer mit dem Dino Stufe 7 erreicht hat, beginnt mit dem Roboter trotzdem bei Stufe 1 und schaltet dessen Angriffe einzeln frei. Alle fünf Figuren sind von Anfang an wählbar; in der Weltauswahl zeigt jede ihre Stufe. Beim Wechsel wird die Figur sofort mit ihrer eigenen Größe weitergespielt. Ein Spielstand aus der Zeit davor wird der zuletzt gespielten Figur gutgeschrieben.
 
 ## 6. Zähler
 
@@ -261,15 +271,34 @@ Acht Schieberegler mit Bildsymbolen an beiden Enden: Weltgröße (128 / 256 / 51
 
 ## 8. Leben in der Welt
 
-Standardmäßig an, in den Einstellungen abschaltbar.
+Standardmäßig an; Bewohner und Einsatzkräfte lassen sich in den Einstellungen getrennt abschalten.
 
 - **Bewohner:** bis zu rund 1 000 Figuren pro Planet. Sie spazieren, fliehen mit erhobenen Armen, sobald das Monster näher als etwa drei Körperhöhen kommt, werden von Explosionen weggeschleudert, purzeln, stehen auf und rennen weiter.
-- **Hubschrauber:** Sobald zerstört wird, kommen sie – einer nach dem anderen, bis zu vier, wenn etwa ein Prozent der Welt in Trümmern liegt. Sie kreisen in respektvollem Abstand etwas über Kopfhöhe um den Kaputtmacher, mit Suchscheinwerfer und Rotorgeräusch, und schießen nicht. Alles, was sie trifft – Schlag, Geschoss, Strahl, Explosion –, holt sie vom Himmel: Sie trudeln ab und explodieren am Boden. Beruhigt sich die Lage, fliegen sie davon.
+- **Einsatzkräfte:** Polizei, Feuerwehr, Reporter und Militär, siehe 8.1.
 - Gezeichnet werden nur die Bewohner innerhalb des Horizonts.
 - Leben gibt keine Macht und zählt in keinem Zähler.
 - Geplant, noch nicht vorhanden: fahrender Verkehr, Vögel, Hunde.
 
-Die Figuren laufen über ein allgemeines Akteur-System. Darauf baut später „Welt wehrt sich“ auf.
+### 8.1 Einsatzkräfte
+
+In Welten mit Bewohnern (Dorf, Park, Stadt, Fabrik, Wolkenkratzer-Stadt, Würfelwelt) reagiert die Welt auf die Zerstörung, ähnlich den Fahndungssternen bekannter Spiele. Die **Alarmstufe** (0 bis 5) richtet sich danach, wie viel der Welt zerstört ist, und steht als Sternenreihe unter dem Welt-Zähler.
+
+| Alarmstufe | ab | Was kommt |
+|---|---|---|
+| ⭐ | erster zerstörter Würfel | ein Polizeiauto |
+| ⭐⭐ | 0,4 % der Welt | drei Polizeiautos, ein Reporter-Hubschrauber |
+| ⭐⭐⭐ | 2 % | vier Polizeiautos, bei größeren Bränden ein Lösch-Hubschrauber |
+| ⭐⭐⭐⭐ | 6 % | fünf Polizeiautos, zwei Reporter, zwei Militär-Hubschrauber |
+| ⭐⭐⭐⭐⭐ | 15 % | sechs Polizeiautos, vier Militär-Hubschrauber, alle 9 bis 17 Sekunden ein oder zwei Kampfflieger im Überflug, zweiter Lösch-Hubschrauber |
+
+- **Polizei:** weiß-blaue Autos mit wechselndem Blaulicht und Martinshorn. Sie fahren am Straßenraster entlang (immer längs einer Achse; ist der Weg versperrt, biegen sie ab), stellen sich in einem lockeren Ring um den Kaputtmacher auf und weichen zurück, wenn er näher kommt.
+- **Feuerwehr:** kommt unabhängig von der Alarmstufe, sobald etwas brennt – ein Löschzug, bei viel Feuer oder hoher Alarmstufe bis zu drei. Sie fahren bis auf etwa 26 m an den Brand, spritzen einen Wasserbogen darauf und löschen alle 0,35 Sekunden, was im Umkreis von rund 9 m brennt. Der rote Lösch-Hubschrauber mit Wassersack löscht aus der Luft einen Umkreis von über 20 m, fliegt zum Nachfüllen weg und kommt wieder. Lässt man sie in Ruhe, ist ein Brand in wenigen Sekunden aus.
+- **Reporter:** die bisherigen Hubschrauber, jetzt erkennbar als Presse (weiß oder blau mit gelbem Streifen und Lampe). Ihr Suchscheinwerfer ist ein breiter, weicher Lichtkegel, der in einem hellen Fleck um den Kaputtmacher endet – kein dünner Strahl, den man für einen Schuss halten könnte.
+- **Militär:** olivgrüne Hubschrauber mit Stummelflügeln kreisen enger und feuern alle paar Sekunden eine Leuchtspur-Garbe; Kampfflieger schießen im Überflug zwei Raketen ab. Beides prallt wirkungslos am Kaputtmacher ab (Funken, kleiner Blitz). Es gibt weiterhin kein Scheitern.
+- **Alles ist zerstörbar:** Fahrzeuge zerplatzen, wenn ein Schlag in ihrer Nähe landet oder der Kaputtmacher darauf tritt; alles, was fliegt, wird von Schlag, Geschoss, Strahl oder Explosion vom Himmel geholt, trudelt ab und explodiert am Boden. Nachschub kommt nach einigen Sekunden.
+- Abschaltbar in den Einstellungen („Einsatzkräfte“); die Detailstufe bestimmt ihre Zahl.
+
+Bewohner und Einsatzkräfte laufen über ein gemeinsames Akteur-System.
 
 ## 9. Figuren und ihre Angriffe
 
@@ -331,7 +360,7 @@ Der Panzer zielt mit dem Turm unabhängig von der Fahrtrichtung.
 | 💣 Bombenteppich (5) | Drei Bomben nacheinander | Zwölf Bomben in 1,3 Sekunden entlang der Flugbahn |
 | 🔥 Schwer (7) | Drei Brandbomben: kleine Explosion, großes Feuer | Eine Riesenbombe (Radius 14 + 2,4 S) |
 
-Der Flieger steht nie still: A/D lenkt, W/S steigt und sinkt, Umschalt ist der Nachbrenner (Tempo 42 + 1,3 H Würfel pro Sekunde, mit Nachbrenner das 1,7-Fache). Er legt sich in die Kurve, gleitet über alles, was unter ihm liegt, und bricht mit der Nase durch alles, was vor ihm steht. Über Inseln dreht er am Rand von selbst um. Springen und Brüllen gibt es für ihn nicht.
+Der Flieger steht nie still: A/D lenkt, W/S steigt und sinkt, Umschalt ist der Nachbrenner (Tempo 42 + 1,3 H Würfel pro Sekunde, mit Nachbrenner das 1,7-Fache). **Die Schnauze zeigt immer in Flugrichtung** – der Flieger dreht sich nicht mehr zum Ziel. Stattdessen trägt er unter dem Bauch ein Anbauteil je Waffe: einen Zwillingsgeschützturm (Bordwaffen) und einen Raketenwerfer mit zwei Behältern (Raketen), die sich rundum zum Zielpunkt drehen, der Turm neigt zusätzlich seine Rohre; eine Reihe Bomben (Bombenteppich) und zwei leuchtende Brandbehälter (Brandbomben), die keine Richtung brauchen. Gezeichnet wird nur das Teil der gewählten Waffe; Schüsse und Raketen starten dort. Er legt sich in die Kurve, gleitet über alles, was unter ihm liegt, und bricht mit der Nase durch alles, was vor ihm steht. Über Inseln dreht er am Rand von selbst um. Springen und Brüllen gibt es für ihn nicht.
 
 ### 9.3 Animation und Wucht
 
@@ -404,17 +433,55 @@ Rennt das Monster (Umschalt) gegen ein Gebäude, das es nicht einfach durchbrich
 
 - **Freischaltung** mit Stufe 4. Es gibt dafür keinen eigenen Knopf mehr (das Kettensymbol war nicht verständlich); ab- und anschalten lassen sie sich in den Einstellungen, dort mit erklärendem Satz.
 - **Wirkung:** Stürzt ein Gebäude ein oder ist es vollständig zerstört, läuft nach gut einer halben Sekunde ein Stoß zu den Nachbarn im Umkreis von etwa einem Häuserblock. Er beißt sichtbar in deren Fuß und schwächt sie dauerhaft – um 24 Prozentpunkte auf Stufe 4, bis 55 ab Stufe 10.
-- **Domino:** Fällt ein Nachbar dadurch, gibt er den Stoß weiter, jede Generation mit 88 % der Stärke. Holzbauten fallen schon beim ersten Stoß, Ziegelbauten nach einem starken oder zweien, Betontürme erst, wenn sie angeschlagen sind oder mehrere Nachbarn gefallen sind. Mit jeder Stufe reißt eine Kette also weiter.
-- Dazu kommt, was ohnehin gilt: Ein kippender Turm zerschlägt, worauf er fällt.
+- **Domino:** Fällt ein Nachbar dadurch, gibt er den Stoß weiter, jede Generation mit 62 % der Stärke; eine Kette läuft sich so nach drei bis fünf Gebäuden tot. Zusätzlich ermüdet die Kette: Jeder Einsturz kurz nach einem anderen zählt wie eine weitere Generation, egal wodurch das Gebäude fiel (auch durch Trümmer); alle vier Sekunden erholt sie sich um einen Schritt. Vorher gaben von Trümmern gefällte Nachbarn den Stoß wieder mit voller Stärke weiter, und ein Drittel der Stadt fiel in unter einer Minute. Holzbauten fallen schon beim ersten Stoß, Ziegelbauten nach einem starken oder zweien, Betontürme erst, wenn sie angeschlagen sind oder mehrere Nachbarn gefallen sind. Mit jeder Stufe reißt eine Kette also weiter.
+- Dazu kommt, was ohnehin gilt: Ein kippender Turm zerschlägt, worauf er fällt (11.6a).
 
-### 11.7 Feuer und Rauch
+### 11.6a Wucht: Masse entscheidet
 
-- **Was brennt:** Holz, Blätter und Stoff – also Bäume, Hecken, Holzhäuser, Dachstühle, Böden und Möbel in Häusern, Markisen, Bauklötze.
-- **Wie es anfängt:** Explosionen zünden Brennbares im 1,4-fachen Explosionsradius; der Laserstrahl zündet, was er trifft.
-- **Wie es sich ausbreitet:** Ein brennender Würfel glüht, wirft Flammen und Rauch und steckt etwa alle 0,7 Sekunden einen brennbaren Nachbarn an – bevorzugt nach oben. So klettert Feuer einen Baum hinauf und frisst sich durch einen Dachstuhl, springt aber nicht über Stein.
-- **Wie es endet:** Holz brennt 3 bis 6,5 Sekunden, Blätter und Stoff 1 bis 3. Danach bleibt in drei von zehn Fällen ein verkohlter Rest, sonst nichts – und was darauf stand, stürzt ein. Verbranntes zählt als zerstört und gibt Macht.
-- **Kettenreaktion:** Erreicht das Feuer Sprengstoff, explodiert er.
-- **Brandherde:** Wo nichts brennen kann, etwa im Krater einer Rakete im Betonturm, brennt 5 bis 12 Sekunden ein Brandherd mit Flammen und dichtem schwarzem Rauch. Schwere Trümmer hinterlassen beim Aufschlag eine Staubsäule.
+Trifft ein fallendes Bruchstück die Welt, zählt nicht nur seine Geschwindigkeit, sondern auch, wie schwer es im Vergleich zu dem ist, worauf es fällt.
+
+- **Schwer auf leicht:** Ist das Bruchstück mehr als zwölfmal so schwer wie das getroffene Gebäude (gemessen an dessen verbliebenen Würfeln), wird das Gebäude einfach zerdrückt: ein großer Biss (Radius 4 bis 24 m je nach Masse) mit voller Kraft, das Gebäude wird zusätzlich dauerhaft geschwächt, und das Bruchstück behält 96 % seines Tempos und bleibt selbst heil. Über dem ganzen Grundriss des zerdrückten Gebäudes steigt Staub auf.
+- **Schwer auf schwer:** Bei ähnlich schweren Gegnern beißen sich beide wie bisher an – Radius und Kraft wachsen mit Tempo und Masse (Radius bis 20 m statt bisher 13). Das Bruchstück verliert 20 % Tempo, kann zerbrechen oder am Nachbarturm lehnen bleiben.
+- **Totes Gewicht:** Liegt ein Bruchstück über 4 000 Masse auf einem viel leichteren Gebäude, drückt es dieses alle 0,2 Sekunden weiter ein, bis es am Boden ankommt. Ein Turmstück bleibt also nicht auf einem Kiosk liegen.
+- Eine echte Stoßrechnung zwischen Bruchstücken gibt es weiterhin nicht (Abschnitt 16).
+
+### 11.7 Feuer, Hitze und Rauch
+
+Feuer richtet sich nach dem Material. Flammen, Strahlen, Explosionen und brennende Nachbarn geben **Hitze** an einzelne Würfel ab; ein Würfel reagiert, sobald er mehr Hitze aufgenommen hat, als sein **Flammpunkt** verlangt. Nicht erneuerte Hitze klingt ab (0,15 pro Sekunde).
+
+| Material | Flammpunkt | Was passiert |
+|---|---|---|
+| Blätter, Stoff, Sprengstoff | 1 | Fangen beim ersten Funken Feuer; Sprengstoff explodiert |
+| Holz | 2,5 | Brennt 4,5 bis 9 Sekunden; in der Hälfte der Fälle bleibt ein verkohlter Würfel, sonst nichts |
+| Boden (Gras, Straße, Pflaster) | 3 | Wird schwarz versengt |
+| Glas | 4 | Platzt |
+| Blech (Autos, Dächer) | 5 | Verrußt: ausgebrannt und schwarz, bleibt aber stehen |
+| Ziegel | 6 | Verrußt |
+| Beton | 7 | Verrußt |
+| Stahl | 9 | Verrußt erst unter Dauerfeuer |
+
+- **Hitzequellen:** Explosion 4 (im 1,4-fachen Radius), Flammenstrahl 3,2 je Treffer, Laserstrahl 3,5, Laserimpuls 2, Brandbombe 8, Brandherd 1,6, brennendes Holz 1,5 und brennendes Laub 1,1 je Übertragung, die Aura ab Stufe 8 1,5 und ab Stufe 10 3,5.
+- **Ausbreitung, langsam und begrenzt:** Ein brennender Würfel gibt seine Hitze an zufällige Nachbarn ab, bevorzugt nach oben – Laub 2,6-mal pro Sekunde, Holz 0,9-mal. Laub zündet sofort, darum brennt ein Baum in etwa fünf Sekunden ab. Holz braucht zwei Übertragungen kurz nacheinander; ein Holzhaus brennt deshalb nur dort weiter, wo mehrere Würfel nebeneinander brennen, und ein einzelner Funke geht meist wieder aus. Über Straßen, Stein und Glas springt Feuer nicht.
+- **Zerstörung ist sichtbar:** Verbranntes ist weg oder verkohlt, was darauf stand, stürzt ein. Verrußte Würfel zählen als zerstört, geben Macht und tragen nicht mehr mit – ein Gebäude, das lange im Flammenstrahl steht, wird also schwarz und schwächer. Flammenwerfer, Feueratem, Brandbomben und Laser hinterlassen damit erkennbare Spuren, auch an Beton und auf der Straße.
+- **Brennende Figur:** Ab Stufe 8 glüht der Kaputtmacher und versengt den Boden unter sich; ab Stufe 10 schlagen Flammen aus ihm, er zündet an, was er streift, und hinterlässt eine schwarze Spur.
+- **Brandherde:** Wo nichts brennen kann, etwa im Krater einer Rakete im Betonturm, brennt 5 bis 12 Sekunden ein Brandherd mit Flammen und dichtem schwarzem Rauch; er versengt, worauf er steht.
+- **Löschen:** Wasser löscht (Hydranten 11.7a, Feuerwehr 8.1). Gelöschtes Holz bleibt verkohlt stehen.
+- **Abschaltbar:** „Feuer breitet sich aus“ in den Einstellungen; ohne Ausbreitung brennt nur, was direkt getroffen wird. Wie viele Würfel gleichzeitig brennen dürfen (150 bis 1 500), bestimmt die Detailstufe.
+- **Staub:** Schwere Trümmer (ab 600 Würfeln) werfen beim Aufschlag sofort einen Staubstoß auf und hinterlassen meist eine helle Staubwolke, die 3 bis 6 Sekunden steht. Gibt ein Stockwerk nach, steigen über dem Grundriss drei solche Wolken auf, bei einem zerdrückten Gebäude zwei und dazu sieben Staubstöße. Staub ist hell (Mauerwerk), Rauch dunkel (Feuer). Abschaltbar („Staub- und Rauchwolken“).
+
+### 11.7a Die Welt reagiert
+
+Manche Dinge antworten, wenn sie zerstört werden, und wirken aufeinander (`reactions.js`):
+
+| Was | Reaktion |
+|---|---|
+| **Hydrant** (an vier von fünf Kreuzungen der Großstädte, an gut jeder dritten in kleinen Orten) | Eine hohe Wasserfontäne für 9 bis 14 Sekunden; zum Ende lässt der Druck nach. Dazu Zischen |
+| **Wasser** (Brunnen, Wasserturm – der ist jetzt gefüllt) | Ein kurzer Schwall von 2,5 Sekunden an der Bruchstelle |
+| **Wasser trifft Feuer** | Jede Fontäne löscht alle 0,3 Sekunden, was im Umkreis von 15 m brennt; Brandherde werden zu Dampf |
+| **Laternen, Scheinwerfer, Leuchtreklame** | Funkenregen und Knistern |
+| **Autos** | Etwa jedes dritte hat Benzin im Tank und explodiert, wenn es zerstört wird – das kann Bäume und Markisen anzünden, die ein Hydrant daneben wieder löscht |
+
+Höchstens acht Wasserquellen laufen gleichzeitig; neue an derselben Stelle verlängern die laufende.
 
 ### 11.8 Die Stadt räumt sich selbst auf
 
@@ -470,12 +537,19 @@ Gemessen (Arbeitsspeicher für die Würfel): Inseln 4 bis 7 MB, normale Planeten
 
 Nächste Größenstufe: 1 km Kantenlänge braucht die Lauflängen-Kodierung, sonst rund 400 MB für normale Planeten und fast 1 GB für die Wolkenkratzer-Stadt.
 
-### 12.4 Geräte
+### 12.4 Geräte und Grafik-Regler
 
-| Gerät | Einstellung |
-|---|---|
-| Großer Bildschirm | Planeten 512 m, Kappe 180 m, bis 9 000 Schuttwürfel und 3 000 Effektteilchen |
-| Handy, schwacher Rechner | Planeten 256 m, Kappe 125 m, weniger Schutt und Bewohner, Querformat |
+In den Einstellungen gibt es einen einzigen Regler „Schnell ⟷ Schön“ mit fünf Stufen. Niemand muss wissen, was sein Gerät kann: Ruckelt es, schiebt man nach links. Solange „Grafik automatisch wählen“ angehakt ist, nimmt das Spiel Stufe 2 auf Geräten mit Touch-Bedienung oder höchstens vier Prozessorkernen und sonst Stufe 4.
+
+| Stufe | Planet | Sichtbare Kappe | Schuttwürfel | Effektteilchen | Bewohner | Einsatzkräfte | Staub, Rauch, Gischt | Brennende Würfel | Auflösung |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 256 m | 95 m | 1 200 | 500 | 25 % | 50 % | 35 % | 150 | 70 % |
+| 2 | 256 m | 125 m | 2 200 | 1 000 | 40 % | 70 % | 60 % | 300 | 85 % |
+| 3 | 512 m | 150 m | 5 000 | 2 000 | 70 % | 100 % | 80 % | 600 | 100 % |
+| 4 | 512 m | 180 m | 9 000 | 3 000 | 100 % | 100 % | 100 % | 900 | 100 % |
+| 5 | 512 m | 215 m | 14 000 | 5 000 | 130 % | 140 % | 130 % | 1 500 | 100 % |
+
+Daneben lassen sich die teuren Effekte einzeln abschalten: Staub- und Rauchwolken, Feuerausbreitung, Einsatzkräfte, Bewohner, Kettenreaktionen. Unabhängig davon nimmt die automatische Anpassung (11.9) bei schlechter Bildrate weiter Teilchen und Auflösung zurück. Ein Wechsel der Stufe baut die Welt neu auf.
 
 ## 13. Bild, Ton und Oberfläche
 
@@ -483,11 +557,11 @@ Nächste Größenstufe: 1 km Kantenlänge braucht die Lauflängen-Kodierung, son
 
 **Ton:** Bruchklang je Materialfamilie, abhängig von der Größe des Ereignisses. Ein Einsturz klingt nach seinen Vorgängen: **Beton knackt**, wenn sich ein großes Teil löst; **Stahl ächzt** mit einem langen, schwankenden Ton, solange ein großes Teil fällt; beim Aufschlag **bröckelt Mauerwerk** in vielen kurzen Stößen auf einem tiefen Schlag, **Glasfassaden regnen** als Klirr-Schauer herab, Blech und Stahl scheppern, Holz kracht. Welche Geräusche fallen, richtet sich danach, woraus das Bruchstück tatsächlich besteht. Dazu Feuerknistern, das mit der Menge des Brennenden lauter wird, Schritte, Brüllen, Rufe der Bewohner, Fanfaren.
 
-**Oberfläche:** unten Werkzeugleiste, rechts unten Springen und Brüllen, oben Welt-Zähler, links oben Macht-Ring mit Stufe, rechts oben Weltauswahl, Selbstspiel und Einstellungen.
+**Oberfläche:** unten Werkzeugleiste, rechts unten Springen und Brüllen, oben Welt-Zähler mit den Sternen der Alarmstufe, links oben Macht-Ring mit Stufe und darunter die Einblendungen der Erfolge, rechts oben Weltauswahl, Selbstspiel, Erfolge und Einstellungen.
 
-**Einstellungen** (Zahnrad, ein gewöhnlicher Knopf; neben dem Impressum-Link der einzige Ort mit Text): Lautstärke, Grafikqualität, Kamerawackeln, Leben an/aus, Kettenreaktionen, Selbstspiel nach 2 Minuten, alles freischalten, Vollbild, freie Flugkamera – und **„Von vorn beginnen“**. Früher öffnete sich das Zahnrad erst nach drei Sekunden Halten und war blass dargestellt; das wirkte wie abgeschaltet und ließ sich nicht entdecken.
+**Einstellungen** (Zahnrad, ein gewöhnlicher Knopf; neben dem Impressum-Link der einzige Ort mit Text): Lautstärke, Grafik-Regler (12.4), Staub und Rauch, Feuerausbreitung, Einsatzkräfte, Kamerawackeln, Bewohner, Kettenreaktionen, Selbstspiel nach 2 Minuten, alles freischalten, Vollbild, freie Flugkamera – und **„Von vorn beginnen“**. Früher öffnete sich das Zahnrad erst nach drei Sekunden Halten und war blass dargestellt; das wirkte wie abgeschaltet und ließ sich nicht entdecken.
 
-**Von vorn beginnen.** Auf jedem Gerät lässt sich die Progression neu starten: Der Knopf löscht Stufe, Macht, abgeschlossene Welten, Sticker und Einstellungen auf diesem Gerät, und das Spiel beginnt wieder bei Stufe 1. Er verlangt zwei Schritte („Von vorn beginnen …“, dann „Ja, alles löschen“) und steht zusätzlich auf der Seite „Impressum & Datenschutz“.
+**Von vorn beginnen.** Auf jedem Gerät lässt sich die Progression neu starten: Der Knopf löscht Stufen und Macht aller Figuren, abgeschlossene Welten, Sticker, Erfolge und Einstellungen auf diesem Gerät, und das Spiel beginnt wieder bei Stufe 1. Er verlangt zwei Schritte („Von vorn beginnen …“, dann „Ja, alles löschen“) und steht zusätzlich auf der Seite „Impressum & Datenschutz“.
 
 ## 14. Nächste Schritte
 
@@ -518,7 +592,7 @@ Reihenfolge nach Wirkung auf das Spielgefühl:
 | 3 | **191 MB für die Wolkenkratzer-Stadt** sind für einen Rechner in Ordnung, für ältere Geräte viel. Lauflängen-Kodierung vorziehen? | Ja, sobald die Welt auf einem eurer Geräte ruckelt oder nicht lädt; auf Handys ist sie schon jetzt nur 256 m groß (51 MB) |
 | 4 | **Sprunghöhe mit Halten steuern** (kurz tippen = kleiner Hüpfer)? | Nein, ein Sprung ist für einen 5-Jährigen leichter zu lernen |
 
-## 16. Umsetzungsstand (6. Oktober 2026)
+## 16. Umsetzungsstand (9. Oktober 2026, Entwurf 10)
 
 **Starten:** im Projektordner `python3 serve.py` ausführen und `http://localhost:8000` öffnen. Der mitgelieferte Server verbietet dem Browser das Zwischenspeichern; mit einem gewöhnlichen Dateiserver kann nach einem Update eine alte Quelldatei neben einer neuen im Cache bleiben, und das Spiel bleibt mit „… is not a function“ stehen.
 
@@ -526,12 +600,16 @@ Reihenfolge nach Wirkung auf das Spielgefühl:
 
 **Vorhanden:** alles, was in den Abschnitten 4 bis 13 beschrieben ist, mit den dort genannten Zahlen – außer den folgenden Punkten.
 
+**Stand der Neuerungen aus Entwurf 9:** Sichtfenster und Hydranten-Fontäne (samt Löschen eines Brandherds) sind auf Standbildern geprüft, die Progression über Messläufe je Stufe (5.3). Das Zerdrücken kleiner Gebäude, das tote Gewicht, die Staubwolken, die Funken an Lampen, explodierende Autos und das Zischen des Wassers liefen in den Messläufen fehlerfrei mit, wurden aber nicht einzeln begutachtet. Ein durchgehender Lauf von Stufe 1 bis 9 mit den neuen Schwellen wurde nicht gemessen.
+
+**Stand der Neuerungen aus Entwurf 10:** In automatisierten Durchläufen ohne Fehler gelaufen und auf Standbildern gesehen: Einblendung und Liste der Erfolge, Sterne der Alarmstufe, Polizeiautos, Feuerwehr, Reporter-, Lösch- und Militär-Hubschrauber, Leuchtspur, das Anbauteil des Fliegers bei gerader Flugrichtung, die Einstellungen mit Regler. Gemessen: Ein angezündeter Baum brennt in rund fünf Sekunden ab (43 Würfel) und das Feuer erlischt von selbst; in 55 Sekunden Selbstspiel auf Stufe 8 in der Stadt wurde Alarmstufe 5 erreicht. **Nicht begutachtet:** wie die Fahrzeuge in Bewegung wirken (ob sie sich festfahren), das Löschen durch die Feuerwehr im Bild, der Überflug der Kampfflieger, Ruß an Beton unter dem Flammenwerfer, alle neuen Töne, die Darstellung auf dem Handy, und ob Detailstufe 1 auf einem schwachen Gerät wirklich flüssig läuft. Die Schwellen der Erfolge sind geschätzt; im Test fielen bei einem Start auf Stufe 6 in 50 Sekunden 41 Erfolge – von Stufe 1 an verteilt es sich, aber das ist nicht gemessen.
+
 **Fehlt oder weicht ab:**
 
 | Punkt | Stand |
 |---|---|
 | Stabilität | Vorhanden als Stockwerks-Bilanz (11.4); keine echte Statik: Ein Gebäude, das nur noch an einer Ecke hängt, fällt, weil dem Stockwerk Tragkraft fehlt, nicht weil es kippt |
-| Bruchstücke untereinander | Stoßen nur mit der Welt zusammen |
+| Bruchstücke untereinander | Stoßen nur mit der Welt zusammen. Die Wucht-Regel (11.6a) vergleicht Massen, rechnet aber keinen echten Stoß |
 | Verkehr und Tiere | Fehlen; Autos stehen |
 | Geister-Vorführung | Der Geist macht die Bewegung vor, zerstört dabei aber nichts zur Vorschau |
 | Schatten | Keine Schlagschatten |
@@ -540,8 +618,8 @@ Reihenfolge nach Wirkung auf das Spielgefühl:
 | Speicherverfahren | Drei Punkte offen, siehe 12.3 |
 | Idle-Modus | Vorhanden, siehe Abschnitt 17; nur automatisiert und kurz geprüft, nicht über Stunden |
 | Zeitlupe, Zurückspulen, „Welt wehrt sich“ | Nicht begonnen; feste Zeitschritte und Akteur-System sind als Vorbereitung da |
-| Feuer in Hochhäusern | Beton, Glas und Stahl brennen nicht. Dort gibt es Brandherde mit Flammen und Rauch, aber kein Feuer, das sich durchs Gebäude frisst |
-| Fahrzeuge | Explodieren nicht, auch nicht an der Tankstelle geparkte |
+| Feuer in Hochhäusern | Beton und Stahl brennen nicht, sie verrußen nur; Glas platzt in der Hitze. Ein Feuer frisst sich also nicht durch einen Betonturm |
+| Verkehr | Nur Einsatzfahrzeuge fahren; die übrigen Autos stehen. Die Fahrzeuge kennen keine Straßenkarte, sie tasten sich am Raster entlang |
 
 **Geprüft in diesem Stand:** alle 16 Angriffe der vier Figuren in beiden Fassungen liefen in automatisierten Durchläufen ohne Fehler; Standbilder zeigen die Modelle von Roboter und Panzer, den Wirbelschlag des Dinos, einstürzende Hochhäuser nach einem Sprint durch die Stadt (15 Gebäude in 7 Sekunden auf Stufe 7, davon mehrere durch Kettenreaktion) und kreisende Hubschrauber. Bei diesem Massen-Einsturz lag die Bildzeit kurz bei 26 ms. **Nicht begutachtet:** die Animationen in Bewegung – ich sehe nur Standbilder – und das Rotorgeräusch.
 
@@ -585,3 +663,12 @@ Macht und Stufen wachsen dabei ganz normal und werden gespeichert. Figur und Stu
 - In einem Tab, der nicht sichtbar ist, hält der Browser das Spiel an.
 - Die Kamera folgt wie im normalen Spiel; es gibt keine eigenen Kamerafahrten.
 
+## 18. Erfolge
+
+117 kleine Ziele, jedes eine Schwelle auf einem Zähler: zerstörte Würfel insgesamt und nach Material, Gebäude und Hochhäuser, Einstürze, zerdrückte Häuser, die längste Kettenreaktion, mehrere Gebäude in zehn Sekunden, zerstörte Welten (auch jede einzeln), erreichte Stufen (insgesamt, je Figur, mit allen Figuren), Explosionen, Brände, Hydranten, Lampen, umgeworfene Polizei- und Feuerwehrautos, abgeschossene Reporter-, Militär-Hubschrauber und Kampfflieger, die Alarmstufe, Sprünge, Saltos, Stampfbomben, Brüller, Rempler, zurückgelegte Strecke, durch die Luft gewirbelte Bewohner, Angriffe, gesammelte Macht, Zeit im Selbstspiel und Spielzeit, Sticker und die Zahl der Erfolge selbst.
+
+- **Einblendung:** Wird ein Erfolg erreicht, schiebt sich links unter dem Macht-Ring für gut vier Sekunden eine Karte herein: großes Symbol, Name, ein Satz dazu, ein Pokal an der Ecke, dazu ein kurzer heller Klang. Höchstens zwei Karten zugleich; warten mehr als drei, bleibt jede nur knapp zwei Sekunden.
+- **Lesen ist freiwillig.** Die Karten sind der einzige Text im Spielfeld. Wer nicht lesen kann, sieht Symbol und Pokal und hört den Klang; für das Spielen braucht man den Text nie.
+- **Liste:** Der Pokal-Knopf oben rechts öffnet alle Erfolge. Erreichte sind farbig, die übrigen grau mit einem Balken, der zeigt, wie weit es noch ist.
+- **Zähler** werden in der Simulation nur hochgezählt und zweimal pro Sekunde ausgewertet. Sie gelten für alle Figuren gemeinsam, liegen im Spielstand und werden mit „Von vorn beginnen“ gelöscht. Auch das Selbstspiel sammelt Erfolge.
+- Die Liste steht in `achievements.js`; ein neuer Erfolg ist eine Zeile.

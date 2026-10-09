@@ -48,9 +48,11 @@ export class Destruction {
   }
 
   // Removes voxels in a sphere. Options: dx/dy/dz (push direction), impulse, debris (max flying cubes),
-  // blast (pushes loose things outwards), quiet (no dust or sound), spare (go easy on the ground).
+  // blast (pushes loose things outwards), quiet (no dust or sound), spare (go easy on the ground),
+  // worldOnly (leave falling fragments alone).
   sphere(cx, cy, cz, r, power, o = NONE) {
     const g = this.g, w = g.world, rnd = g.rng;
+    if (g.actors.units.length) g.actors.hit(cx, cy, cz, r); // police cars and fire engines in the way
     const x0 = Math.floor(cx - r), x1 = Math.ceil(cx + r), z0 = Math.floor(cz - r), z1 = Math.ceil(cz + r);
     const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(w.sy - 1, Math.ceil(cy + r));
     const r2 = r * r, imp = o.impulse ?? 16; // launch speed of the flying cubes
@@ -86,7 +88,7 @@ export class Destruction {
         }
       }
     }
-    removed += g.bodies.damageSphere(cx, cy, cz, r, power, o, mc);
+    if (!o.worldOnly) removed += g.bodies.damageSphere(cx, cy, cz, r, power, o, mc);
     if (o.blast) {
       g.debris.blast(cx, cy, cz, r * 2.2, o.blast);
       g.actors.blast(cx, cy, cz, r * 2.5, o.blast);

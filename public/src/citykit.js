@@ -301,5 +301,6 @@ export function busStop(g, x, y, z) {
 }
 
 export function hydrant(g, x, y, z) {
-  g.box(x, y, z, 1, 2, 1, T.STEEL_RED);
+  g.box(x, y, z, 1, 3, 1, T.HYDRANT);
+  g.set(x, y + 3, z, T.TILE_WHITE);
 }

@@ -362,10 +362,10 @@ const MOVES = {
   // ---------------------------------------------------------------- Aircraft: guns ahead, bombs below
   jet: [
     { id: 'guns', icon: '🔫', stage: 1,
-      light: { // strafing run: a burst from the nose guns
+      light: { // a burst from the twin guns of the belly turret
         wind: 0.04, strike: 0.4, recover: 0.08,
-        pose(j, p, a, b) { j.torso[5] -= Math.abs(Math.sin(b * 22)) * 0.6 * (b > 0 && b < 1 ? 1 : 0); },
-        tick(T, act, dt, b0, b1) { eachShot(b0, b1, 6, () => { const B = T.base(), o = T.at(T.o, 0, 0.8); T.bolt(o, T.g.aim, 0.6 + B.S * 0.08 + B.H * 0.012, 3 + B.S * 0.35, 1, 0.85, 0.3); T.g.audio.hit('metal', 0.2); }); },
+        pose(j, p, a, b) { j.barrel[5] -= Math.abs(Math.sin(b * 22)) * 1.5 * (b > 0 && b < 1 ? 1 : 0); },
+        tick(T, act, dt, b0, b1) { eachShot(b0, b1, 6, () => { const B = T.base(), o = T.gun(); T.bolt(o, T.g.aim, 0.6 + B.S * 0.08 + B.H * 0.012, 3 + B.S * 0.35, 1, 0.85, 0.3); T.g.audio.hit('metal', 0.2); }); },
       },
       heavy: { // one bomb, released from the belly
         wind: 0.25, strike: 0.1, recover: 0.3,
@@ -375,14 +375,14 @@ const MOVES = {
     { id: 'rockets', icon: '🚀', stage: 3,
       light: {
         wind: 0.1, strike: 0.1, recover: 0.2,
-        pose(j, p, a, b) { j.torso[5] -= 1.2 * pulse(b); },
-        hit(T, act) { const B = T.base(), o = T.at(T.o, -0.05, 0.3, 0.45 * act.side); T.rocket(o, T.g.aim, 4 + B.S * 0.9, 12 + B.S * 2, 70); },
+        pose(j, p, a, b) { j.pods[5] -= 1.2 * pulse(b); },
+        hit(T, act) { const B = T.base(), o = T.at(T.o, 0.09, 0.16, 0.2 * act.side, T.turretYaw()); T.rocket(o, T.g.aim, 4 + B.S * 0.9, 12 + B.S * 2, 70); },
       },
-      heavy: { // salvo from under both wings
+      heavy: { // salvo from both pods of the launcher
         wind: 0.35, strike: 0.6, recover: 0.3,
-        pose(j, p, a, b, c) { j.torso[0] -= 0.15 * a * (1 - c); j.torso[5] -= Math.abs(Math.sin(b * 25)) * 0.8 * (b > 0 && b < 1 ? 1 : 0); },
+        pose(j, p, a, b, c) { j.torso[0] -= 0.15 * a * (1 - c); j.pods[5] -= Math.abs(Math.sin(b * 25)) * 0.8 * (b > 0 && b < 1 ? 1 : 0); },
         tick(T, act, dt, b0, b1) {
-          eachShot(b0, b1, 8, (k) => { const B = T.base(), o = T.at(T.o, -0.05, 0.3, k % 2 ? 0.45 : -0.45), aim = T.g.aim, r = T.g.rng, s = B.H * 0.55 + 7; T.tgt.x = aim.x + (r() - 0.5) * 2 * s; T.tgt.y = aim.y; T.tgt.z = aim.z + (r() - 0.5) * 2 * s; T.rocket(o, T.tgt, 5 + B.S, 13 + B.S * 2, 60, true); });
+          eachShot(b0, b1, 8, (k) => { const B = T.base(), o = T.at(T.o, 0.09, 0.16, k % 2 ? 0.2 : -0.2, T.turretYaw()), aim = T.g.aim, r = T.g.rng, s = B.H * 0.55 + 7; T.tgt.x = aim.x + (r() - 0.5) * 2 * s; T.tgt.y = aim.y; T.tgt.z = aim.z + (r() - 0.5) * 2 * s; T.rocket(o, T.tgt, 5 + B.S, 13 + B.S * 2, 60, true); });
         },
       } },
     { id: 'carpet', icon: '💣', stage: 5,
@@ -459,6 +459,12 @@ export class Tools {
 
   turretYaw() { return this.g.monster.heading + this.g.monster.pose.look; }
   muzzle() { return this.at(this.o, 0.48, 0.85, 0, this.turretYaw()); }
+  // Where the barrels of the aircraft's belly turret end.
+  gun() {
+    const m = this.g.monster, o = this.at(this.o, 0.09, 0.16), yaw = this.turretYaw(), len = m.h * 0.28, c = Math.cos(m.pose.aimPitch);
+    o[0] += Math.sin(yaw) * len * c; o[1] -= Math.sin(m.pose.aimPitch) * len; o[2] += Math.cos(yaw) * len * c;
+    return o;
+  }
   later(delay, fn) { this.timers.push({ t: delay, fn }); }
 
   // Starts a move. heavy = the slow, strong version.
@@ -469,12 +475,14 @@ export class Tools {
     if (!m.onGround && g.progress.species !== 'jet') return; // no attacks in mid-jump; the aircraft is always in the air
     const list = movesFor(g.progress.species), move = list.find((x) => x.id === moveId) ?? list[0];
     const v = heavy ? move.heavy : move.light, aim = g.aim;
-    if (g.progress.species !== 'tank' || v.root) m.faceTo(aim.x, aim.z);
+    // Tank and aircraft keep their course: only the turret turns towards the target.
+    if ((g.progress.species !== 'tank' && g.progress.species !== 'jet') || v.root) m.faceTo(aim.x, aim.z);
     this.side = -this.side;
     // Bigger creatures take a little longer to wind up: more weight to move.
     const slow = 1 + m.stage * 0.035;
     this.act = { move, v, heavy, t: 0, W: v.wind * slow, S: v.strike, R: v.recover * slow, ax: aim.x, ay: aim.y, az: aim.z, heading: m.heading, side: this.side, begun: false, hit: false, landed: false };
     g.emit('tool', heavy ? 'heavy' : 'light');
+    g.stat(heavy ? 'heavy' : 'light');
     if (heavy) g.audio.whoosh();
   }
 
@@ -499,7 +507,7 @@ export class Tools {
   updateAct(dt) {
     const g = this.g, m = g.monster, a = this.act, v = a.v, t0 = a.t;
     a.t += dt;
-    if (v.root) m.heading = a.heading; else if (g.progress.species !== 'tank') m.faceTo(g.aim.x, g.aim.z);
+    if (v.root) m.heading = a.heading; else if (g.progress.species !== 'tank' && g.progress.species !== 'jet') m.faceTo(g.aim.x, g.aim.z);
     const A = ease(Math.min(1, a.t / a.W)), b = clamp((a.t - a.W) / a.S, 0, 1), c = clamp((a.t - a.W - a.S) / a.R, 0, 1);
     v.pose(m.pose.j, m.pose, A, b, c, a);
     if (a.t < a.W) { if (v.windTick && g.rng() < 0.6) v.windTick(this, a); return; }
@@ -668,7 +676,7 @@ export class Tools {
     const e = this.beyond(depth);
     g.destruction.capsule(bx, by, bz, e[0], e[1], e[2], radius, 60, opt);
     g.fx.sparks(bx, by, bz, 16, 4, r, gr, b);
-    if (g.rng() < 0.4) g.fire.igniteSphere(bx + this.rdx * 2, by + this.rdy * 2, bz + this.rdz * 2, radius + 2.5, 5);
+    if (g.rng() < 0.4) g.fire.heatSphere(bx + this.rdx * 2, by + this.rdy * 2, bz + this.rdz * 2, radius + 2.5, 2, 5);
   }
 
   // A continuous beam for one simulation step: burns deeper every step, sets fire, leaves glowing spots.
@@ -685,7 +693,7 @@ export class Tools {
     g.destruction.capsule(bx, by, bz, e[0], e[1], e[2], radius, 70, opt);
     opt.quiet = false;
     if (g.rng() < 0.6) g.fx.sparks(bx, by, bz, 18, 3, r, gr, b);
-    if (burn && g.rng() < 0.35) g.fire.igniteSphere(bx + this.rdx * 2, by + this.rdy * 2, bz + this.rdz * 2, radius + 3, 6);
+    if (burn && g.rng() < 0.35) g.fire.heatSphere(bx + this.rdx * 2, by + this.rdy * 2, bz + this.rdz * 2, radius + 3, 3.5, 6);
     if (burn && g.rng() < 0.05) g.fire.spot(bx, by, bz, radius + 0.5, 2 + g.rng() * 3);
   }
 
@@ -701,7 +709,7 @@ export class Tools {
         const x = ox + rx * t, y = oy + ry * t, z = oz + rz * t;
         if (r() < 0.25) g.fire.flame(x, y, z, 1 + t * 0.06);
         if (!g.world.get(Math.floor(x), Math.floor(y), Math.floor(z))) continue;
-        g.fire.igniteSphere(x, y, z, 3.5, 6);
+        g.fire.heatSphere(x, y, z, 3.5, 3.2, 8); // lights what can burn at once; stone and metal turn black if the flame stays on them
         if (r() < 0.25) g.destruction.sphere(x, y, z, 2 + power * 0.3, power, { quiet: true, debris: 3 });
         if (r() < 0.03) g.fire.spot(x, y, z, 1.5, 3 + r() * 3);
         break;
@@ -842,6 +850,7 @@ export class Tools {
     const g = this.g, m = g.monster;
     if (this.roarCool > 0 || this.act) return;
     this.roarCool = 1.4;
+    g.stat('roars');
     m.pose.roar = 1;
     g.audio.roar(m.stage);
     g.shake(0.4);
@@ -929,7 +938,7 @@ export class Tools {
             if (!n || p.pierce <= 0) { dead = true; if (p.blast) g.explode(p.x, p.y, p.z, p.blast, p.power + 8); }
           } else if (p.kind === 'rocket' || p.kind === 'mortar') {
             g.explode(p.x, p.y, p.z, p.radius, p.power);
-            if (p.fire) { g.fire.igniteSphere(p.x, p.y, p.z, p.radius * 2.5, 160); for (let k = 0; k < 4; k++) g.fire.spot(p.x + (g.rng() - 0.5) * p.radius * 2, p.y, p.z + (g.rng() - 0.5) * p.radius * 2, 2, 6 + g.rng() * 6); }
+            if (p.fire) { g.fire.heatSphere(p.x, p.y, p.z, p.radius * 2.5, 8, 160); for (let k = 0; k < 4; k++) g.fire.spot(p.x + (g.rng() - 0.5) * p.radius * 2, p.y, p.z + (g.rng() - 0.5) * p.radius * 2, 2, 6 + g.rng() * 6); }
             dead = true;
           } else {
             p.x -= p.vx * h; p.y -= p.vy * h; p.z -= p.vz * h;

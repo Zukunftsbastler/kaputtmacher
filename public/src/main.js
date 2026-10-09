@@ -9,25 +9,35 @@ import { Destruction } from './destruction.js';
 import { Bodies } from './bodies.js';
 import { Debris, Fx, launch } from './particles.js';
 import { Actors } from './actors.js';
-import { Monster, buildModel, partMatrix, stageNeed, newPose, locomotion, MODEL_HEIGHT } from './monster.js';
+import { Monster, buildModel, partMatrix, stageNeed, newPose, locomotion, MODEL_HEIGHT, JET_GEAR } from './monster.js';
 import { Stability } from './stability.js';
 import { Fire } from './fire.js';
 import { Sweeper } from './sweeper.js';
 import { Autopilot } from './autopilot.js';
+import { Reactions } from './reactions.js';
 import { Tools, movesFor } from './tools.js';
 import { WORLDS } from './worldgen.js';
 import { Audio } from './audio.js';
 import { Input } from './input.js';
 import { Hud } from './hud.js';
-import { loadProgress, saveProgress, cleanStage, cleanSpecies, cleanQuality } from './progress.js';
+import { loadProgress, saveProgress, switchCreature, cleanStage, cleanSpecies, cleanDetail } from './progress.js';
+import { checkAchievements } from './achievements.js';
 
 const STEP = 1 / 60; // the simulation always advances in equal steps (needed later for slow motion and rewind)
 const FOV = (55 * Math.PI) / 180;
-const QUALITY = {
-  // planet: edge length of planet worlds in voxels (tall: of the skyscraper world). cap: radius of the part of a planet that is visible (and meshed) at once.
-  high: { planet: 1024, tall: 1024, cap: 360, debris: 9000, fx: 3000, people: 1 },
-  low: { planet: 512, tall: 512, cap: 250, debris: 2200, fx: 1000, people: 0.4 },
-};
+const CHAIN_FADE = 0.62; // share of a chain reaction's strength that reaches the next generation: a chain dies out after three to five buildings in a row
+// Detail levels 1 (fastest) to 5 (richest), chosen with one slider in the settings.
+// planet: edge length of planet worlds in voxels (tall: of the skyscraper world). cap: radius of the part of a planet
+// that is visible (and meshed) at once. debris, fx: most loose cubes and particles at a time. people, units: share of
+// inhabitants and emergency vehicles. thin: share of the ambient effects (dust, smoke, spray). fire: most voxels that
+// burn at once. pixel: resolution of the picture relative to the screen.
+const DETAIL = [null,
+  { planet: 512, tall: 512, cap: 190, debris: 1200, fx: 500, people: 0.25, units: 0.5, thin: 0.35, fire: 150, pixel: 0.7 },
+  { planet: 512, tall: 512, cap: 250, debris: 2200, fx: 1000, people: 0.4, units: 0.7, thin: 0.6, fire: 300, pixel: 0.85 },
+  { planet: 1024, tall: 1024, cap: 300, debris: 5000, fx: 2000, people: 0.7, units: 1, thin: 0.8, fire: 600, pixel: 1 },
+  { planet: 1024, tall: 1024, cap: 360, debris: 9000, fx: 3000, people: 1, units: 1, thin: 1, fire: 900, pixel: 1 },
+  { planet: 1024, tall: 1024, cap: 430, debris: 14000, fx: 5000, people: 1.3, units: 1.4, thin: 1.3, fire: 1500, pixel: 1 },
+];
 // Dust colour per material.
 const DUST = { [MAT.EARTH]: [0.55, 0.42, 0.3], [MAT.GLASS]: [0.85, 0.95, 1], [MAT.LEAF]: [0.4, 0.7, 0.3], [MAT.WOOD]: [0.75, 0.6, 0.4], [MAT.BRICK]: [0.8, 0.5, 0.4], [MAT.CONCRETE]: [0.75, 0.75, 0.73], [MAT.STEEL]: [0.6, 0.62, 0.66], [MAT.SHEET]: [0.7, 0.72, 0.75], [MAT.EXPLOSIVE]: [0.3, 0.3, 0.3], [MAT.FABRIC]: [0.9, 0.9, 0.85] };
 
@@ -43,10 +53,10 @@ class Game {
     this.input.onFirstGesture = () => this.audio.unlock();
     this.progress = loadProgress();
     this.progress.volatile = ['stage', 'unlock', 'world', 'quality', 'species'].some((k) => params.has(k));
+    if (params.has('species')) switchCreature(this.progress, cleanSpecies(params.get('species')));
     // Address-bar parameters are for testing. They are validated like stored data and never saved.
     if (params.has('stage')) this.progress.stage = this.progress.playStage = cleanStage(params.get('stage'));
-    if (params.has('quality')) this.progress.settings.quality = cleanQuality(params.get('quality'));
-    if (params.has('species')) this.progress.species = cleanSpecies(params.get('species'));
+    if (params.has('quality')) this.progress.settings.detail = cleanDetail(params.get('quality'));
     if (params.has('unlock')) this.progress.settings.unlockAll = true;
     this.audio.setVolume(this.progress.settings.volume);
 
@@ -68,7 +78,16 @@ class Game {
     this.fire = new Fire(this);
     this.stability = new Stability(this);
     this.sweeper = new Sweeper(this);
-    this.heat = 0; // 0..1: how much has been destroyed lately; brings the helicopters
+    this.reactions = new Reactions(this);
+    this.gainScale = 1; // below 1 while a collapse is being processed: falling voxels are worth less
+    this.chainLoad = 0; // how many collapses the running chain reaction has behind it
+    this.earned = 0; // all power earned in this session (for tuning the stages)
+    this.heat = 0; // 0..1: how much has been destroyed lately; brings the reporters' helicopters
+    this.wanted = 0; // alarm level 0..5 of the world's emergency services (see actors.js)
+    this.absorb = 0; // 0..1: glow of the creature while power flows into it
+    this.matCount = new Float64Array(12); // destroyed voxels per material since the last tally
+    this.doneTimes = []; // when the last buildings were finished, for "several at once"
+    this.checkT = 0; this.saveT = 0; this.auraT = 0;
     this.slowT = 0; // seconds of slow motion left after a heavy blow
     this.hitStop = 0; // seconds the simulation holds still after a heavy blow
     this.groanT = 0;
@@ -116,11 +135,15 @@ class Game {
   }
 
   setQuality() {
-    const s = this.progress.settings.quality;
+    // 0 = automatic: phones, tablets and small machines start two steps lower.
     const weak = matchMedia('(pointer: coarse)').matches || (navigator.hardwareConcurrency ?? 8) <= 4;
-    this.quality = QUALITY[s === 'auto' ? (weak ? 'low' : 'high') : s];
+    this.detail = this.progress.settings.detail || (weak ? 2 : 4);
+    this.quality = DETAIL[this.detail];
     this.debris = new Debris(this, this.quality.debris);
     this.fx = new Fx(this, this.quality.fx);
+    this.fx.thin = this.quality.thin;
+    this.fire.resize(this.quality.fire);
+    this.renderer.pixelScale = this.quality.pixel;
     this.cubeBuf = new Float32Array((this.quality.debris + 1200) * 12);
     this.billBuf = new Float32Array((this.quality.fx + 200) * 9);
   }
@@ -150,7 +173,9 @@ class Game {
     this.fire.clear();
     this.stability.reset();
     this.sweeper.clear();
+    this.reactions.clear();
     this.heat = 0;
+    this.wanted = 0; this.chainLoad = 0; this.doneTimes.length = 0;
     this.debris.clear();
     this.fx.clear();
     this.tools.reset();
@@ -177,6 +202,7 @@ class Game {
     c.fogDist = world.wrap ? cap * 2.2 : 1400;
     c.top = world.sky[0]; c.low = world.sky[1];
     this.hud.setStructures(world);
+    this.hud.setWanted(0);
     this.hud.showNext(false);
     this.hud.refreshTools();
     this.hud.setPower(p.power / stageNeed(p.stage), p.stage);
@@ -196,9 +222,14 @@ class Game {
     this.modelMeshes = this.model.parts.map((p) => this.renderer.createMesh(p.data, p.quads));
   }
 
+  // Every creature has its own stage and power: switching creature switches to its progress.
   setSpecies(id) {
-    this.progress.species = id;
-    saveProgress(this.progress);
+    const p = this.progress, m = this.monster;
+    switchCreature(p, id);
+    saveProgress(p);
+    m.stage = p.playStage;
+    m.h = m.targetHeight();
+    this.hud.setPower(p.power / stageNeed(p.stage), p.stage);
     this.tools.reset();
     this.tool = movesFor(id)[0].id; // every creature has its own moves
     this.buildMonster();
@@ -220,10 +251,11 @@ class Game {
   applySettings(key) {
     const s = this.progress.settings;
     if (key === 'volume') this.audio.setVolume(s.volume);
-    else if (key === 'quality') { this.setQuality(); this.loadWorld(this.progress.world); }
+    else if (key === 'detail') { this.setQuality(); this.loadWorld(this.progress.world); }
     else if (key === 'life') this.actors.populate(s.life ? Math.round((this.world.people ?? 0) * this.quality.people) : 0);
     else if (key === 'unlockAll') this.hud.refreshTools();
     else if (key === 'cascade') this.hud.refreshButtons();
+    else if (key === 'smoke' && !s.smoke) this.fire.spots = this.fire.spots.filter((x) => x.flames);
   }
 
   // Tools and actions --------------------------------------------------------------
@@ -280,13 +312,33 @@ class Game {
     if (this.progress.settings.shake) this.shakeAmt = Math.max(this.shakeAmt, a);
   }
 
+  // Counters behind the achievements (see achievements.js).
+  stat(key, n = 1) { this.progress.stats[key] += n; }
+  statMax(key, v) { if (v > this.progress.stats[key]) this.progress.stats[key] = v; }
+
+  // A few times per second: tally what was destroyed, look for achievements that have just been reached.
+  checkStats(dt) {
+    const p = this.progress, st = p.stats, c = this.matCount;
+    st.time += dt;
+    if (this.idle) st.idle += dt;
+    st.vox += c[MAT.GLASS] + c[MAT.LEAF] + c[MAT.WOOD] + c[MAT.BRICK] + c[MAT.CONCRETE] + c[MAT.STEEL] + c[MAT.SHEET] + c[MAT.EXPLOSIVE] + c[MAT.FABRIC];
+    st.glass += c[MAT.GLASS]; st.wood += c[MAT.WOOD]; st.leaf += c[MAT.LEAF]; st.stone += c[MAT.BRICK] + c[MAT.CONCRETE]; st.steel += c[MAT.STEEL] + c[MAT.SHEET];
+    c.fill(0);
+    st.fires += this.fire.lit; this.fire.lit = 0;
+    const fresh = checkAchievements(p);
+    if (fresh) { for (const a of fresh) this.hud.toast(a); this.audio.achieve(); saveProgress(p); }
+    if ((this.saveT += dt) > 20) { this.saveT = 0; saveProgress(p); }
+  }
+
   // Simulation callbacks -------------------------------------------------------------
 
   // Called by the world for every original voxel that leaves its place.
   onDestroyed(type, x, y, z, st) {
-    this.gain += MATS[TYPE_MAT[type]].power;
+    this.gain += MATS[TYPE_MAT[type]].power * this.gainScale;
+    this.reactions.onVoxel(type, x, y, z);
     this.gainPos[0] = x; this.gainPos[1] = y; this.gainPos[2] = z;
     if (!st || !st.id) return;
+    this.matCount[TYPE_MAT[type]]++;
     if (st.major) { this.activeSt = st; this.activeT = this.time; }
     if (!st.done && st.remaining <= st.total * 0.1) { st.done = true; this.doneQueue.push(st); }
   }
@@ -307,8 +359,25 @@ class Game {
     if (t[MAT.GLASS] > 40) this.audio.glassfall(Math.min(1, t[MAT.GLASS] / 3000));
     if (t[MAT.STEEL] + t[MAT.SHEET] > 30) this.audio.hit('metal', size + 0.2);
     if (t[MAT.WOOD] > body.count * 0.3) this.audio.hit('wood', size + 0.3);
-    // Heavy wreckage throws up a column of dust that hangs for a few seconds.
-    if (body.count > 1500 && speed > 12 && this.rng() < 0.5) this.fire.spot(x, y, z, 2 + size * 3, 2.5 + this.rng() * 3, false);
+    // Heavy wreckage throws up dust: a burst at once and a pale cloud that hangs for a few seconds.
+    if (body.count > 600) {
+      const r = clamp(Math.cbrt(body.mass) * 0.4, 3, 16);
+      this.fx.dust(x, y + 1, z, r, 0.78, 0.76, 0.71, Math.min(14, 4 + (body.count >> 10)));
+      if (speed > 10 && this.rng() < 0.6) this.fire.spot(x, y, z, r * 0.6, 3 + this.rng() * 3, false, true);
+    }
+  }
+
+  // A small building has been flattened by something much heavier: dust all over where it stood.
+  onCrush(st, body) {
+    if (this.time - (st.dustT ?? -9) < 0.5) return;
+    st.dustT = this.time;
+    if (!st.crushed) { st.crushed = true; this.stat('crushed'); }
+    const w = st.x1 - st.x0, d = st.z1 - st.z0, r = clamp(Math.max(w, d) * 0.3, 3, 14);
+    for (let i = 0; i < 7; i++) this.fx.dust(st.x0 + this.rng() * w, st.y0 + this.rng() * Math.min(st.top - st.y0, 20), st.z0 + this.rng() * d, r, 0.78, 0.76, 0.71, 3);
+    for (let i = 0; i < 2; i++) this.fire.spot(st.x0 + this.rng() * w, st.y0 + 2, st.z0 + this.rng() * d, r * 0.7, 4 + this.rng() * 3, false, true);
+    this.audio.crumble(Math.min(1, st.remaining / 8000 + 0.3));
+    this.shake(0.3);
+    void body;
   }
 
   // Something large has come loose: concrete cracks, steel starts to groan.
@@ -328,6 +397,7 @@ class Game {
     if (ix < 0 || iz < 0 || ix >= w.sx || iz >= w.sz) return;
     const st = w.structures[w.footprint[ix + w.sx * iz]];
     if (!st || !st.S) return;
+    this.stat('shoves');
     // How hard the shove is depends on how big the creature is compared with what is left of the building.
     const bonus = clamp((0.08 * m.h ** 3 * strength) / Math.max(200, st.remaining), 0, 0.6);
     this.stability.shove(st, dx, dz, bonus);
@@ -346,6 +416,7 @@ class Game {
 
   onPoundStart() {
     this.audio.whoosh();
+    this.stat('pounds');
     this.emit('ability', 'stomp');
   }
 
@@ -358,6 +429,7 @@ class Game {
   // The second jump kicks off from thin air: a puff below the feet.
   onDoubleJump(m) {
     this.audio.whoosh();
+    this.stat('flips');
     for (let i = 0; i < 12; i++) { const a = (i / 12) * 6.283; this.fx.add(m.x, m.y, m.z, Math.cos(a) * m.h * 1.2, -m.h * 0.3, Math.sin(a) * m.h * 1.2, m.h * 0.12 + 0.5, m.h * 0.3, 0.35, 1, 1, 1, 0.7, 0, 0, 2.5); }
   }
 
@@ -375,7 +447,9 @@ class Game {
     const size = Math.max(st.x1 - st.x0, st.z1 - st.z0), cx = (st.x0 + st.x1) / 2, cz = (st.z0 + st.z1) / 2;
     this.audio.crumble(Math.min(1, st.remaining / 20000));
     this.shake(0.4);
-    this.fx.dust(cx, y, cz, size * 0.45, 0.76, 0.74, 0.7, 12);
+    if (st.major && !st.counted2) { st.counted2 = true; this.stat('collapses'); this.orbBurst(cx, y, cz, size * 0.4, 8); }
+    this.fx.dust(cx, y, cz, size * 0.45, 0.76, 0.74, 0.7, 14);
+    for (let i = 0; i < 3; i++) this.fire.spot(st.x0 + this.rng() * (st.x1 - st.x0), y, st.z0 + this.rng() * (st.z1 - st.z0), clamp(size * 0.2, 3, 12), 4 + this.rng() * 4, false, true);
     this.cascade(st, cx, cz, size);
   }
 
@@ -384,7 +458,11 @@ class Game {
     if (st.fell || !s.cascade || (stage < 4 && !this.allUnlocked)) return;
     st.fell = true;
     // Stronger with every stage; fades from one generation of the chain to the next.
-    const amount = Math.min(0.55, 0.24 + 0.05 * (stage - 4)) * 0.88 ** st.gen;
+    // Buildings brought down by falling wreckage start a chain of their own, so on top of the generation
+    // every collapse in quick succession tires the chain; it recovers by one step every four seconds.
+    const amount = Math.min(0.55, 0.24 + 0.05 * (stage - 4)) * CHAIN_FADE ** Math.max(st.gen, this.chainLoad);
+    this.chainLoad += 1;
+    this.statMax('chain', Math.floor(this.chainLoad));
     if (amount < 0.06) return;
     this.tools.later(0.55 + this.rng() * 0.3, () => {
       for (const o of this.hud.major) {
@@ -440,12 +518,13 @@ class Game {
   }
 
   explode(x, y, z, r, power) {
+    this.stat('explosions');
     this.recent.push({ x, y, z, t: 0.6 });
     this.lastHit.pop = launch(r * 1.2);
     this.destruction.sphere(x, y, z, r, power, { impulse: launch(r * 6 + 12), debris: 200, blast: launch(r * 4) });
     this.fx.explosion(x, y, z, r);
     // What can burn nearby catches fire; the crater itself keeps burning and smoking for a while.
-    this.fire.igniteSphere(x, y, z, r * 1.4, 70);
+    this.fire.heatSphere(x, y, z, r * 1.4, 4, 70);
     this.fire.spot(x, y, z, r * 0.45 + 1, 5 + this.rng() * 7);
     this.audio.boom(r / 9);
     const size = this.world.wrap ? this.world.sx : 0;
@@ -456,6 +535,8 @@ class Game {
   addPower(v) {
     const p = this.progress;
     p.power += v;
+    this.earned += v;
+    p.stats.power += v;
     const need = stageNeed(p.stage);
     if (p.power < need || this.growCool > 0) return;
     p.power = Math.min(p.power - need, stageNeed(p.stage + 1) * 0.8);
@@ -494,6 +575,14 @@ class Game {
     const p = this.progress;
     this.addPower(st.total * 0.25);
     if (!st.major) return;
+    // The building's power bursts out of it in a cloud of glowing balls.
+    const cx = (st.x0 + st.x1) / 2, cz = (st.z0 + st.z1) / 2;
+    this.orbBurst(cx, st.y0 + Math.min(20, (st.top - st.y0) * 0.3), cz, Math.max(st.x1 - st.x0, st.z1 - st.z0) * 0.4, Math.min(28, 10 + (st.total >> 12)));
+    this.stat('buildings');
+    if (st.top - st.y0 > 100) this.stat('towers');
+    this.doneTimes.push(this.time);
+    while (this.time - this.doneTimes[0] > 10) this.doneTimes.shift();
+    this.statMax('multi', this.doneTimes.length);
     this.cascade(st, (st.x0 + st.x1) / 2, (st.z0 + st.z1) / 2, Math.max(st.x1 - st.x0, st.z1 - st.z0));
     this.audio.fanfare();
     if (this.project((st.x0 + st.x1) / 2, st.top * 0.5 + 6, (st.z0 + st.z1) / 2, v3)) this.hud.stamp(st, v3[0], v3[1]);
@@ -508,6 +597,16 @@ class Game {
       this.hud.refreshButtons();
     }
     saveProgress(p);
+  }
+
+  // Size of the power balls: they grow with the creature, so they stay visible next to a giant.
+  orbSize() { return 0.7 + this.monster.h * 0.045; }
+
+  // A cloud of power balls thrown out of a building.
+  orbBurst(x, y, z, spread, count) {
+    const size = this.orbSize() * 1.3;
+    for (let i = 0; i < Math.ceil(count * Math.min(1, this.fx.thin + 0.3)); i++)
+      this.fx.orb(x + (this.rng() - 0.5) * spread * 2, y + this.rng() * spread, z + (this.rng() - 0.5) * spread * 2, size, 2.2);
   }
 
   // One fixed simulation step -----------------------------------------------------
@@ -544,7 +643,9 @@ class Game {
     m.jumpHeld = inp.jumpHeld;
     m.sprint = inp.sprint;
     m.update(dt, mx, mz, this.aim.x, this.aim.z);
-    this.walked += Math.hypot(wrapDelta(m.x - px, this.cam.wrap), wrapDelta(m.z - pz, this.cam.wrap));
+    const moved = Math.hypot(wrapDelta(m.x - px, this.cam.wrap), wrapDelta(m.z - pz, this.cam.wrap));
+    this.walked += moved;
+    if (!this.fly) this.progress.stats.dist += moved;
     if (this.walked > m.h * 1.2) { this.hud.doneHint('move'); this.hud.requestHint('light'); this.walked = -1e9; }
 
     // Left = the quick version of the selected move, right = the slow, strong one.
@@ -556,10 +657,20 @@ class Game {
     this.fire.update(dt);
     this.stability.update(dt);
     this.sweeper.update();
+    this.reactions.update(dt);
+    this.chainLoad = Math.max(0, this.chainLoad - dt * 0.25);
     this.destruction.flush();
     this.lastHit.pop = 0;
     this.debris.update(dt);
-    this.fx.update(dt, m.x, m.y + m.h * 0.6, m.z);
+    this.fx.update(dt, m.x, m.y + m.h * 0.55, m.z, m.h * 0.3 + 2);
+    // Power arrives: the creature lights up, and a spark carries it on to the ring that fills.
+    if (this.fx.arrived) {
+      this.absorb = Math.min(1, this.absorb + this.fx.arrived * 0.3);
+      this.fx.arrived = 0;
+      this.audio.absorb();
+      if (this.project(m.x, m.y + m.h * 0.6, m.z, v3)) this.hud.gain(v3[0], v3[1]);
+    }
+    this.absorb = Math.max(0, this.absorb - dt * 1.6);
     this.actors.update(dt);
 
     for (let i = this.pending.length - 1; i >= 0; i--) {
@@ -576,11 +687,11 @@ class Game {
       this.orbAcc += this.gain;
       for (let n = 0; this.orbAcc >= per && n < 4; n++) {
         this.orbAcc -= per;
-        this.fx.orb(this.gainPos[0] + (this.rng() - 0.5) * 6, this.gainPos[1] + 1, this.gainPos[2] + (this.rng() - 0.5) * 6);
+        this.fx.orb(this.gainPos[0] + (this.rng() - 0.5) * 6, this.gainPos[1] + 1, this.gainPos[2] + (this.rng() - 0.5) * 6, this.orbSize());
         this.audio.orb();
       }
       this.orbAcc = Math.min(this.orbAcc, per * 4);
-      this.heat = Math.min(1, this.heat + this.gain / (this.world.total * 0.012 + 400)); // about one percent of the world brings all four helicopters
+      this.heat = Math.min(1, this.heat + this.gain / (this.world.total * 0.012 + 400)); // how busy it is: brings the reporters
       this.addPower(this.gain);
       this.gain = 0;
       this.hud.setPower(p.power / stageNeed(p.stage), p.stage);
@@ -601,8 +712,13 @@ class Game {
         this.audio.boom(0.15);
       }
     }
-    if (m.stage >= 8 && this.rng() < 0.3) // aura
-      this.fx.add(m.x + (this.rng() - 0.5) * m.h * 0.6, m.y + this.rng() * m.h, m.z + (this.rng() - 0.5) * m.h * 0.6, 0, m.h * 0.3, 0, m.h * 0.05, 0, 0.8, 1, 0.5, 0.1, 0.6, 1);
+    if (m.stage >= 8) { // aura: from stage 8 the creature glows, from stage 10 it burns
+      const hot = m.stage >= 10;
+      if (this.rng() < 0.3) this.fx.add(m.x + (this.rng() - 0.5) * m.h * 0.6, m.y + this.rng() * m.h, m.z + (this.rng() - 0.5) * m.h * 0.6, 0, m.h * 0.3, 0, m.h * 0.05, 0, 0.8, 1, 0.5, 0.1, 0.6, 1);
+      if (hot && this.rng() < 0.5 * this.fx.thin) this.fire.flame(m.x + (this.rng() - 0.5) * m.h * 0.5, m.y + this.rng() * m.h * 0.9, m.z + (this.rng() - 0.5) * m.h * 0.5, m.h * 0.07 + 1);
+      // Such heat leaves traces: scorched ground under the feet, and whatever can burn nearby catches fire.
+      if ((this.auraT -= dt) <= 0) { this.auraT = 0.25; this.fire.heatSphere(m.x, m.y + m.h * 0.15, m.z, m.h * 0.3 + 2, hot ? 3.5 : 1.5, hot ? 10 : 5); }
+    }
 
     // While a big piece is on its way down, the steel keeps groaning.
     if ((this.groanT -= dt) <= 0) {
@@ -714,6 +830,9 @@ class Game {
     }
     this.audio.fire(this.fire.level());
     this.audio.heli(this.actors.heliLevel());
+    this.audio.hiss(this.reactions.level ?? 0);
+    this.audio.siren(this.actors.siren);
+    if (!this.paused && (this.checkT += dt) >= 0.5) { this.checkStats(this.checkT); this.checkT = 0; }
     this.govern(dt);
     this.remesh();
     this.render();
@@ -728,10 +847,10 @@ class Game {
     const d = this.debris, f = this.fx, r = this.renderer;
     if (this.frameMs > 26) {
       d.limit = Math.max(400, d.limit * 0.8) | 0; f.limit = Math.max(200, f.limit * 0.8) | 0;
-      r.pixelScale = Math.max(0.6, r.pixelScale * 0.9);
+      r.pixelScale = Math.max(0.55, r.pixelScale * 0.9);
     } else if (this.frameMs < 18) {
       d.limit = Math.min(d.max, d.limit * 1.15) | 0; f.limit = Math.min(f.max, f.limit * 1.15) | 0;
-      r.pixelScale = Math.min(1, r.pixelScale * 1.05);
+      r.pixelScale = Math.min(this.quality.pixel, r.pixelScale * 1.05);
     }
   }
 
@@ -786,8 +905,10 @@ class Game {
   }
 
   drawMonster(b, pose, alpha, tint) {
+    // The aircraft shows only the gear that belongs to the selected weapon.
+    const gear = this.model.species === 'jet' ? JET_GEAR[this.tool] ?? '' : null;
     for (let i = 0; i < this.model.parts.length; i++)
-      this.renderer.drawMesh(this.modelMeshes[i], partMatrix(mat, b, this.model, this.model.parts[i], pose), alpha, tint);
+      if (gear === null || this.model.parts[i].name === 'torso' || this.model.parts[i].chain.includes(gear)) this.renderer.drawMesh(this.modelMeshes[i], partMatrix(mat, b, this.model, this.model.parts[i], pose), alpha, tint);
   }
 
   render() {
@@ -795,11 +916,12 @@ class Game {
     r.resize();
     r.begin(c);
 
-    // Keep the monster visible behind tall buildings.
+    // Keep the monster and a good stretch of its surroundings visible behind tall buildings:
+    // the window is more than two body lengths wide in every direction.
     const mDist = Math.hypot(c.eye[0], c.eye[1] - (m.y + m.h * 0.6), c.eye[2]);
     if (!this.fly && this.project(m.x, m.y + m.h * 0.55, m.z, v3)) {
       const k = this.canvas.width / this.canvas.clientWidth;
-      r.setHole(v3[0] * k, (this.canvas.clientHeight - v3[1]) * k, ((m.h * 0.75) / mDist) * (this.canvas.height / 2 / Math.tan(FOV / 2)), mDist - m.h * 0.5, m.y + m.h * 0.3);
+      r.setHole(v3[0] * k, (this.canvas.clientHeight - v3[1]) * k, ((m.h * 2.3 + 8) / mDist) * (this.canvas.height / 2 / Math.tan(FOV / 2)), mDist - m.h * 0.5, m.y + m.h * 0.3);
     } else r.setHole(0, 0, 0, 0, 0);
 
     // Static world. Chunks behind the camera or beyond the planet's visible cap are skipped.
@@ -837,7 +959,7 @@ class Game {
     r.setHole(0, 0, 0, 0, 0);
     this.monsterBase(base, m.x, m.y, m.z, m.heading, m.h, m.pose);
     // A golden shimmer shows the moment in which the third press turns the jump into a ground pound.
-    const tint = m.grow > 0 ? [1, 1, 0.8, m.grow * 0.7] : m.poundReady() ? [1, 0.85, 0.2, 0.3 + 0.2 * Math.sin(this.last * 0.03)] : null;
+    const tint = m.grow > 0 ? [1, 1, 0.8, m.grow * 0.7] : m.poundReady() ? [1, 0.85, 0.2, 0.3 + 0.2 * Math.sin(this.last * 0.03)] : this.absorb > 0.03 ? [1, 0.88, 0.35, this.absorb * 0.45] : null;
     this.drawMonster(base, m.pose, 1, tint);
 
     let o = this.debris.write(this.cubeBuf, 0);

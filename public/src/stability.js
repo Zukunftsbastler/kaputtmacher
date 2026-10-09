@@ -6,6 +6,7 @@
 // Shoves (running into a building) and chain reactions make a building temporarily or permanently weaker.
 
 import { TYPE_MAT, MATS, MAT, isTerrain } from './materials.js';
+import { FALL_GAIN } from './bodies.js';
 
 // Share of a storey's original strength that must remain, per material the building mostly consists of.
 const TAU = { [MAT.LEAF]: 0.7, [MAT.FABRIC]: 0.7, [MAT.GLASS]: 0.6, [MAT.WOOD]: 0.62, [MAT.EXPLOSIVE]: 0.6, [MAT.SHEET]: 0.58, [MAT.BRICK]: 0.5, [MAT.CONCRETE]: 0.42, [MAT.STEEL]: 0.3 };
@@ -108,6 +109,7 @@ export class Stability {
     }
     const l = Math.hypot(dx, dz) || 1;
     g.lastHit.dx = dx / l; g.lastHit.dz = dz / l; g.lastHit.pop = 0;
+    g.gainScale = FALL_GAIN;
     for (let yy = Math.max(st.y0, y - 1); yy <= y + 1; yy++)
       for (let z = st.z0; z <= st.z1; z++) for (let x = st.x0; x <= st.x1; x++) {
         if (w.footprint[x + w.sx * z] !== st.id) continue;
@@ -117,6 +119,7 @@ export class Stability {
         g.destruction.addSeeds(x, yy, z);
         if (g.rng() < 0.12) g.debris.spawn(x + 0.5, yy + 0.5, z + 0.5, (g.rng() - 0.5) * 30, g.rng() * 14, (g.rng() - 0.5) * 30, t);
       }
+    g.gainScale = 1;
     g.onStructureCollapse(st, y);
   }
 }

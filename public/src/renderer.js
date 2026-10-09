@@ -42,8 +42,10 @@ void main() {
   if (dot(v_flat, v_flat) > u_cap2) discard;
   // Peephole: whatever stands between the camera and the monster is cut away around it.
   if (u_hole.z > 0.0 && v_dist < u_hole.w && v_y > u_holeY) {
+    // Fully open in the middle, thinning out towards the rim in four dither steps.
     float d = distance(gl_FragCoord.xy, u_hole.xy) / u_hole.z;
-    if (d < 0.8 || (d < 1.0 && mod(gl_FragCoord.x + gl_FragCoord.y, 2.0) < 1.0)) discard;
+    float keep = smoothstep(0.6, 1.0, d);
+    if (keep <= fract(dot(floor(gl_FragCoord.xy), vec2(0.5, 0.25))) + 0.12) discard;
   }
   // Every voxel gets a slightly different shade, so merged faces still read as single cubes.
   ivec3 ic = ivec3(floor(v_cell));

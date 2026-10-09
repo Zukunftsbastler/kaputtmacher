@@ -8,6 +8,7 @@ import { GRAVITY, launch } from './particles.js';
 const MIN_SAMPLES = 70, MAX_SAMPLES = 300; // collision probe points per body, more for big ones
 const MAX_BODIES = 36;
 const MIN_BODY = 5; // smaller groups become loose cubes straight away
+export const FALL_GAIN = 0.3; // share of the usual power for voxels that come down with a collapse instead of being hit
 
 const tmp = [0, 0, 0], tmp2 = [0, 0, 0];
 let cells = new Int32Array(4 * 4096); // scratch: x, y, z, type
@@ -112,6 +113,7 @@ export class Bodies {
     const g = this.g, w = g.world, sx = w.sx, layer = sx * w.sz, size = w.wrap ? sx : 0;
     this.reserve(n);
     let fx = 0, fz = 0;
+    g.gainScale = FALL_GAIN; // what merely falls is worth less than what is hit
     for (let k = 0; k < n; k++) {
       const i = list[k], y = (i / layer) | 0, rem = i - y * layer, z = (rem / sx) | 0, x = rem - z * sx;
       if (k === 0) { fx = x; fz = z; }
@@ -121,6 +123,7 @@ export class Bodies {
       cells[o + 3] = w.get(x, y, z);
       w.set(x, y, z, 0);
     }
+    g.gainScale = 1;
     const hit = g.lastHit;
     if (n < MIN_BODY) {
       for (let o = 0; o < n * 4; o += 4)
@@ -205,6 +208,7 @@ export class Bodies {
         if (nl < 0.5) { nx = 0; ny = 1; nz = 0; nl = 1; }
         nx /= nl; ny /= nl; nz /= nl;
         contacts++;
+        b.lcx = p[0]; b.lcy = p[1]; b.lcz = p[2]; // last contact point, for the dead-weight check
         pushX += nx; pushY += ny; pushZ += nz;
         const rx = p[0] - pos[0], ry = p[1] - pos[1], rz = p[2] - pos[2];
         const vx = v[0] + av[1] * rz - av[2] * ry, vy = v[1] + av[2] * rx - av[0] * rz, vz = v[2] + av[0] * ry - av[1] * rx;
@@ -242,19 +246,48 @@ export class Bodies {
 
     if (nHits && b.cooldown <= 0) {
       // Every hard contact works like a new hit on both the world and the fragment itself.
+      // What decides the outcome is momentum: a piece that is far heavier than the building it lands on
+      // goes straight through it, while two heavyweights break each other and may end up leaning.
       const sp = Math.hypot(v[0], v[1], v[2]) || 1, size = Math.cbrt(b.mass), opt = this.hitOpt;
       b.cooldown = 0.06;
       g.lastHit.dx = v[0] / sp; g.lastHit.dz = v[2] / sp;
       opt.dx = v[0] / sp; opt.dz = v[2] / sp; opt.impulse = Math.min(hitSpeed * 0.9, launch(60)); opt.spare = !b.thrown;
+      let crushed = false;
       for (let k = 0; k < Math.min(nHits, MAX_HITS); k++) {
-        const hs = hits[k * 4 + 3];
-        const radius = clamp(size * 0.3 * Math.min(1.6, hs / 14), 1.3, 13);
-        const power = clamp(hs * 0.5 * (b.thrown ? 2.4 : 1) + size * 0.12, 2, 34);
+        const hs = hits[k * 4 + 3], st = w.structureAt(hits[k * 4], hits[k * 4 + 2]);
+        if (st && st.remaining * 12 < b.mass) {
+          // Light target: crushed outright, the falling piece itself is hardly slowed or damaged.
+          opt.worldOnly = true;
+          g.destruction.sphere(hits[k * 4], hits[k * 4 + 1], hits[k * 4 + 2], clamp(size * 0.45, 4, 24), 44, opt);
+          opt.worldOnly = false;
+          if (st.S) g.stability.weaken(st, 0.6);
+          if (!crushed) g.onCrush(st, b);
+          crushed = true;
+          continue;
+        }
+        // The faster and heavier, the bigger the bite out of both.
+        const radius = clamp(size * 0.3 * Math.min(2.2, hs / 14), 1.3, 20);
+        const power = clamp(hs * 0.5 * (b.thrown ? 2.4 : 1) + size * 0.12, 2, 40);
         g.destruction.sphere(hits[k * 4], hits[k * 4 + 1], hits[k * 4 + 2], radius, power, opt);
       }
       g.onImpact(hits[0], hits[1], hits[2], b, hitSpeed);
       if (b.hard) { b.hard = false; g.explode(hits[0], hits[1], hits[2], clamp(size * 0.3, 4, 14), 14); }
-      v[0] *= 0.8; v[1] *= 0.8; v[2] *= 0.8;
+      const keep = crushed ? 0.96 : 0.8;
+      v[0] *= keep; v[1] *= keep; v[2] *= keep;
+    }
+    // Dead weight: a heavy piece that has come to lie on something much lighter squashes it bit by bit.
+    if (contacts && b.mass > 4000 && (b.crushT = (b.crushT ?? 0) - dt) <= 0) {
+      b.crushT = 0.2;
+      const st = w.structureAt(b.lcx, b.lcz);
+      if (st && st.remaining > 10 && st.remaining * 12 < b.mass) {
+        const opt = this.hitOpt;
+        opt.dx = 0; opt.dz = 0; opt.impulse = launch(8); opt.spare = true; opt.worldOnly = true;
+        g.destruction.sphere(b.lcx, b.lcy, b.lcz, clamp(Math.cbrt(b.mass) * 0.35, 3, 16), 40, opt);
+        opt.worldOnly = false;
+        if (st.S) g.stability.weaken(st, 0.4);
+        g.onCrush(st, b);
+        b.rest = 0;
+      }
     }
     const slow = v[0] * v[0] + v[1] * v[1] + v[2] * v[2] < 2.5 && av[0] * av[0] + av[1] * av[1] + av[2] * av[2] < 1;
     b.rest = contacts && slow ? b.rest + dt : 0;

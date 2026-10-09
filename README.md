@@ -52,7 +52,11 @@ Der Flieger ist immer in Bewegung: A/D lenkt, W/S steigt und sinkt, Umschalt ist
 
 **Zehn Welten,** frei wählbar: die Wolkenkratzer-Stadt als Hauptszenario (Start im Zentralpark, Türme bis 230 m), dazu Bauklotz-Zimmer, Garten, Wohnstraße, Spielzeugland, Dorf, Parklandschaft, Stadt, Fabrik und ein gewürfelter Planet mit Schiebereglern. Große Welten sind Planeten ohne Rand.
 
-**Was die Zerstörung ausmacht:** Materialien brechen verschieden. Gebäude geben nach, wenn einem Stockwerk zu viel Tragkraft fehlt – Holz früh, Beton spät. Abgetrennte Teile kippen, zerschellen und zerschlagen, worauf sie fallen. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
+**Was die Zerstörung ausmacht:** Materialien brechen verschieden. Gebäude geben nach, wenn einem Stockwerk zu viel Tragkraft fehlt – Holz früh, Beton spät. Abgetrennte Teile kippen, zerschellen und zerschlagen, worauf sie fallen. Dabei zählt die Masse: Ein Turmstück zerdrückt ein kleines Haus einfach und hüllt es in Staub, an einem anderen Turm bleibt es eher lehnen. Zerstörte Hydranten spritzen eine Weile Wasserfontänen, die Feuer löschen; Lampen sprühen Funken; manche Autos explodieren. Feuer richtet sich nach dem Material: Laub und Holz brennen, Glas platzt, Stein und Blech verrußen.
+
+**Die Welt reagiert:** Beim ersten Schaden kommt ein Polizeiauto, dann mehr, dazu Reporter im Hubschrauber, die Feuerwehr, sobald es brennt, und schließlich das Militär mit Hubschraubern und Kampffliegern. Niemand kann dem Kaputtmacher etwas anhaben; alle lassen sich umwerfen oder vom Himmel holen.
+
+**Erfolge:** 117 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der fünf Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
 
 Das vollständige Konzept mit allen Zahlen steht in [KONZEPT.md](KONZEPT.md).
 
@@ -84,7 +88,7 @@ PROMPTS/            alle Prompts des Autors
 public/
   index.html, style.css, _headers
   impressum.html, legal.css, legal.js   Impressum, Datenschutzerklärung und der Knopf zum Löschen des Spielstands
-  src/              22 ES-Module, siehe unten
+  src/              24 ES-Module, siehe unten
 ```
 
 ### Module (`public/src`)
@@ -98,21 +102,23 @@ public/
 | `worldgen.js` | Baukasten und Baupläne aller Welten; Liste `WORLDS`; Stadtgenerator `town()` |
 | `citykit.js` | Großstadt-Baukasten: Wolkenkratzer aus Segmenten, Fassaden, Dächer, Läden, Eingänge |
 | `mesher.js` | Voxel → Dreiecke: nur sichtbare Flächen, Kantenabdunklung, Zusammenfassen gleicher Flächen |
-| `renderer.js` | WebGL2: Voxel-Netze, Würfel-Instanzen, Leuchtpunkte, Himmel; Krümmung, Dunst, Guckloch |
+| `renderer.js` | WebGL2: Voxel-Netze, Würfel-Instanzen, Leuchtpunkte, Himmel; Krümmung, Dunst, Sichtfenster um die Figur |
 | `destruction.js` | Schadensformen (`sphere`, `capsule`) und Haltprüfung (`flush`): was den Bodenkontakt verliert, wird Bruchstück |
 | `stability.js` | Tragkraft-Bilanz je Stockwerk; Schubsen; Schwächung durch Kettenreaktionen; löst Einstürze aus |
-| `bodies.js` | Starre Bruchstücke: Fallen, Kontakt mit der Welt, Weiterzerbrechen, Zurückschreiben als Schutt |
+| `bodies.js` | Starre Bruchstücke: Fallen, Kontakt mit der Welt (Wucht nach Masse: Leichtes wird zerdrückt), Weiterzerbrechen, Zurückschreiben als Schutt |
 | `particles.js` | `Debris` (lose Würfel mit Kollision), `Fx` (Staub, Funken, Rauch …), `GRAVITY`, `launch()` |
-| `fire.js` | Brennende Voxel, Ausbreitung, Brandherde |
+| `fire.js` | Hitze und Flammpunkte je Material (`heat`, `heatSphere`), brennende Voxel, langsame Ausbreitung, Ruß, Brandherde, Staubwolken, Löschen (`douse`) |
+| `reactions.js` | Reaktionen zerstörter Dinge: Hydranten-Fontänen, Wasserschwall, Funken an Lampen; Wasser löscht Feuer |
 | `sweeper.js` | Entfernt lose Trümmer nach 30 s, lässt Haufen ab 14 Würfeln stehen |
 | `monster.js` | Gelenkmodelle der fünf Figuren je Stufe, Körpersprache (`locomotion`), Steuerung am Boden und in der Luft (`Monster`) |
 | `tools.js` | Angriffe: Tabelle `MOVES` je Figur (leicht/schwer, Pose, Wirkung) und die Bausteine dafür (`blow`, `shock`, `bolt`, `ray`, `rocket`, `bomb`, `grab` …) |
-| `actors.js` | Bewohner und Hubschrauber |
+| `actors.js` | Bewohner und Einsatzkräfte: Polizeiautos, Feuerwehr, Reporter-, Lösch- und Militär-Hubschrauber, Kampfflieger; Alarmstufe |
+| `achievements.js` | Liste der 117 Erfolge, Zähler (`STATS`), Prüfung |
 | `autopilot.js` | Idle-Modus: füllt den Eingabezustand, wählt Ziele, Angriffe und Welten |
 | `audio.js` | Erzeugter Ton (Web Audio), keine Dateien |
 | `input.js` | Maus/Tastatur, Gamepad, Touch → ein gemeinsamer Zustand |
 | `hud.js` | Oberfläche aus DOM-Elementen, Vorführ-Hinweise, Weltauswahl, Einstellungen |
-| `progress.js` | Spielstand und Einstellungen in `localStorage` |
+| `progress.js` | Spielstand und Einstellungen in `localStorage`: Stufe und Macht je Figur, Zähler, Erfolge, Detailstufe |
 
 ### Datenmodell
 
@@ -165,7 +171,7 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 
 ### Testen ohne Testframework
 
-- **Adress-Parameter** (speichern keinen Fortschritt): `?world=skyline|blocks|garden|house|toyland|village|park|city|factory|random`, `?stage=7`, `?species=dino|gorilla|robot|tank|jet`, `?tool=<Angriffs-Id>`, `?unlock=1`, `?quality=low`, `?fly=1`, `?idle=1`.
+- **Adress-Parameter** (speichern keinen Fortschritt): `?world=skyline|blocks|garden|house|toyland|village|park|city|factory|random`, `?stage=7`, `?species=dino|gorilla|robot|tank|jet`, `?tool=<Angriffs-Id>`, `?unlock=1`, `?quality=1…5` (Detailstufe; `low` und `high` gehen weiter), `?fly=1`, `?idle=1`.
 - **`window.game`** gibt in der Browser-Konsole Zugriff auf alles, z. B. `game.tools.use(game.tool, true)` oder `game.gain += 1e6`.
 - Die Module ohne WebGL (`world`, `worldgen`, `destruction`, `bodies`, `particles`, `mesher`) laufen auch in Node, wenn man sie in einen Ordner mit `{"type":"module"}` kopiert.
 
@@ -175,6 +181,11 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 - **Neue Figur:** in `monster.js` Eintrag in `SPECIES`, Modell in `buildModel` (Teile mit Drehpunkt und Elternteil), Körpersprache in `locomotion`; in `tools.js` eine Angriffsliste.
 - **Neue Welt:** in `worldgen.js` eine Bauplan-Funktion (liefert eine `World`) und einen Eintrag in `WORLDS`. Für Städte genügt ein neuer Parametersatz für `town()`.
 - **Neues Material oder neuer Voxel-Typ:** `materials.js`; höchstens 127 Typen.
+- **Neuer Erfolg:** eine Zeile in `achievements.js` (`tiers(zähler, symbol, text, [[schwelle, name], …])`). Ein neuer Zähler kommt zusätzlich in `STATS` und wird im Spiel mit `game.stat(key)` oder `game.statMax(key, wert)` gezählt; nur Zähler aus `STATS` überstehen das Laden.
+- **Feuer:** nie Voxel direkt anzünden, sondern Hitze geben (`fire.heatSphere(x, y, z, radius, hitze, versuche)`); Flammpunkte und Brenndauer stehen in `materials.js` (`FLASH`, `BURN`).
+- **Neue Einstellung oder Detailgröße:** Schalter in `TOGGLES` und `DEFAULTS` (`progress.js`) und im Einstellungsblatt (`hud.js`); Größen je Detailstufe in der Tabelle `DETAIL` (`main.js`).
+- **Neue Reaktion der Welt:** in `reactions.js` den Voxel-Typ in die Tabelle `REACT` eintragen und in `onVoxel` behandeln. Die Funktion läuft für jeden zerstörten Würfel, muss also billig bleiben.
+- **Macht bei Einstürzen:** `game.gainScale` ist nur in `bodies.detach` und `stability.collapse` kleiner als 1 (`FALL_GAIN`) und muss danach wieder auf 1 stehen.
 
 ### Idle-Modus (`autopilot.js`)
 
