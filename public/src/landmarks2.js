@@ -491,11 +491,52 @@ export const BIG = {
   bighabitat: { w: 2, h: 2, ground: 'soil', build: enlarged((g, x, G, z, L, kit) => LOTS2.habitat(g, x, G, z, L, kit), 2) },
   stadium: { w: 2, h: 2, ground: 'pave', build: enlarged((g, x, G, z, L) => LOTS.arena(g, x, G, z, L), 2) },
   bigpyramid: { w: 2, h: 2, ground: 'pave', build: enlarged((g, x, G, z, L) => LOTS.pyramid(g, x, G, z, L), 2) },
-  // The harbour basin: deep water with two ocean-going ships in it. G is the bottom of the basin here.
-  basin: { w: 3, h: 2, ground: 'basin', build(g, x, G, z, W, D) {
-    for (const [ax, az] of [[x + 2, z + (D >> 2) - 52], [x + W - 106, z + D - (D >> 2) - 52]]) LOTS.ship(scaled(g, ax, G, az, 2), ax, G, az, 52);
+  // Open spaces: every world has one wide field where the eye can rest and the view goes into the distance.
+  // Their size follows the size of the world: about a seventh of its surface.
+
+  // The sea of the harbour: one large stretch of deep water with ocean-going ships lying in it, a few to a row.
+  // G is the bottom of the sea here.
+  sea: { wide: true, w: (n) => (n >= 16 ? 7 : 4), h: (n) => (n >= 16 ? 6 : 3), ground: 'basin', build(g, x, G, z, W, D) {
+    for (let az = z + 6, row = 0; az + 60 < z + D; az += 84, row++) for (let ax = x + 6 + (row & 1) * 70; ax + 100 < x + W; ax += 190) {
+      const ox = ax + g.int(0, 30), oz = az - 36;
+      LOTS.ship(scaled(g, ox, G, oz, 2), ox, G, oz, 52);
+    }
     g.begin('buoys', '🛟', {});
-    for (let i = 0; i < 4; i++) { const bx = x + 20 + i * ((W - 40) / 3 | 0), bz = z + (D >> 1); g.box(bx, G, bz, 1, 9, 1, T.STEEL_DARK); g.box(bx - 1, G + 9, bz - 1, 3, 2, 3, i & 1 ? T.CAR_RED : T.CAR_GREEN); g.set(bx, G + 11, bz, T.NEON_YELLOW); }
+    for (let i = 0; i < 6; i++) { const bx = x + 14 + Math.round(((W - 28) * i) / 5), bz = z + (i & 1 ? 10 : D - 10); g.box(bx, G, bz, 1, 9, 1, T.STEEL_DARK); g.box(bx - 1, G + 9, bz - 1, 3, 2, 3, i & 1 ? T.CAR_RED : T.CAR_GREEN); g.set(bx, G + 11, bz, T.NEON_YELLOW); }
+    g.end();
+  } },
+  // The airfield: one huge runway with aprons along both sides. Airliners wait on the aprons, far apart.
+  airfield: { wide: true, w: (n) => (n >= 16 ? 9 : 5), h: (n) => (n >= 16 ? 4 : 3), ground: 'airfield', build(g, x, G, z, W, D) {
+    const mid = z + (D >> 1);
+    for (let ax = x + 8, k = 0; ax + 52 < x + W; ax += 96, k++) { const az = k & 1 ? mid + 38 : mid - 38 - 52; if (az > z && az + 52 < z + D) LOTS2.airliner(g, ax, G, az, 52); }
+    g.begin('lights', '💡', {});
+    for (let i = 6; i < W - 6; i += 12) { g.set(x + i, G, mid - 23, T.NEON_BLUE); g.set(x + i, G, mid + 23, T.NEON_BLUE); }
+    for (let i = 0; i < 5; i++) { g.set(x + 4, G, mid - 16 + i * 8, T.NEON_GREEN); g.set(x + W - 5, G, mid - 16 + i * 8, T.NEON_RED); }
+    g.box(x + 30, G, mid + 30, 1, 9, 1, T.STEEL); g.box(x + 31, G + 7, mid + 30, 4, 2, 1, T.FABRIC_RED); // windsock
+    g.end();
+  } },
+  // A meadow: grass (or snow, or sand) as far as the plot goes, with a few trees at its edge and a pond.
+  meadow: { wide: true, w: (n) => (n >= 16 ? 5 : 3), h: (n) => (n >= 16 ? 5 : 3), ground: 'soil', build(g, x, G, z, W, D, kit) {
+    for (let i = 0; i < 7; i++) { const a = g.rnd() * 6.283; kit.tree(g, Math.round(x + W / 2 + Math.cos(a) * (W / 2 - 8)), G, Math.round(z + D / 2 + Math.sin(a) * (D / 2 - 8)), 1 + g.rnd() * 0.6); }
+    g.begin('pond', '💧', {});
+    g.cyl(x + (W >> 1) + g.int(-20, 20), z + (D >> 1) + g.int(-20, 20), 9, G, 1, T.WATER);
+    g.end();
+  } },
+  // A frozen lake.
+  lake: { wide: true, w: (n) => (n >= 16 ? 5 : 3), h: (n) => (n >= 16 ? 5 : 3), ground: 'ice', build(g, x, G, z, W, D) {
+    pine(g, x + 6, G, z + 6, 1); pine(g, x + W - 8, G, z + D - 8, 1.2);
+    g.begin('hut', '🎣', { major: true }); // an ice-fishing hut, alone in the middle
+    g.box(x + (W >> 1), G, z + (D >> 1), 9, 7, 7, T.WOOD_DARK); g.box(x + (W >> 1) - 1, G + 7, z + (D >> 1) - 1, 11, 1, 9, T.TILE_WHITE); g.box(x + (W >> 1) + 3, G + 1, z + (D >> 1) + 6, 3, 4, 1, T.WOOD_LIGHT);
+    g.end();
+  } },
+  // A paved square with a row of lamps and one monument in the middle.
+  plaza: { wide: true, w: (n) => (n >= 16 ? 5 : 3), h: (n) => (n >= 16 ? 4 : 3), ground: 'pave', build(g, x, G, z, W, D) {
+    g.begin('monument', '🗽', { major: true });
+    const cx = x + (W >> 1), cz = z + (D >> 1);
+    g.box(cx - 5, G, cz - 5, 10, 4, 10, T.GRANITE); g.box(cx - 2, G + 4, cz - 2, 4, 26, 4, T.MARBLE); g.box(cx - 3, G + 30, cz - 3, 6, 2, 6, T.STEEL_YELLOW); g.set(cx, G + 32, cz, T.SECRET);
+    g.end();
+    g.begin('lamp', '💡', {});
+    for (let i = 10; i < W - 6; i += 28) for (const dz of [8, D - 9]) { g.box(x + i, G, z + dz, 1, 8, 1, T.STEEL_DARK); g.set(x + i, G + 8, z + dz, T.LAMP); }
     g.end();
   } },
 };

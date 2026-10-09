@@ -23,13 +23,15 @@ Zu jedem Punkt reicht ein Haken oder ein Stichwort, was stört.
 - [ ] Salto und Stampfattacke: Ist der goldene Moment zu treffen?
 - [ ] Panzer: Reicht der Hüpfer, um aus einer Kuhle zu kommen?
 - [ ] Flieger: Schnauze immer vorn? Dreht sich der Geschützturm sichtbar zum Ziel?
-- [ ] Sichtfenster: Sieht man die Figur zwischen Hochhäusern immer gut?
+- [ ] Sichtfenster: Sieht man die Figur zwischen Hochhäusern immer gut? Geht der Schlag dorthin, wohin man zielt, auch wenn die Kamera hinter einer (ausgeblendeten) Hauswand steht?
 
 ## 3. Zerstörung
 
 - [ ] Wirken schwere Angriffe wuchtig (Ausholen, kurzer Stillstand, Zeitlupe)?
 - [ ] Einstürze: Kippen und brechen große Gebäude glaubwürdig? Werden kleine Häuser unter Trümmern platt?
 - [ ] Staubwolken: schön oder zu viel?
+- [ ] Fallende Gebäude: Sind sie im Weg, solange sie fallen? Zerquetschen sie Autos und werfen Passanten um?
+- [ ] Sprünge: Ist die Landung jetzt ein Angriff unter vielen statt der stärkste?
 - [ ] Kettenreaktionen (ab Stufe 3 schwach, dann stärker): spannend oder räumt es die Stadt zu schnell leer?
 - [ ] Feuer: Brennt ein Baum ab, ohne dass die halbe Stadt brennt? Sieht man Ruß nach Flammenwerfer und Laser?
 - [ ] Hydranten, Lampen, Ballons, Wassertürme: Fallen die Reaktionen auf?
@@ -55,6 +57,7 @@ Zu jedem Punkt reicht ein Haken oder ein Stichwort, was stört.
 - [ ] Raumhafen: Ist die Rakete, die nach einem Treffer explodiert, ein Höhepunkt oder zu schnell vorbei?
 - [ ] Unter dem Meer: Fühlt sich die Bewegung nach Wasser an (langsames Sinken, Schwimmzüge)? Passen Haie, Wale, Fische und U-Boote?
 - [ ] Hafen: Kann man ins Becken steigen und hindurchwaten? Sieht das Wasser nach Wasser aus?
+- [ ] Weite Flächen: Hafenmeer, Rollfeld, Wiesen, zugefrorener See, Plätze – kann das Auge dort ausruhen?
 - [ ] Wahrzeichen: verschlungene Achterbahn, große Burg, Jumbojets, Ozeanriesen – lohnen sie den Weg?
 - [ ] Viertel in den Städten: Erkennt man Hochhaus- und Wohnviertel?
 - [ ] Innenleben: Sieht man beim Zerlegen Möbel, Fernseher, Büros? Schon ein Fundstück (Ente, Pokal, Klavier …) entdeckt?
@@ -64,13 +67,14 @@ Zu jedem Punkt reicht ein Haken oder ein Stichwort, was stört.
 
 Das Spielprotokoll in den Einstellungen zeigt, wie lange jede Stufe gedauert hat.
 
-- [ ] Dauern die Stufen ungefähr gleich lang (Ziel: anderthalb bis zwei Minuten)?
+- [ ] Fühlt sich jede neue Stufe verdient an (Ziel: mehrere Minuten je Stufe)? Oder ist es jetzt zu zäh?
+- [ ] Flieger: stark, aber nicht mehr übermächtig?
 - [ ] Gibt es eine Stufe, die sich zieht, oder eine, die man kaum bemerkt?
 - [ ] Kommen Erfolge in angenehmen Abständen?
 
 ## 7. Ton (mit Lautsprecher oder Kopfhörer)
 
-- [ ] **Musik:** Klingt sie überhaupt nach Musik – erkennbares Thema, saubere Harmonien? Treibend und fröhlich? Wird sie mit der Zerstörung und den Sternen voller und schneller, und beruhigt sie sich wieder? Stimmt die Lautstärke im Verhältnis zu den Geräuschen? Nervt etwas (zu schrill, zu eintönig)?
+- [ ] **Musik:** Trägt das Schlagzeug jetzt? Klingt es nach „Banger“ statt nach Kinderlied – treibend, etwas erwachsener? Ist das Thema noch erkennbar? Wird sie mit der Zerstörung und den Sternen voller und schneller, und beruhigt sie sich wieder? Stimmt die Lautstärke im Verhältnis zu den Geräuschen? Nervt etwas (zu schrill, zu eintönig)?
 
 - [ ] Bruchgeräusche je Material unterscheidbar?
 - [ ] Einsturz: Knacken, Ächzen, Bröckeln – stimmig oder Lärm?

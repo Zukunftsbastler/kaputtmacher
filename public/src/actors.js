@@ -53,6 +53,7 @@ export class Actors {
     const g = this.g, w = g.world, m = g.monster, size = w.wrap ? w.sx : 0, u = w.unit;
     const fear = m.h * 3 + 14 * u, walk = 1.3 * u, run = 4.2 * u;
     let fleeing = 0;
+    const crash = g.bodies.list.length > 0, tick = (this.tick = ((this.tick ?? 0) + 1) & 3); // every person is checked every fourth step
     for (const a of this.list) {
       a.t -= dt;
       if (a.state === 'fly') {
@@ -67,6 +68,8 @@ export class Actors {
         if (a.t <= 0) { a.state = 'walk'; a.spin = 0; }
         continue;
       }
+      // Falling wreckage knocks people off their feet (they get up again, as always).
+      if (crash && ((a.phase * 7) | 0) % 4 === tick && g.bodies.solidAt(a.x, a.y + u, a.z)) { a.state = 'fly'; a.vx = (g.rng() - 0.5) * 30; a.vz = (g.rng() - 0.5) * 30; a.vy = 14 + g.rng() * 10; g.stat('people'); continue; }
       const dx = wrapDelta(a.x - m.x, size), dz = wrapDelta(a.z - m.z, size), d = Math.hypot(dx, dz);
       const scared = !g.fly && d < fear;
       if (scared) { a.dir = Math.atan2(dx, dz) + Math.sin(a.phase + a.t) * 0.5; fleeing++; }
@@ -177,11 +180,13 @@ export class Actors {
     }
 
     let siren = 0;
+    const falling = g.bodies.list.length > 0;
     // Whoever is no longer needed drives off: all of them at once, not one after the other.
     const spare = { police: this.count(this.units, 'police') - this.want.police, fire: this.count(this.units, 'fire') - this.want.fire };
     for (let i = this.units.length - 1; i >= 0; i--) {
       const c = this.units[i];
       c.blink += dt; c.age += dt;
+      if (falling && g.bodies.solidAt(c.x, c.y + u, c.z)) { this.wreck(i); continue; } // crushed by falling wreckage
       const mdx = wrapDelta(c.x - m.x, size), mdz = wrapDelta(c.z - m.z, size), md = Math.hypot(mdx, mdz);
       const near = Math.abs(m.y - c.y) < m.h * 0.5 + 2;
       if (m.h < SOLID * u) {

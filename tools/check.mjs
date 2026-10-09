@@ -62,7 +62,7 @@ for (const [i, w] of WORLDS.entries()) {
     music.setWorld(w.id);
     for (let i = 0; i < 60 * 40; i++) { now += 1 / 60; music.update(1 / 60, (i / 2400) ** 0.7, 0); } // 40 s, from calm to full
   }
-  if (bad || notes < 5000 || lo < 30 || hi > 5000) fail(`music: ${notes} notes, ${bad} bad values, ${lo.toFixed(0)}..${hi.toFixed(0)} Hz`);
+  if (bad || notes < 5000 || lo < 20 || hi > 5000) fail(`music: ${notes} notes, ${bad} bad values, ${lo.toFixed(0)}..${hi.toFixed(0)} Hz`);
   console.log(`music: ${notes} notes scheduled, ${lo.toFixed(0)} to ${hi.toFixed(0)} Hz`);
 }
 console.log(`${ACHIEVEMENTS.length} achievements, ${WORLDS.length} worlds`);

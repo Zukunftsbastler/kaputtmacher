@@ -51,7 +51,6 @@ export class Hud {
     this.btnCamera = this.button(tr, '🎥', () => game.doAction('camera'));
     this.btnWorlds = this.button(tr, '🌍', () => this.openWorlds());
     this.btnIdle = this.button(tr, '🍿', () => game.setIdle(!game.idle)); // lean back and watch: the game plays itself
-    this.btnTrophy = this.button(tr, '🏆', () => this.openAchievements());
     this.btnGear = this.button(tr, '⚙️', () => this.openParent()); this.btnGear.id = 'gear';
     // On small and touch screens everything in this row folds away behind one menu button,
     // so the playing field stays free. The legal link moves in here as well.
@@ -417,6 +416,9 @@ export class Hud {
       this.button(sheet, '🎲', () => { this.close(); g.travel('random', true); }).classList.add('tile');
     }
     if (p.stickers.length) el('div', 'stickers', sheet, p.stickers.join(' '));
+    // The achievements live here, out of the way of the playing field.
+    const cup = this.button(sheet, '🏆', () => this.openAchievements());
+    el('span', 'key ok', cup, String(p.achieved.length));
     this.button(sheet, '✖️', () => this.close()).classList.add('small');
   }
 
@@ -474,6 +476,7 @@ export class Hud {
     check('Militär kann den Kaputtmacher kurz zurückstoßen (es gibt trotzdem kein Scheitern)', 'fightBack');
     check('Selbstspiel nach 2 Minuten ohne Eingabe', 'autoIdle');
     check('Alles freischalten', 'unlockAll');
+    el('button', '', sheet, `Erfolge ansehen (${p.achieved.length} von ${ACHIEVEMENTS.length})`).addEventListener('click', () => this.openAchievements());
     const full = el('button', '', sheet, 'Vollbild an/aus');
     full.addEventListener('click', () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.()));
     // Rarely needed, so it lives here instead of on the screen: fly around freely without the creature.

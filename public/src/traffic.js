@@ -15,8 +15,9 @@ const WAYS = [[0, 1], [0, -1], [1, 1], [1, -1]];
 
 export class Roads {
   // net: { pitch, n, width(i), closed(alongX, line, cell) } as written by the town generator.
-  constructor(world) {
+  constructor(world, game) {
     this.w = world;
+    this.g = game;
     this.net = world.roads ?? null;
   }
 
@@ -109,7 +110,7 @@ export class Roads {
   blocked(v, u) {
     const w = this.w, fx = v.ax === 0 ? v.dir : 0, fz = v.ax === 0 ? 0 : v.dir;
     const px = v.x + fx * 3.2 * u, pz = v.z + fz * 3.2 * u, y = Math.floor(v.y + 1.5 * u);
-    return !!w.get(Math.floor(px), y, Math.floor(pz)) || w.heightBelow(px, pz, v.y + 4 * u) > v.y + 1.5 * u;
+    return !!w.get(Math.floor(px), y, Math.floor(pz)) || w.heightBelow(px, pz, v.y + 4 * u) > v.y + 1.5 * u || (this.g.bodies.list.length > 0 && !!this.g.bodies.solidAt(px, v.y + 1.5 * u, pz)); // falling wreckage blocks the street as well
   }
 
   // For pick(): the way out of crossing (i, j) that leads closest to (tx, tz), or furthest from it.
@@ -142,9 +143,9 @@ export class Traffic {
     const w = this.g.world;
     this.cars.length = 0; this.swimmers.length = 0;
     // Boats on open water: tugs and ferries that cross the harbour basin to and fro.
-    if (on) for (const r of w.water?.rects ?? []) for (let k = 0; k < 3; k++)
-      this.swimmers.push({ kind: 'boat', state: 'fly', big: k === 0, rect: r, x: r[0] + 20 + this.g.rng() * (r[2] - r[0] - 40), z: r[1] + 12 + k * ((r[3] - r[1] - 24) / 2), y: w.water.level, yaw: Math.PI / 2, dir: k & 1 ? 1 : -1, phase: 0, flee: 0, c: PAINT[(this.g.rng() * PAINT.length) | 0] });
-    this.roads = new Roads(w);
+    if (on) for (const r of w.water?.rects ?? []) for (let k = 0, nb = Math.min(9, 3 + Math.floor(((r[2] - r[0]) * (r[3] - r[1])) / 25000)); k < nb; k++)
+      this.swimmers.push({ kind: 'boat', state: 'fly', big: k % 3 === 0, rect: r, x: r[0] + 20 + this.g.rng() * (r[2] - r[0] - 40), z: r[1] + 14 + k * ((r[3] - r[1] - 28) / Math.max(1, nb - 1)), y: w.water.level, yaw: Math.PI / 2, dir: k & 1 ? 1 : -1, phase: 0, flee: 0, c: PAINT[(this.g.rng() * PAINT.length) | 0] });
+    this.roads = new Roads(w, this.g);
     this.want = on && this.roads.ok && !w.quiet ? Math.round(26 * (w.roads.cars ?? 0.5) * this.g.quality.units) : 0;
     // The streets are busy from the first moment.
     for (let i = 0; i < this.want; i++) this.add(40 + this.g.rng() * 200);
@@ -165,12 +166,13 @@ export class Traffic {
     if (w.under || this.swimmers.length) this.updateSwimmers(dt);
     if (!this.want && !this.cars.length) return;
     if ((this.spawnT -= dt) <= 0 && this.cars.length < this.want) { this.spawnT = 0.7; this.add(190 + rnd() * 60); }
-    const scare = m.h * 2.2 + 18 * u;
+    const scare = m.h * 2.2 + 18 * u, falling = g.bodies.list.length > 0;
     for (let i = this.cars.length - 1; i >= 0; i--) {
       const c = this.cars[i];
       const dx = wrapDelta(c.x - m.x, S), dz = wrapDelta(c.z - m.z, S), d = Math.hypot(dx, dz);
       if (d > 330) { this.cars.splice(i, 1); continue; } // left behind: another one will turn up ahead
       if (d < m.h * 0.28 + 2 * u && Math.abs(m.y - c.y) < m.h * 0.5 + 2 && m.h > 5 * u) { this.wreck(i); continue; }
+      if (falling && g.bodies.solidAt(c.x, c.y + u, c.z)) { this.wreck(i); continue; } // hit by something that is coming down
       // Close to the creature the driver steps on it and takes every turn that leads away.
       c.fear = d < scare && !g.fly ? 1 : Math.max(0, c.fear - dt * 0.4);
       const pick = c.fear > 0.5 ? (o, ci, cj) => roads.toward(o, ci, cj, m.x, m.z, true)

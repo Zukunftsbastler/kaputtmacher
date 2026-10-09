@@ -8,7 +8,7 @@ import { GRAVITY, launch } from './particles.js';
 const MIN_SAMPLES = 70, MAX_SAMPLES = 300; // collision probe points per body, more for big ones
 const MAX_BODIES = 36;
 const MIN_BODY = 5; // smaller groups become loose cubes straight away
-export const FALL_GAIN = 0.3; // share of the usual power for voxels that come down with a collapse instead of being hit
+export const FALL_GAIN = 0.2; // share of the usual power for voxels that come down with a collapse instead of being hit
 
 const tmp = [0, 0, 0], tmp2 = [0, 0, 0];
 let cells = new Int32Array(4 * 4096); // scratch: x, y, z, type

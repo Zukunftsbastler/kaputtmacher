@@ -9,7 +9,7 @@ import { Destruction } from './destruction.js';
 import { Bodies } from './bodies.js';
 import { Debris, Fx, launch } from './particles.js';
 import { Actors } from './actors.js';
-import { Monster, buildModel, partMatrix, stageNeed, newPose, locomotion, MODEL_HEIGHT, JET_GEAR } from './monster.js';
+import { Monster, buildModel, partMatrix, stageNeed, newPose, locomotion, MODEL_HEIGHT, JET_GEAR, SPECIES } from './monster.js';
 import { Stability } from './stability.js';
 import { Fire } from './fire.js';
 import { Sweeper } from './sweeper.js';
@@ -87,6 +87,7 @@ class Game {
     this.reactions = new Reactions(this);
     this.frail = new Frail(this);
     this.gainScale = 1; // below 1 while a collapse is being processed: falling voxels are worth less
+    this.speciesGain = 1; // some creatures destroy so easily that it is worth less (see SPECIES in monster.js); kept up to date in checkStats
     this.chainLoad = 0; // how many collapses the running chain reaction has behind it
     this.earned = 0; // all power earned in this session (for tuning the stages)
     this.heat = 0; // 0..1: how much has been destroyed lately; brings the reporters' helicopters
@@ -119,6 +120,7 @@ class Game {
     this.worldDone = false; this.fireworks = 0;
     this.walked = 0; this.quietT = 0; // quietT: seconds without input, for the reminder demonstration
     this.frameMs = 16; this.governT = 0;
+    this.hole = null; // the see-through window of the last picture, in screen pixels
     this.ghost = { pose: newPose(), t: 0, len: 1 };
 
     this.autopilot = new Autopilot(this);
@@ -340,7 +342,8 @@ class Game {
 
   // A few times per second: tally what was destroyed, look for achievements that have just been reached.
   checkStats(dt) {
-    const p = this.progress, st = p.stats, c = this.matCount;
+    const p = this.progress, st = p.stats, c = this.matCount, gain = SPECIES.find((s) => s.id === p.species).gain;
+    this.speciesGain = gain ? gain(this.monster.stage) : 1;
     st.time += dt;
     if (p.playStage === p.stage) p.t += dt; // seconds spent on the current stage, for the play log
     if (this.idle) { st.idle += dt; c.fill(0); this.fire.lit = 0; }
@@ -357,7 +360,7 @@ class Game {
 
   // Called by the world for every original voxel that leaves its place.
   onDestroyed(type, x, y, z, st) {
-    this.gain += MATS[TYPE_MAT[type]].power * this.gainScale;
+    this.gain += MATS[TYPE_MAT[type]].power * this.gainScale * this.speciesGain;
     this.reactions.onVoxel(type, x, y, z);
     this.gainPos[0] = x; this.gainPos[1] = y; this.gainPos[2] = z;
     if (!st || !st.id) return;
@@ -868,6 +871,9 @@ class Game {
     dx /= l; dy /= l; dz /= l;
     aim.hit = false;
     const check = this.bodies.list.length > 0;
+    // Walls between the camera and the creature that the see-through window has cut away are not there for aiming:
+    // the player aims at what can be seen, and the blow goes there.
+    const hole = this.hole, through = hole && Math.hypot(this.input.aimX - hole.x, this.input.aimY - hole.y) < hole.r * 0.85;
     let x = 0, y = 0, z = 0, hitT = 1100;
     for (let t = 2; t < 1100; t += t < 300 ? 0.6 : 1.5) {
       hitT = t;
@@ -875,6 +881,7 @@ class Game {
       x = c.focusX + vx; z = c.focusZ + vz;
       y = c.eye[1] + dy * t + (vx * vx + vz * vz) * c.curv;
       if (y < 0) { aim.hit = true; break; }
+      if (through && t < hole.dist && y > hole.y0) continue;
       if (y < w.sy && (w.get(Math.floor(x), Math.floor(y), Math.floor(z)) || (check && this.bodies.solidAt(x, y, z)))) { aim.hit = true; break; }
       if (t > 320 && !c.curv && dy >= 0) break;
     }
@@ -1023,8 +1030,11 @@ class Game {
     const mDist = Math.hypot(c.eye[0], c.eye[1] - (m.y + m.h * 0.6), c.eye[2]);
     if (!this.fly && this.project(m.x, m.y + m.h * 0.55, m.z, v3)) {
       const k = this.canvas.width / this.canvas.clientWidth;
-      r.setHole(v3[0] * k, (this.canvas.clientHeight - v3[1]) * k, ((m.h * 2.3 + 8) / mDist) * (this.canvas.height / 2 / Math.tan(FOV / 2)), mDist - m.h * 0.5, m.y + m.h * 0.3);
-    } else r.setHole(0, 0, 0, 0, 0);
+      const rad = ((m.h * 2.3 + 8) / mDist) * (this.canvas.height / 2 / Math.tan(FOV / 2));
+      r.setHole(v3[0] * k, (this.canvas.clientHeight - v3[1]) * k, rad, mDist - m.h * 0.5, m.y + m.h * 0.3);
+      // Remembered for aiming: what the window hides must not catch the pointer either.
+      this.hole = { x: v3[0], y: v3[1], r: rad / k, dist: mDist - m.h * 0.5, y0: m.y + m.h * 0.3 };
+    } else { r.setHole(0, 0, 0, 0, 0); this.hole = null; }
 
     // Static world. Chunks behind the camera or beyond the planet's visible cap are skipped.
     // A chunk is also skipped when it lies outside the cone the camera can see (with a generous margin

@@ -861,8 +861,9 @@ export class Tools {
   // Called when the monster lands after a jump.
   stompLand(m) {
     const B = this.base(), k = m.flipped ? 1.3 : 1; // coming down out of a somersault hits a third harder and wider
-    this.blow(m.x, m.y + m.h * 0.05, m.z, (m.h * 0.42 + 1) * k, (4 + m.stage * 1.7) * k, true, 0, 0, true);
-    this.shock(m.x, m.y, m.z, m.h * 0.55 * k, m.h * 0.28 + 1, (4 + m.stage * 1.7) * 0.8 * k, m.flipped ? 8 : 6);
+    // A landing is a blow among others, not the strongest one: a crater about a third of the creature wide and a modest ring.
+    this.blow(m.x, m.y + m.h * 0.05, m.z, (m.h * 0.28 + 1) * k, (3 + m.stage * 0.9) * k, true, 0, 0, true);
+    this.shock(m.x, m.y, m.z, m.h * 0.38 * k, m.h * 0.2 + 1, (3 + m.stage * 0.9) * 0.6 * k, m.flipped ? 6 : 4);
     this.g.impactFx(m.x, m.y + 1, m.z, B.H * 0.5, 0.5 + m.stage * 0.1, false);
   }
 
@@ -870,10 +871,10 @@ export class Tools {
   // a crater under the seat and two rings running outwards. Each further floor of a chain hits a little softer.
   poundLand(m, chain) {
     const g = this.g, w = g.world, S = m.stage + 1, k = 0.88 ** chain;
-    const H = Math.min(w.monsterBase * stageScale(S), w.sy * 0.92), P = (4 + S * 1.7) * 1.25 * k, x = m.x, y = m.y, z = m.z;
-    this.blow(x, y + H * 0.05, z, H * 0.45 + 1, P, true, 0, 0, true, 200);
-    this.shock(x, y, z, H * 0.6, H * 0.28 + 1, P * 0.8, 8);
-    if (chain === 0) this.later(0.1, () => this.shock(x, y, z, H * 1.1, H * 0.24 + 1, P * 0.6, 12, true));
+    const H = Math.min(w.monsterBase * stageScale(S), w.sy * 0.92), P = (3.5 + S * 1.2) * 1.15 * k, x = m.x, y = m.y, z = m.z;
+    this.blow(x, y + H * 0.05, z, H * 0.34 + 1, P, true, 0, 0, true, 200);
+    this.shock(x, y, z, H * 0.45, H * 0.22 + 1, P * 0.7, 8);
+    if (chain === 0) this.later(0.1, () => this.shock(x, y, z, H * 0.75, H * 0.18 + 1, P * 0.5, 10, true));
     g.impactFx(x, y + 1, z, H * 0.6, 0.9 + S * 0.1, true);
     g.debris.blast(x, y, z, H * 2, launch(H * 1.5));
     g.audio.boom(0.8 + S * 0.08);

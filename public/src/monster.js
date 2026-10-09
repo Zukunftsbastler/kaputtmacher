@@ -11,19 +11,24 @@ export const SPECIES = [
   { id: 'gorilla', icon: '🦍', skin: [0x5d5d66, 0x26262c], belly: 0xb8956a, dark: 0x1a1a1e },
   { id: 'robot', icon: '🤖', skin: [0x6f9fd8, 0x3d4f7a], belly: 0xcfd8dc, dark: 0x263238 },
   { id: 'tank', icon: '🪖', skin: [0x7c8f45, 0x55662e], belly: 0x9aa860, dark: 0x2b2f25 },
-  { id: 'jet', icon: '✈️', skin: [0xdfe4e8, 0xa9b4bd], belly: 0x3f7fc0, dark: 0x2d3436 },
+  // gain: what the aircraft destroys counts for less, most of all while it is small. It is fast, never has to walk
+  // anywhere and bombs from above: measured with full value it earned seven to forty times as much as the dino on
+  // stages 1 to 3 and raced through them. With this curve it stays ahead on the early stages (about three times) and level later.
+  { id: 'jet', icon: '✈️', skin: [0xdfe4e8, 0xa9b4bd], belly: 0x3f7fc0, dark: 0x2d3436, gain: (stage) => Math.min(0.9, 0.054 * 1.75 ** (stage - 1)) },
 ];
 
 // Height factor per stage, relative to a stage-1 monster. Grows without limit.
 const SCALE = [1, 1.6, 2.6, 3.8, 6, 9, 14, 20, 30];
 export const stageScale = (s) => (s <= 9 ? SCALE[s - 1] : 30 * 1.25 ** (s - 9));
 // Power needed to leave a stage. The first growth comes quickly; after that the steps follow the size of the worlds.
-// Tuned so that every stage lasts about as long (roughly 100 s of steady play). Measured income in the skyscraper
-// city while the game plays itself, in power per second for stages 1..9: 17, 46, 400, 3900, 7400, 13000, 37000, 42000, 81000.
-// The leaps come with the first small collapses (stage 3) and the first skyscraper that can be felled (stage 4).
-// Measure again with: node tools/browser.mjs x "world=skyline&stage=N&idle=1&run=55000" income 58000
-const NEED = [1200, 4500, 40000, 390000, 750000, 1300000, 3000000, 4200000];
-export const stageNeed = (s) => (s <= 8 ? NEED[s - 1] : 4200000 * 1.7 ** (s - 8));
+// Growing is meant to be earned: every stage takes several minutes of steady destruction (aim: three to four
+// minutes at the pace of the game playing itself; a player who knows what to do is quicker on the early stages).
+// Measured income of the dino in the skyscraper city while the game plays itself, in power per second:
+// stage 1: 11, stage 3: 86, stage 5: 7 100, stage 7: 10 000, stage 8: 54 000. The leap comes with the first skyscraper that
+// can be felled; on stage 4 that is a matter of luck (measured between 58 and 3 900), so its threshold is set low.
+// Measure again with: node tools/browser.mjs x "world=skyline&stage=N&idle=1&run=50000" income 53000
+const NEED = [1500, 8000, 25000, 300000, 1600000, 2600000, 4000000, 12000000];
+export const stageNeed = (s) => (s <= 8 ? NEED[s - 1] : 12000000 * 1.7 ** (s - 8));
 
 export const MODEL_HEIGHT = 28;
 // Jumping works like in a classic platformer: hold the button for the full height, tap for a hop,
@@ -422,8 +427,8 @@ export class Monster {
     if (w.get(Math.floor(nx), Math.floor(this.y), Math.floor(nz))) {
       if (this.bounce <= 0) {
         g.lastHit.dx = fx; g.lastHit.dz = fz;
-        g.destruction.sphere(nx + fx * h * 0.3, this.y, nz + fz * h * 0.3, h * 0.75 + 3, 9 + this.stage * 2.5, { dx: fx, dy: 0.1, dz: fz, impulse: launch(h * 1.5 + 8), debris: 80, spare: true });
-        g.onShove(this, nx + fx * 3, nz + fz * 3, fx, fz, 2.5);
+        // A dent the size of the aircraft, no more: ramming is a mishap, not a weapon.
+        g.destruction.sphere(nx + fx * h * 0.3, this.y, nz + fz * h * 0.3, h * 0.4 + 1.5, 4 + this.stage * 1.5, { dx: fx, dy: 0.1, dz: fz, impulse: launch(h * 1.5 + 8), debris: 50, spare: true });
         g.onCrash(this);
         this.bounce = 0.75;
         this.bounceDir = g.rng() < 0.5 ? 1 : -1;
@@ -678,10 +683,13 @@ export class Monster {
 
   // True if something solid stands between knee and head height at the given spot.
   blocked(px, pz, stepH, dx, dz, r) {
-    const w = this.g.world, h = this.h;
+    const w = this.g.world, h = this.h, falling = this.g.bodies.list.length > 0;
     for (let s = -1; s <= 1; s++) {
       const x = px - dz * r * s * 0.8, z = pz + dx * r * s * 0.8;
-      for (let k = 0; k < 5; k++) if (w.get(Math.floor(x), Math.floor(this.y + stepH + 1 + (h * 0.75 - stepH) * (k / 4)), Math.floor(z))) return true;
+      for (let k = 0; k < 5; k++) {
+        const y = this.y + stepH + 1 + (h * 0.75 - stepH) * (k / 4);
+        if (w.get(Math.floor(x), Math.floor(y), Math.floor(z)) || (falling && this.g.bodies.solidAt(x, y, z))) return true; // a building on its way down is in the way too
+      }
     }
     return false;
   }
