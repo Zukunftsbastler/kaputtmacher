@@ -83,7 +83,9 @@ class Game {
     this.chainLoad = 0; // how many collapses the running chain reaction has behind it
     this.earned = 0; // all power earned in this session (for tuning the stages)
     this.heat = 0; // 0..1: how much has been destroyed lately; brings the reporters' helicopters
-    this.wanted = 0; // alarm level 0..5 of the world's emergency services (see actors.js)
+    this.wanted = 0; // alarm level 0..5 of the world's emergency services, in whole stars (see actors.js)
+    this.alarm = 0; // the same as a fraction: rises while things break, ebbs away in peace
+    this.lastGainT = -99; // when something was last destroyed
     this.absorb = 0; // 0..1: glow of the creature while power flows into it
     this.matCount = new Float64Array(12); // destroyed voxels per material since the last tally
     this.doneTimes = []; // when the last buildings were finished, for "several at once"
@@ -175,7 +177,7 @@ class Game {
     this.sweeper.clear();
     this.reactions.clear();
     this.heat = 0;
-    this.wanted = 0; this.chainLoad = 0; this.doneTimes.length = 0;
+    this.wanted = 0; this.alarm = 0; this.lastGainT = -99; this.chainLoad = 0; this.doneTimes.length = 0;
     this.debris.clear();
     this.fx.clear();
     this.tools.reset();
@@ -684,6 +686,7 @@ class Game {
     // Turn this step's destruction into power, with orbs flying to the monster.
     if (this.gain > 0) {
       const p = this.progress, per = stageNeed(p.stage) / 60;
+      this.lastGainT = this.time;
       this.orbAcc += this.gain;
       for (let n = 0; this.orbAcc >= per && n < 4; n++) {
         this.orbAcc -= per;

@@ -2,6 +2,8 @@
 
 Status: in Umsetzung. Dieser Entwurf nennt überall konkrete Zahlen; sie entsprechen dem Stand im Code. Was fehlt oder abweicht, steht in Abschnitt 16.
 
+**Nachtrag zu Entwurf 10:** Sprung mit Richtung trägt von Dach zu Dach, der Panzer hüpft nur noch (4.2); die Alarmstufe steigt und fällt mit der Zeit, die Polizei fährt ruhiger, stellt sich kleinen Kaputtmachern in den Weg und hält von großen Abstand (8.1).
+
 **Neu gegenüber Entwurf 9:** 117 Erfolge mit Einblendung (18), eigene Progression je Figur (5.4), deutlich sichtbare Macht-Kugeln (5.1), Flieger mit drehbarem Anbauteil statt drehendem Rumpf (9.2), Polizei, Feuerwehr, Reporter und Militär (8), Feuer mit Flammpunkten, Ruß und Löschen (11.7), Grafik-Regler und abschaltbare Effekte (12.4).
 
 **Neu in Entwurf 9 war:** großes Sichtfenster um die Figur (4.3), gleichmäßigere Progression (5.1, 5.3), Wucht fallender Gebäude nach Masse (11.6a), Staubwolken (11.7), Reaktionen der Welt wie Hydranten-Fontänen (11.7a).
@@ -104,6 +106,9 @@ Weitere Anpassungen: Vorführ-Hinweise erscheinen oben statt unten, damit sie ni
 | **Doppelsprung** | Ein zweiter Druck in der Luft gibt noch einmal 2,4 Körperhöhen Auftrieb, und die Figur schlägt in 0,55 Sekunden einen Salto vorwärts. Beide Sprünge zusammen reichen bis knapp fünf Körperhöhen. Einen dritten gibt es erst nach der Landung. Wer von einer Kante fällt, hat diesen einen Luftsprung ebenfalls. Die Landung aus dem Salto trifft ein Drittel härter und breiter |
 | **Stampfattacke** (dritter Druck) | Wie der Bodenstampfer aus Jump-and-Run-Spielen. **Der richtige Moment** ist der Scheitel des Doppelsprungs: von der zweiten Hälfte des Saltos, bis die Figur merklich fällt. Dann schimmert sie golden und es tickt kurz. Wer jetzt drückt: Die Figur rollt sich mit einer schnellen Drehung zusammen, hängt 0,2 Sekunden in der Luft und saust dann senkrecht nach unten – Sitzfläche voran, lang gestreckt, Arme hochgerissen. **Lenken ist ab dem Druck nicht mehr möglich.** Der Aufschlag wirkt wie der Stampfer einer Figur **eine Stufe höher**, allein durch Gewicht: Krater, zwei Stoßringe, Zeitlupe; was darunter steht, bekommt einen dreifachen Schubs. Trifft sie ein Gebäude, bricht sie Stockwerk für Stockwerk durch (bis zu acht, jedes etwas schwächer); auf freiem Boden bleibt es bei einem Krater. Danach hockt sie 0,3 Sekunden im Krater. Zu früh oder zu spät gedrückt passiert nichts |
 | Steuerung in der Luft | voll: Man kann gezielt auf ein Dach springen |
+| **Sprung mit Richtung** | Wer beim Springen eine Richtung hält, fliegt in diese Richtung – mit dem **1,8-Fachen des Lauftempos**, im Sprint entsprechend mehr. So kommt man von einem Dach auf das nächste: Ein einfacher Sprung trägt rund 2,5 Körperlängen weit, über eine normale Straße hinweg; Sprint und Doppelsprung zusammen gut sechs. Je höher der Absprungpunkt, desto länger der Flug und desto größer die Weite. Es ist kein Angriff: Im Flug bricht nur, was auch beim Laufen bricht |
+| Dachkante | In der Luft wird eine Kante bis zu einer halben Körperhöhe über den Füßen noch gefasst – ein Sprung, der ein Dach fast erreicht, landet darauf |
+| **Panzer** | Springt nicht, er hüpft: 0,7 Körperhöhen hoch, ohne Doppelsprung, ohne Stampfattacke, ohne Schub in der Luft und ohne Krater bei der Landung. Das reicht, um aus einer selbst gegrabenen Kuhle wieder herauszukommen |
 | Landung | Springen kann das Monster von Anfang an. Ab Stufe 2 ist jede Landung ein Stampfer mit Krater und Druckwelle; mit Stufe 1 gibt es nur eine Staubwolke |
 
 Damit sich ein 50 Meter hohes Monster nicht träge anfühlt, wächst seine eigene Fallbeschleunigung mit der Körpergröße; sie ist außerdem doppelt so hoch wie die der Trümmer. Beim Fallen wirkt das 1,7-Fache, beim Aufsteigen ohne gedrückte Taste das Dreifache.
@@ -281,17 +286,22 @@ Standardmäßig an; Bewohner und Einsatzkräfte lassen sich in den Einstellungen
 
 ### 8.1 Einsatzkräfte
 
-In Welten mit Bewohnern (Dorf, Park, Stadt, Fabrik, Wolkenkratzer-Stadt, Würfelwelt) reagiert die Welt auf die Zerstörung, ähnlich den Fahndungssternen bekannter Spiele. Die **Alarmstufe** (0 bis 5) richtet sich danach, wie viel der Welt zerstört ist, und steht als Sternenreihe unter dem Welt-Zähler.
+In Welten mit Bewohnern (Dorf, Park, Stadt, Fabrik, Wolkenkratzer-Stadt, Würfelwelt) reagiert die Welt auf die Zerstörung, ähnlich den Fahndungssternen bekannter Spiele. Die **Alarmstufe** (0 bis 5) steht als Sternenreihe unter dem Welt-Zähler – auf dem Handy nur winzig und halb durchsichtig, damit sie nichts verdeckt.
 
-| Alarmstufe | ab | Was kommt |
+- **Sie braucht Zeit.** Solange etwas zerstört wird, steigt sie um einen Stern in etwa 8 Sekunden; die erste Streife ist also nicht beim ersten Schlag da (im Test fuhr sie nach knapp 12 Sekunden vor).
+- **Sie hat eine Obergrenze**, die davon abhängt, wie viel der Welt zerstört ist (Tabelle).
+- **Sie ebbt ab.** Wird 12 Sekunden lang nichts zerstört, sinkt sie um einen Stern alle 14 Sekunden bis auf null; die Fahrzeuge werden dann nach und nach abgezogen, frühestens aber eine halbe Minute nach ihrer Ankunft.
+
+| Alarmstufe | möglich ab | Was kommt |
 |---|---|---|
-| ⭐ | erster zerstörter Würfel | ein Polizeiauto |
+| ⭐ | erstem Schaden | ein Polizeiauto |
 | ⭐⭐ | 0,4 % der Welt | drei Polizeiautos, ein Reporter-Hubschrauber |
 | ⭐⭐⭐ | 2 % | vier Polizeiautos, bei größeren Bränden ein Lösch-Hubschrauber |
 | ⭐⭐⭐⭐ | 6 % | fünf Polizeiautos, zwei Reporter, zwei Militär-Hubschrauber |
 | ⭐⭐⭐⭐⭐ | 15 % | sechs Polizeiautos, vier Militär-Hubschrauber, alle 9 bis 17 Sekunden ein oder zwei Kampfflieger im Überflug, zweiter Lösch-Hubschrauber |
 
-- **Polizei:** weiß-blaue Autos mit wechselndem Blaulicht und Martinshorn. Sie fahren am Straßenraster entlang (immer längs einer Achse; ist der Weg versperrt, biegen sie ab), stellen sich in einem lockeren Ring um den Kaputtmacher auf und weichen zurück, wenn er näher kommt.
+- **Polizei:** weiß-blaue Autos mit wechselndem Blaulicht und Martinshorn. Sie fahren ohne Hast am Straßenraster entlang (immer längs einer Achse; ist der Weg versperrt, biegen sie ab), zügig bei der Anfahrt, langsam in Sichtweite, und überlegen sich ihr Ziel nur alle drei bis fünf Sekunden neu, statt jedem Schritt zu folgen.
+- **Respekt wächst mit der Größe.** Vor einem Kaputtmacher, der kaum größer ist als ein Auto (unter 9 Einheiten Höhe, also etwa die ersten zwei bis vier Stufen je nach Welt), bildet die Polizei eine **Straßensperre**: Die Wagen stellen sich quer nebeneinander ein paar Wagenlängen vor seine Nase und weichen nicht. Solange er kleiner ist als ein Auto (unter 5 Einheiten), kommt er nicht darüber hinweg und muss sie zerschlagen. Ist er größer, stellen sie sich in einem Ring um ihn auf, dessen Abstand schneller wächst als er selbst, und weichen zurück, wenn er näher kommt. Das Militär hat eine andere Schwelle: Seine Hubschrauber kreisen bei kleinen Kaputtmachern auf gut halbem Abstand der Reporter und halten erst bei Riesen denselben Abstand.
 - **Feuerwehr:** kommt unabhängig von der Alarmstufe, sobald etwas brennt – ein Löschzug, bei viel Feuer oder hoher Alarmstufe bis zu drei. Sie fahren bis auf etwa 26 m an den Brand, spritzen einen Wasserbogen darauf und löschen alle 0,35 Sekunden, was im Umkreis von rund 9 m brennt. Der rote Lösch-Hubschrauber mit Wassersack löscht aus der Luft einen Umkreis von über 20 m, fliegt zum Nachfüllen weg und kommt wieder. Lässt man sie in Ruhe, ist ein Brand in wenigen Sekunden aus.
 - **Reporter:** die bisherigen Hubschrauber, jetzt erkennbar als Presse (weiß oder blau mit gelbem Streifen und Lampe). Ihr Suchscheinwerfer ist ein breiter, weicher Lichtkegel, der in einem hellen Fleck um den Kaputtmacher endet – kein dünner Strahl, den man für einen Schuss halten könnte.
 - **Militär:** olivgrüne Hubschrauber mit Stummelflügeln kreisen enger und feuern alle paar Sekunden eine Leuchtspur-Garbe; Kampfflieger schießen im Überflug zwei Raketen ab. Beides prallt wirkungslos am Kaputtmacher ab (Funken, kleiner Blitz). Es gibt weiterhin kein Scheitern.

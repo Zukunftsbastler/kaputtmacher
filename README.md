@@ -54,7 +54,7 @@ Der Flieger ist immer in Bewegung: A/D lenkt, W/S steigt und sinkt, Umschalt ist
 
 **Was die Zerstörung ausmacht:** Materialien brechen verschieden. Gebäude geben nach, wenn einem Stockwerk zu viel Tragkraft fehlt – Holz früh, Beton spät. Abgetrennte Teile kippen, zerschellen und zerschlagen, worauf sie fallen. Dabei zählt die Masse: Ein Turmstück zerdrückt ein kleines Haus einfach und hüllt es in Staub, an einem anderen Turm bleibt es eher lehnen. Zerstörte Hydranten spritzen eine Weile Wasserfontänen, die Feuer löschen; Lampen sprühen Funken; manche Autos explodieren. Feuer richtet sich nach dem Material: Laub und Holz brennen, Glas platzt, Stein und Blech verrußen.
 
-**Die Welt reagiert:** Beim ersten Schaden kommt ein Polizeiauto, dann mehr, dazu Reporter im Hubschrauber, die Feuerwehr, sobald es brennt, und schließlich das Militär mit Hubschraubern und Kampffliegern. Niemand kann dem Kaputtmacher etwas anhaben; alle lassen sich umwerfen oder vom Himmel holen.
+**Die Welt reagiert:** Beim ersten Schaden kommt ein Polizeiauto, dann mehr, dazu Reporter im Hubschrauber, die Feuerwehr, sobald es brennt, und schließlich das Militär mit Hubschraubern und Kampffliegern. Niemand kann dem Kaputtmacher etwas anhaben; alle lassen sich umwerfen oder vom Himmel holen. Die Alarmstufe (Sterne) steigt mit der Zeit und ebbt wieder ab, wenn man nichts zerstört.
 
 **Erfolge:** 117 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der fünf Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
 

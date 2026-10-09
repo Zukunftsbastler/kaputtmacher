@@ -9,6 +9,11 @@ import { T } from './materials.js';
 const SHIRTS = [[0.9, 0.25, 0.25], [0.2, 0.5, 0.9], [0.95, 0.8, 0.2], [0.3, 0.75, 0.4], [0.9, 0.5, 0.75], [0.95, 0.95, 0.95], [0.5, 0.3, 0.7]];
 const SKINS = [[1, 0.82, 0.66], [0.85, 0.62, 0.45], [0.55, 0.38, 0.26]];
 const v3 = [0, 0, 0];
+const ALARM_RISE = 8; // seconds of ongoing destruction per star
+const ALARM_HOLD = 12; // seconds of peace before the alarm starts to ebb
+const ALARM_FALL = 14; // seconds per star on the way down
+const BOLD = 9; // creature height (in the world's units) below which the police dare to block its way
+const SOLID = 5; // below this height a police car is an obstacle instead of something to step on
 
 export class Actors {
   constructor(game) {
@@ -93,11 +98,23 @@ export class Actors {
   // burns. None of them can hurt the creature: what the army fires bounces off. All of them can be
   // knocked over, stepped on or shot down.
 
-  alarm() {
+  // How high the alarm can climb: it depends on how much of the world is gone.
+  ceiling() {
     const g = this.g, w = g.world;
     if (!this.cityOn || !g.progress.settings.units) return 0;
     const gone = 1 - w.remaining / w.total;
     return gone <= 0 ? 0 : gone < 0.004 ? 1 : gone < 0.02 ? 2 : gone < 0.06 ? 3 : gone < 0.15 ? 4 : 5;
+  }
+
+  // The alarm itself (g.alarm, 0..5) takes its time: it climbs one star in about eight seconds while
+  // things keep breaking, holds for a while, and ebbs away again when the creature keeps the peace.
+  updateAlarm(dt) {
+    const g = this.g, quiet = g.time - g.lastGainT, top = this.ceiling();
+    if (quiet < 3) g.alarm = Math.min(top, g.alarm + dt / ALARM_RISE);
+    else if (quiet > ALARM_HOLD) g.alarm = Math.max(0, g.alarm - dt / ALARM_FALL);
+    g.alarm = Math.min(g.alarm, top);
+    const level = Math.floor(g.alarm + 1e-6);
+    if (level !== g.wanted) { g.wanted = level; g.hud.setWanted(level); g.statMax('wanted', level); }
   }
 
   // How many of a kind should be around, after the detail setting.
@@ -121,12 +138,11 @@ export class Actors {
 
   updateUnits(dt) {
     const g = this.g, w = g.world, m = g.monster, size = w.wrap ? w.sx : 0, rnd = g.rng, u = w.unit;
-    if ((this.alarmT -= dt) <= 0) {
-      this.alarmT = 0.5;
-      const level = this.alarm();
-      if (level !== g.wanted) { g.wanted = level; g.hud.setWanted(level); g.statMax('wanted', level); }
-    }
+    this.updateAlarm(dt);
     const level = g.wanted, burning = g.fire.level();
+    // Respect: a creature no bigger than a car gets a road block right in front of its nose.
+    // The bigger it grows, the further away the police stay; from house size on they only watch.
+    const bold = m.h < BOLD * u, fx = Math.sin(m.heading), fz = Math.cos(m.heading);
     const on = this.cityOn && g.progress.settings.units;
     this.want.police = this.scaled([0, 1, 3, 4, 5, 6][level]);
     this.want.fire = on && burning > 0.01 ? this.scaled(1 + (level >= 3 ? 1 : 0) + (burning > 0.4 ? 1 : 0)) : 0;
@@ -138,8 +154,8 @@ export class Actors {
     this.unitT -= dt;
     if (this.unitT <= 0) for (const kind of ['police', 'fire']) {
       if (this.count(this.units, kind) >= this.want[kind] || !this.spawnSpot(v3, Math.min(210, w.sx * 0.4))) continue;
-      this.units.push({ kind, x: v3[0], y: v3[1], z: v3[2], yaw: 0, ax: 0, az: 1, dodge: 0, state: 'drive', slot: this.slot++, t: 0, blink: rnd() * 3, tx: 0, ty: 0, tz: 0, has: false, work: 0, stuck: 0 });
-      this.unitT = 2.5;
+      this.units.push({ kind, x: v3[0], y: v3[1], z: v3[2], yaw: 0, ax: 0, az: 1, dodge: 0, state: 'drive', slot: this.slot++, t: 0, blink: rnd() * 3, tx: v3[0], ty: 0, tz: v3[2], has: false, work: 0, stuck: 0, age: 0, plan: 0 });
+      this.unitT = 4;
       break;
     }
     // Fighter jets: a pass every now and then at the highest alarm level.
@@ -154,32 +170,49 @@ export class Actors {
     let siren = 0;
     for (let i = this.units.length - 1; i >= 0; i--) {
       const c = this.units[i];
-      c.blink += dt;
+      c.blink += dt; c.age += dt;
       const mdx = wrapDelta(c.x - m.x, size), mdz = wrapDelta(c.z - m.z, size), md = Math.hypot(mdx, mdz);
-      // Under the creature's feet (or its belly, if it flies low): flat.
-      if (md < m.h * 0.28 + 2 * u && Math.abs(m.y - c.y) < m.h * 0.5 + 2) { this.wreck(i); continue; }
-      const leaving = this.count(this.units, c.kind) > this.want[c.kind] && this.units.findIndex((o) => o.kind === c.kind) === i;
+      const near = Math.abs(m.y - c.y) < m.h * 0.5 + 2;
+      if (m.h < SOLID * u) {
+        // A creature smaller than the car cannot walk over it: the car stands in its way (and can be smashed).
+        if (near && md < 2.6 * u && md > 0.01) { m.x -= (mdx / md) * (2.6 * u - md); m.z -= (mdz / md) * (2.6 * u - md); }
+      } else if (near && md < m.h * 0.28 + 2 * u) { this.wreck(i); continue; } // under the creature's feet (or its belly, if it flies low): flat
+      // Nobody rushes off: a vehicle stays at least half a minute before it is called back.
+      const leaving = c.age > 30 && this.count(this.units, c.kind) > this.want[c.kind] && this.units.findIndex((o) => o.kind === c.kind) === i;
       if (leaving) c.state = 'leave';
       if (c.state === 'leave' && md > 260) { this.units.splice(i, 1); continue; }
-      let stop = 4 * u, speed = 24 * u;
-      if (c.state === 'leave') { c.tx = c.x + (mdx / (md || 1)) * 60; c.tz = c.z + (mdz / (md || 1)) * 60; }
-      else if (md < m.h * 1.2 + 12 * u) { c.tx = c.x + (mdx / (md || 1)) * 50; c.tz = c.z + (mdz / (md || 1)) * 50; c.state = 'drive'; speed = 30 * u; } // too close: back off
+      // Unhurried: quick on the way in, slow once the creature is in sight.
+      let stop = 4 * u, speed = (md > 90 * u ? 17 : 10) * u, side = false;
+      const blockade = bold && c.kind === 'police';
+      if (c.state === 'leave') { c.tx = c.x + (mdx / (md || 1)) * 60; c.tz = c.z + (mdz / (md || 1)) * 60; speed = 12 * u; }
+      else if (!blockade && md < m.h * 1.3 + 12 * u) { c.tx = c.x + (mdx / (md || 1)) * 50; c.tz = c.z + (mdz / (md || 1)) * 50; c.state = 'drive'; speed = 16 * u; c.plan = 0; } // too close for comfort: back off
       else if (c.kind === 'police') {
-        // A loose ring around the creature, at a respectful distance.
-        const a = c.slot * 2.4, R = m.h * 2.4 + 34 * u + (c.slot % 3) * 8 * u;
-        c.tx = m.x + Math.cos(a) * R; c.tz = m.z + Math.sin(a) * R;
-        stop = 14 * u;
+        // The plan is only changed every few seconds, so the cars do not twitch with every step of the creature.
+        if ((c.plan -= dt) <= 0) {
+          c.plan = 3 + rnd() * 2;
+          if (blockade) {
+            // Road block: side by side across the creature's path, a few car lengths ahead.
+            const row = ((c.slot % 5) - 2) * 4.6 * u, ahead = m.h * 1.5 + 9 * u;
+            c.tx = m.x + fx * ahead + fz * row; c.tz = m.z + fz * ahead - fx * row;
+          } else {
+            // A loose ring around the creature. Its radius grows faster than the creature does.
+            const a = c.slot * 2.4, R = m.h * (2.2 + Math.min(2.5, m.h / (22 * u))) + 30 * u + (c.slot % 3) * 8 * u;
+            c.tx = m.x + Math.cos(a) * R; c.tz = m.z + Math.sin(a) * R;
+          }
+        }
+        stop = blockade ? 2.5 * u : 12 * u; side = blockade;
       } else {
         if ((c.t -= dt) <= 0) { c.t = 1.5; c.has = g.fire.target(v3); if (c.has) { c.tx = v3[0]; c.ty = v3[1]; c.tz = v3[2]; } }
         stop = 26 * u;
         if (!c.has) { c.state = 'park'; }
       }
       const dx = wrapDelta(c.tx - c.x, size), dz = wrapDelta(c.tz - c.z, size), d = Math.hypot(dx, dz);
-      if (c.state !== 'leave') c.state = d > stop * (c.state === 'park' ? 1.5 : 1) && (c.kind !== 'fire' || c.has) ? 'drive' : 'park';
+      if (c.state !== 'leave') c.state = d > stop * (c.state === 'park' ? 2.5 : 1) && (c.kind !== 'fire' || c.has) ? 'drive' : 'park';
       if (c.state === 'park') {
-        let want = Math.atan2(dx, dz) - c.yaw;
+        // Parked: facing the fire, or (police) the creature; in a road block side-on to it.
+        let want = (c.kind === 'police' ? Math.atan2(-mdx, -mdz) + (side ? Math.PI / 2 : 0) : Math.atan2(dx, dz)) - c.yaw;
         want = Math.atan2(Math.sin(want), Math.cos(want));
-        c.yaw += want * Math.min(1, dt * 3);
+        c.yaw += want * Math.min(1, dt * 2);
         if (c.kind === 'fire' && c.has && d < stop * 1.6) this.spray(c, dt);
       } else this.drive(c, dx, dz, speed, dt);
       const ed = Math.hypot(wrapDelta(c.x - g.eye[0], size), c.y - g.eye[1], wrapDelta(c.z - g.eye[2], size));
@@ -244,7 +277,7 @@ export class Actors {
       const turn = c.ax ? Math.sign(dz) || (g.rng() < 0.5 ? 1 : -1) : Math.sign(dx) || (g.rng() < 0.5 ? 1 : -1);
       const flip = ++c.stuck > 2 ? -1 : 1;
       if (c.ax) { c.ax = 0; c.az = turn * flip; } else { c.az = 0; c.ax = turn * flip; }
-      c.dodge = 0.8 + g.rng() * 1.2;
+      c.dodge = 1.5 + g.rng() * 1.5;
       if (c.stuck > 5) { c.stuck = 0; c.y = w.heightBelow(c.x, c.z, w.sy - 1); } // buried: climb out
     } else {
       c.x = nx; c.z = nz; c.stuck = 0;
@@ -254,7 +287,7 @@ export class Actors {
     if (w.wrap) { c.x = ((c.x % w.sx) + w.sx) % w.sx; c.z = ((c.z % w.sz) + w.sz) % w.sz; }
     let want = Math.atan2(c.ax, c.az) - c.yaw;
     want = Math.atan2(Math.sin(want), Math.cos(want));
-    c.yaw += want * Math.min(1, dt * 7);
+    c.yaw += want * Math.min(1, dt * 3.5);
   }
 
   // A fire engine at work: an arc of water onto the fire, which goes out bit by bit.
@@ -334,7 +367,8 @@ export class Actors {
         }
       } else {
         // Circle at a respectful distance, a little above the creature's head. With nothing left to watch they leave.
-        const near = h.kind === 'army' ? 0.75 : 1;
+        // The army comes closer than the press, but it too keeps more distance the bigger the creature is.
+        const near = h.kind === 'army' ? Math.min(1.1, 0.55 + m.h / (140 * u)) : 1;
         const R = leaving ? 520 : (m.h * 2.8 + 60 + (h.slot % 4) * 16) * near;
         alt = m.y + m.h * 1.35 + 34 + (h.slot % 4) * 11;
         h.ang += (dt * 34) / R * (h.slot & 1 ? -1 : 1);

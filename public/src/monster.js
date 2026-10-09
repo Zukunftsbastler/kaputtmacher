@@ -30,6 +30,8 @@ const JUMP_HEIGHT = 3.2; // apex of a full jump in monster heights
 const JUMP_CUT = 3; // extra gravity while rising with the button released
 const FALL_GRAVITY = 1.7; // extra gravity on the way down
 const SPRINT = 1.75;
+const AIR_SPEED = 1.8; // a jump with a direction carries: horizontal speed in the air, relative to walking
+const TANK_HOP = 0.7; // the tank only hops, in its own heights: enough to climb out of a crater it has dug
 const JUMP2_HEIGHT = 2.4; // extra height of the second jump in mid-air, in monster heights
 const FLIP_TIME = 0.55; // seconds the somersault of the second jump takes
 // Ground pound, as in classic platformers: third press near the top of the double jump.
@@ -320,15 +322,16 @@ export class Monster {
 
   // First press: jump from the ground. Second press in the air: one more jump, with a forward somersault.
   jump() {
+    const tank = this.g.progress.species === 'tank';
     if (this.onGround) {
-      this.vy = Math.sqrt(2 * this.gravity() * this.h * JUMP_HEIGHT);
+      this.vy = Math.sqrt(2 * this.gravity() * this.h * (tank ? TANK_HOP : JUMP_HEIGHT));
       this.onGround = false;
-      this.stomping = true;
+      this.stomping = !tank; // a hop leaves no crater: it is the way out of one
       this.jumps = 1;
       this.g.stat('jumps');
       return true;
     }
-    if (this.leaping || this.pound) return false;
+    if (this.leaping || this.pound || tank) return false; // 30 tonnes: no second jump, no ground pound
     if (this.jumps >= 2) {
       // Third press: only at the right moment. Then all steering ends and the creature drops like a stone.
       if (!this.poundReady()) return false;
@@ -419,12 +422,16 @@ export class Monster {
     this.stun = Math.max(0, this.stun - dt);
     if (this.pound || this.stun > 0) { mx = 0; mz = 0; } // no steering during a ground pound or while getting up from it
     if (!this.cued && this.poundReady()) { this.cued = true; g.onPoundCue(this); }
-    const input = Math.hypot(mx, mz), stepH = Math.max(1.5, h * 0.3), r = h * 0.22;
+    // In the air a ledge up to half the body height is still caught: a jump that almost reaches a roof lands on it.
+    const input = Math.hypot(mx, mz), stepH = Math.max(1.5, h * (this.onGround ? 0.3 : 0.5)), r = h * 0.22;
     this.speed = 0;
     if (this.leaping) {
       this.x += this.leaping.vx * dt; this.z += this.leaping.vz * dt;
     } else if (input > 0.05) {
-      const dx = mx / input, dz = mz / input, v = (5 + h * 0.9) * Math.min(1, input) * (this.sprint ? SPRINT : 1);
+      // In a jump the creature keeps going where it is steered, and faster than on foot: that is what carries it
+      // across a street from one roof to the next. The higher it starts, the longer it flies and the further it gets.
+      const air = !this.onGround && this.jumps > 0 && species !== 'tank' ? AIR_SPEED : 1;
+      const dx = mx / input, dz = mz / input, v = (5 + h * 0.9) * Math.min(1, input) * (this.sprint ? SPRINT : 1) * air;
       const want = Math.atan2(dx, dz);
       let dh = want - this.heading;
       dh = Math.atan2(Math.sin(dh), Math.cos(dh));
