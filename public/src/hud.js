@@ -4,7 +4,7 @@
 import { ABILITIES, movesFor } from './tools.js';
 import { SPECIES } from './monster.js';
 import { WORLDS } from './worldgen.js';
-import { saveProgress, resetProgress, MAX_DETAIL } from './progress.js';
+import { saveProgress, resetProgress, exportProgress, importProgress, MAX_DETAIL } from './progress.js';
 import { ACHIEVEMENTS, achievementProgress } from './achievements.js';
 
 function el(tag, cls, parent, text) {
@@ -220,6 +220,12 @@ export class Hud {
 
   showNext(on) { this.next.classList.toggle('hidden', !on); }
 
+  // Shows an hourglass, lets the browser draw it, then runs fn (which blocks the page for a moment).
+  busy(fn) {
+    const o = el('div', 'overlay busy', this.root, '⏳');
+    requestAnimationFrame(() => setTimeout(() => { try { fn(); } finally { o.remove(); } }, 20));
+  }
+
   // Alarm level 0..5 as a row of stars under the world bar.
   setWanted(level) {
     this.wanted.classList.toggle('hidden', !level);
@@ -376,7 +382,7 @@ export class Hud {
     // (green once the monster has reached it); a tick marks worlds that were destroyed completely.
     for (const w of WORLDS) {
       if (w.id === 'random') continue; // the dice tile sits next to its mixer below
-      const b = this.button(worlds, w.icon, () => { this.close(); g.loadWorld(w.id); });
+      const b = this.button(worlds, w.icon, () => { this.close(); g.travel(w.id); });
       b.classList.add('tile');
       if (w.id === p.world) b.classList.add('sel');
       if (p.completed.includes(w.id)) b.classList.add('complete');
@@ -408,7 +414,7 @@ export class Hud {
         r.addEventListener('input', () => { p.mix[k] = Number(r.value); saveProgress(p); });
         el('span', '', mix, MIX_ICONS[k][1]);
       }
-      this.button(sheet, '🎲', () => { this.close(); g.loadWorld('random', true); }).classList.add('tile');
+      this.button(sheet, '🎲', () => { this.close(); g.travel('random', true); }).classList.add('tile');
     }
     if (p.stickers.length) el('div', 'stickers', sheet, p.stickers.join(' '));
     this.button(sheet, '✖️', () => this.close()).classList.add('small');
@@ -459,8 +465,9 @@ export class Hud {
     check('Feuer breitet sich aus', 'fireSpread');
     check('Einsatzkräfte (Polizei, Feuerwehr, Reporter, Militär)', 'units');
     check('Kamerawackeln', 'shake');
-    check('Bewohner', 'life');
-    check('Kettenreaktionen: einstürzende Gebäude reißen ihre Nachbarn mit (wirkt ab Stufe 4)', 'cascade');
+    check('Bewohner und Verkehr', 'life');
+    check('Kettenreaktionen: einstürzende Gebäude reißen ihre Nachbarn mit (wirkt ab Stufe 3, mit jeder Stufe stärker)', 'cascade');
+    check('Militär kann den Kaputtmacher kurz zurückstoßen (es gibt trotzdem kein Scheitern)', 'fightBack');
     check('Selbstspiel nach 2 Minuten ohne Eingabe', 'autoIdle');
     check('Alles freischalten', 'unlockAll');
     const full = el('button', '', sheet, 'Vollbild an/aus');
@@ -468,6 +475,35 @@ export class Hud {
     // Rarely needed, so it lives here instead of on the screen: fly around freely without the creature.
     const cam = el('button', '', sheet, g.fly ? 'Zurück zur Figur' : 'Freie Flugkamera');
     cam.addEventListener('click', () => { this.close(); g.doAction('camera'); });
+    // Backup: the save as a file, and back again (e.g. to move to another device).
+    const io = el('div', 'row', sheet);
+    el('button', '', io, 'Spielstand als Datei sichern').addEventListener('click', () => {
+      const a = document.createElement('a'), url = URL.createObjectURL(new Blob([exportProgress(p)], { type: 'application/json' }));
+      a.href = url; a.download = 'kaputtmacher-spielstand.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    const file = document.createElement('input');
+    file.type = 'file'; file.accept = '.json,application/json'; file.className = 'hidden';
+    sheet.appendChild(file);
+    const load = el('button', '', io, 'Spielstand aus Datei laden …');
+    load.addEventListener('click', () => file.click());
+    file.addEventListener('change', async () => {
+      const f = file.files[0];
+      if (!f) return;
+      const ok = f.size < 300000 && importProgress(await f.text());
+      if (ok) { p.volatile = true; location.reload(); } else load.textContent = 'Das ist kein Kaputtmacher-Spielstand';
+    });
+    // Play log: how long each stage took. Useful for judging whether the stages are well balanced.
+    if (p.log.length) {
+      const fmt = (t) => Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+      const box = el('details', 'log', sheet);
+      el('summary', '', box, 'Spielprotokoll: Dauer je Stufe');
+      for (const sp of SPECIES) {
+        const rows = p.log.filter((e) => e.c === sp.id);
+        if (rows.length) el('p', 'note', box, sp.icon + ' ' + rows.map((e) => `Stufe ${e.s}: ${fmt(e.t)}${e.a ? ' (Selbstspiel)' : ''}`).join(' · '));
+      }
+    }
     // Starting over: stage, power, finished worlds, stickers and settings are wiped; the game begins at stage 1.
     el('p', 'note', sheet, 'Von vorn beginnen: Stufen und Macht aller Figuren, abgeschlossene Welten, Sticker, Erfolge und Einstellungen werden auf diesem Gerät gelöscht. Das Spiel startet danach wieder bei Stufe 1.');
     const reset = el('button', 'danger', sheet, 'Von vorn beginnen …');

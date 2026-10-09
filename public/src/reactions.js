@@ -6,11 +6,13 @@ import { T } from './materials.js';
 import { GRAVITY } from './particles.js';
 import { wrapDelta } from './math.js';
 
-const HYDRANT = 1, WATER = 2, LIGHT = 3;
+const HYDRANT = 1, WATER = 2, LIGHT = 3, BALLOON = 4;
+const BALLOON_RGB = { [T.BALLOON_RED]: [1, 0.3, 0.37], [T.BALLOON_BLUE]: [0.3, 0.64, 1], [T.BALLOON_YELLOW]: [1, 0.85, 0.3] };
 // What a destroyed voxel sets off, by type. Looked up for every destroyed voxel, so it has to be cheap.
 const REACT = new Uint8Array(256);
 REACT[T.HYDRANT] = HYDRANT;
 REACT[T.WATER] = WATER;
+for (const t of [T.BALLOON_RED, T.BALLOON_BLUE, T.BALLOON_YELLOW]) REACT[t] = BALLOON;
 for (const t of [T.LAMP, T.HEADLIGHT, T.NEON_RED, T.NEON_BLUE, T.NEON_GREEN, T.NEON_PINK, T.NEON_YELLOW]) REACT[t] = LIGHT;
 
 const MAX_JETS = 8;
@@ -29,7 +31,10 @@ export class Reactions {
     const r = REACT[type];
     if (!r) return;
     if (r === HYDRANT) { this.g.stat('hydrants'); this.jet(x + 0.5, y, z + 0.5, 9 + this.g.rng() * 5, 1); } // a tall fountain for ten seconds or so
-    else if (r === WATER) this.jet(x + 0.5, y, z + 0.5, 2.5, 0.6); // a short gush where the basin broke
+    else if (r === BALLOON) { // set free: it drifts up and away
+      const c = BALLOON_RGB[type], rnd = this.g.rng;
+      this.g.fx.add(x + 0.5, y + 0.5, z + 0.5, (rnd() - 0.5) * 5, 5 + rnd() * 4, (rnd() - 0.5) * 5, 1.6, 0, 6 + rnd() * 4, c[0], c[1], c[2], 1, 0, -3, 0.1);
+    } else if (r === WATER) this.jet(x + 0.5, y, z + 0.5, 2.5, 0.6); // a short gush where the basin broke
     else if (this.g.time - this.zapT > 0.12) {
       this.zapT = this.g.time;
       this.g.stat('lamps');

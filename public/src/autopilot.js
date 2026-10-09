@@ -153,7 +153,7 @@ export class Autopilot {
   nextWorld() {
     const g = this.g, list = WORLDS.filter((w) => w.id !== 'random'), i = list.findIndex((w) => w.id === g.progress.world);
     g.hud.close();
-    g.loadWorld(list[(i + 1) % list.length].id);
+    g.travel(list[(i + 1) % list.length].id);
     this.reset();
   }
 }

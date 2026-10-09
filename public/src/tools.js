@@ -472,7 +472,7 @@ export class Tools {
     const g = this.g, m = g.monster;
     if (this.act || this.cool > 0) return;
     if (g.fly) { this.flyFire(heavy); return; }
-    if (!m.onGround && g.progress.species !== 'jet') return; // no attacks in mid-jump; the aircraft is always in the air
+    if (!m.onGround && !m.cling && g.progress.species !== 'jet') return; // no attacks in mid-jump (but while hanging on a wall); the aircraft is always in the air
     const list = movesFor(g.progress.species), move = list.find((x) => x.id === moveId) ?? list[0];
     const v = heavy ? move.heavy : move.light, aim = g.aim;
     // Tank and aircraft keep their course: only the turret turns towards the target.

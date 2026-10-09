@@ -18,10 +18,12 @@ export const SPECIES = [
 const SCALE = [1, 1.6, 2.6, 3.8, 6, 9, 14, 20, 30];
 export const stageScale = (s) => (s <= 9 ? SCALE[s - 1] : 30 * 1.25 ** (s - 9));
 // Power needed to leave a stage. The first growth comes quickly; after that the steps follow the size of the worlds.
-// Tuned so that every stage lasts about as long (roughly 100 s of steady play): measured income in the
-// skyscraper city jumps from about 100 power/s on stage 3 to several thousand once chain reactions start.
-const NEED = [1200, 4500, 12000, 380000, 900000, 1500000, 2800000, 4700000];
-export const stageNeed = (s) => (s <= 8 ? NEED[s - 1] : 4700000 * 1.7 ** (s - 8));
+// Tuned so that every stage lasts about as long (roughly 100 s of steady play). Measured income in the skyscraper
+// city while the game plays itself, in power per second for stages 1..9: 17, 46, 400, 3900, 7400, 13000, 37000, 42000, 81000.
+// The leaps come with the first small collapses (stage 3) and the first skyscraper that can be felled (stage 4).
+// Measure again with: node tools/browser.mjs x "world=skyline&stage=N&idle=1&run=55000" income 58000
+const NEED = [1200, 4500, 40000, 390000, 750000, 1300000, 3000000, 4200000];
+export const stageNeed = (s) => (s <= 8 ? NEED[s - 1] : 4200000 * 1.7 ** (s - 8));
 
 export const MODEL_HEIGHT = 28;
 // Jumping works like in a classic platformer: hold the button for the full height, tap for a hop,
@@ -197,7 +199,7 @@ export function newPose() {
   for (const n of JOINTS) j[n] = new Float32Array(6);
   // spin/pitch: whole-body yaw and pitch. hop/fwd: whole-body offset in model units. look: where the head turns.
   // bank/climb: how the aircraft leans into a turn and points its nose. flip: somersault angle of the double jump.
-  return { flip: 0, walk: 0, walkAmp: 0, time: 0, squash: 0, spin: 0, pitch: 0, hop: 0, fwd: 0, roar: 0, hold: 0, look: 0, aimPitch: 0, air: 0, bank: 0, climb: 0, j };
+  return { flip: 0, walk: 0, walkAmp: 0, time: 0, squash: 0, spin: 0, pitch: 0, hop: 0, fwd: 0, roar: 0, hold: 0, look: 0, aimPitch: 0, air: 0, cling: 0, bank: 0, climb: 0, j };
 }
 
 // Body language that is always on: walking, breathing, tail sway, looking at the aim point, tucking in a jump.
@@ -252,6 +254,10 @@ export function locomotion(pose, species) {
     j.torso[0] -= 0.25 * r; j.head[0] -= 0.6 * r; j.jaw[0] += 0.8 * r;
     j.armL[2] -= 1.0 * r; j.armR[2] += 1.0 * r; j.armL[0] -= 0.4 * r; j.armR[0] -= 0.4 * r;
   }
+  if (pose.cling) { // hanging on a wall: arms stretched up and forward, legs drawn up against it
+    const c = pose.cling;
+    j.armL[0] -= 2.5 * c; j.armR[0] -= 2.5 * c; j.torso[0] += 0.12 * c; j.legL[0] = -0.9 * c; j.legR[0] = -0.6 * c; j.head[0] -= 0.3 * c;
+  }
   if (pose.hold) { j.armL[0] -= 2.9 * pose.hold; j.armR[0] -= 2.9 * pose.hold; j.torso[0] -= 0.15 * pose.hold; }
 }
 
@@ -295,6 +301,9 @@ export class Monster {
     this.pound = null; // ground pound in progress: { t, falling, chain }
     this.stun = 0; // seconds the creature cannot move after a ground pound
     this.cued = false;
+    this.cling = null; // hanging on a wall: { dx, dz, t } (direction of the wall)
+    this.clingCool = 0; // seconds until the next wall may be grabbed
+    this.wallJump = false;
     this.steer = 0; this.pitchIn = 0; // aircraft controls: turn and climb, -1..1
     this.homing = false; // aircraft has left an island and is turning back
   }
@@ -308,7 +317,7 @@ export class Monster {
     this.x = x; this.y = y; this.z = z; this.heading = heading;
     this.vy = 0; this.leaping = null; this.onGround = true;
     this.jumps = 0; this.flipT = -1; this.flipped = false; this.pose.flip = 0;
-    this.pound = null; this.stun = 0;
+    this.pound = null; this.stun = 0; this.cling = null;
     this.h = this.targetHeight();
     if (this.g.progress.species === 'jet') { this.y = y + 40 + this.h; this.onGround = false; } // the aircraft starts in the air
   }
@@ -325,6 +334,16 @@ export class Monster {
   // First press: jump from the ground. Second press in the air: one more jump, with a forward somersault.
   jump() {
     const tank = this.g.progress.species === 'tank';
+    if (this.cling) {
+      // Off the wall: a jump straight up that can be steered. Towards the wall it ends in the next grab further up
+      // (that is how to climb), over the edge it lands on the roof, away from the wall it carries across the street.
+      this.cling = null; this.clingCool = 0.15;
+      this.wallJump = true; // until the top of this jump the wall is neither grabbed again nor broken through
+      this.vy = Math.sqrt(2 * this.gravity() * this.h * JUMP2_HEIGHT);
+      this.jumps = 1; this.stomping = true; this.flipT = -1;
+      this.g.stat('jumps');
+      return true;
+    }
     if (this.onGround) {
       this.vy = Math.sqrt(2 * this.gravity() * this.h * (tank ? TANK_HOP : JUMP_HEIGHT));
       this.onGround = false;
@@ -414,6 +433,7 @@ export class Monster {
     pose.roar = Math.max(0, pose.roar - dt * 1.1);
     pose.squash = Math.max(0, pose.squash - dt * 4);
     pose.air += ((this.onGround ? 0 : 1) - pose.air) * Math.min(1, dt * 12);
+    pose.cling += ((this.cling ? 1 : 0) - pose.cling) * Math.min(1, dt * 14);
     if (this.flipT >= 0) { // somersault: one full forward turn, quick in the middle
       this.flipT += dt;
       const t = Math.min(1, this.flipT / FLIP_TIME);
@@ -425,7 +445,21 @@ export class Monster {
     if (this.pound || this.stun > 0) { mx = 0; mz = 0; } // no steering during a ground pound or while getting up from it
     if (!this.cued && this.poundReady()) { this.cued = true; g.onPoundCue(this); }
     // In the air a ledge up to half the body height is still caught: a jump that almost reaches a roof lands on it.
-    const input = Math.hypot(mx, mz), stepH = Math.max(1.5, h * (this.onGround ? 0.3 : 0.5)), r = h * 0.22;
+    const stepH = Math.max(1.5, h * (this.onGround ? 0.3 : 0.5)), r = h * 0.22;
+    this.clingCool -= dt;
+    if (this.cling) {
+      // Hanging on a wall. It holds as long as the wall does; steering away from it (or losing the wall) lets go.
+      const c = this.cling, push = Math.hypot(mx, mz);
+      const away = push > 0.05 && (mx * c.dx + mz * c.dz) / push < -0.3;
+      if (away || this.onGround || !this.blocked(this.x + c.dx * (r + 1.5 + h * 0.2), this.z + c.dz * (r + 1.5 + h * 0.2), stepH, c.dx, c.dz, r)) { this.cling = null; this.clingCool = 0.3; }
+      else {
+        mx = 0; mz = 0;
+        this.heading = Math.atan2(c.dx, c.dz);
+        // A heavy creature tears at the wall it hangs on: from stage 3 on the claws keep breaking pieces out.
+        if (this.stage >= 3 && (c.t += dt) > 0.7) { c.t = 0; g.onCling(this, c.dx, c.dz, false); }
+      }
+    }
+    const input = Math.hypot(mx, mz);
     this.speed = 0;
     if (this.leaping) {
       this.x += this.leaping.vx * dt; this.z += this.leaping.vz * dt;
@@ -448,7 +482,18 @@ export class Monster {
       const nx = this.x + dx * v * dt, nz = this.z + dz * v * dt;
       const px = this.x + dx * (r + 1 + v * dt), pz = this.z + dz * (r + 1 + v * dt);
       let stopped = this.blocked(nx + dx * r, nz + dz * r, stepH, dx, dz, r);
-      if (this.trampleT <= 0 && (stopped || this.blocked(px, pz, stepH, dx, dz, r))) {
+      // A jump that ends at the wall of a building does not just punch through: the creature grabs hold.
+      // (Sprinting into a wall still smashes through it, and the game playing itself never clings.)
+      const rising = this.wallJump && !this.onGround && this.vy > 0;
+      if (!this.onGround && this.jumps > 0 && !this.pound && this.clingCool <= 0 && !rising && !this.sprint && !g.idle && species !== 'tank'
+        && (stopped || this.blocked(px, pz, stepH, dx, dz, r)) && w.structureAt(px + dx * 2, pz + dz * 2)?.major) {
+        this.cling = { dx, dz, t: 0 };
+        this.wallJump = false;
+        this.vy = 0; this.trampleT = 0.3; this.flipT = -1; pose.flip = 0; this.stomping = false;
+        stopped = true;
+        g.onCling(this, dx, dz, true);
+      }
+      if (this.trampleT <= 0 && !rising && (stopped || this.blocked(px, pz, stepH, dx, dz, r))) {
         this.trampleT = 0.08;
         g.lastHit.dx = dx; g.lastHit.dz = dz;
         g.destruction.sphere(this.x + dx * h * 0.3, this.y + h * 0.48, this.z + dz * h * 0.3, h * 0.36, (1.5 + this.stage * 1.6) * (this.sprint ? 1.3 : 1),
@@ -458,6 +503,7 @@ export class Monster {
         stopped = this.blocked(nx + dx * r, nz + dz * r, stepH, dx, dz, r);
       }
       if (!stopped) { this.x = nx; this.z = nz; this.speed = v; }
+      else if (this.cling) { /* held by the wall */ }
       else if (!this.blocked(nx + dx * r, this.z, stepH, dx, 0, r)) this.x = nx;
       else if (!this.blocked(this.x, nz + dz * r, stepH, 0, dz, r)) this.z = nz;
 
@@ -479,7 +525,8 @@ export class Monster {
       if (gy >= this.y) this.y = Math.min(gy, this.y + h * 5 * dt + 0.2);
       else if (gy < this.y - 0.6) { this.onGround = false; this.vy = 0; }
       else this.y = gy;
-    } else {
+    } else if (this.cling) this.vy = 0; // hanging: no rising, no falling
+    else {
       // Released early: the rise is cut short. Falling is faster than rising. A leap always flies its full arc.
       const held = this.jumpHeld || this.leaping, pd = this.pound;
       if (pd && !pd.falling) { // curl up and hang for a moment, then go straight down at full speed
@@ -506,10 +553,15 @@ export class Monster {
         }
         if (!this.pound) {
           this.onGround = true;
-          this.jumps = 0; this.flipT = -1; pose.flip = 0;
+          this.jumps = 0; this.flipT = -1; pose.flip = 0; this.wallJump = false;
           pose.squash = pd ? 1.6 : 1;
           if (this.leaping) { this.leaping = null; g.onLeapLand(this); }
-          else if (this.stomping) g.onStompLand(this);
+          else if (this.stomping) {
+            // On the ground every landing is a stomp. On a roof it only is one while the jump button is held:
+            // hopping from roof to roof must not knock a hole into every roof on the way.
+            const st = w.structureAt(this.x, this.z), roof = st && st.major && this.y > st.y0 + h * 0.5;
+            if (roof && !this.jumpHeld) g.onSoftLand(this); else g.onStompLand(this);
+          }
           this.stomping = false; this.flipped = false;
         }
       }

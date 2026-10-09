@@ -66,6 +66,12 @@ export class Audio {
     this.hissGain.gain.setTargetAtTime(level * 0.2, this.ctx.currentTime, 0.2);
   }
 
+  // The page is hidden (other tab, screen off) or shown again: all sound stops and comes back.
+  pause(on) {
+    if (!this.ctx) return;
+    if (on) this.ctx.suspend(); else this.ctx.resume();
+  }
+
   // Sirens of police cars and fire engines: a two-tone horn, level 0..1 by distance.
   siren(level) {
     if (!this.ctx || this.ctx.state !== 'running') return;

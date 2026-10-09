@@ -53,6 +53,7 @@ export class Destruction {
   sphere(cx, cy, cz, r, power, o = NONE) {
     const g = this.g, w = g.world, rnd = g.rng;
     if (g.actors.units.length) g.actors.hit(cx, cy, cz, r); // police cars and fire engines in the way
+    if (g.traffic.cars.length) g.traffic.hit(cx, cy, cz, r);
     const x0 = Math.floor(cx - r), x1 = Math.ceil(cx + r), z0 = Math.floor(cz - r), z1 = Math.ceil(cz + r);
     const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(w.sy - 1, Math.ceil(cy + r));
     const r2 = r * r, imp = o.impulse ?? 16; // launch speed of the flying cubes

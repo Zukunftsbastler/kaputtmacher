@@ -55,6 +55,12 @@ export const T = {
   PAVE2: def(MAT.EARTH, 0xb3aea2, F_TERRAIN),
   PAVE_RED: def(MAT.EARTH, 0xb9715e, F_TERRAIN),
   SCORCH: def(MAT.EARTH, 0x2b2622, F_TERRAIN), // ground that fire has passed over
+  SEA: def(MAT.EARTH, 0x2f7fc4, F_TERRAIN), // harbour basin
+  SNOW: def(MAT.EARTH, 0xf4f7fb, F_TERRAIN),
+  SNOW2: def(MAT.EARTH, 0xe3ebf4, F_TERRAIN),
+  ICE: def(MAT.EARTH, 0xbfe6f5, F_TERRAIN),
+  SEABED: def(MAT.EARTH, 0xd9c98f, F_TERRAIN),
+  SEABED2: def(MAT.EARTH, 0xb9b07e, F_TERRAIN),
 
   BRICK_RED: def(MAT.BRICK, 0xb5503c),
   BRICK_DARK: def(MAT.BRICK, 0x8f3f31),
@@ -69,6 +75,8 @@ export const T = {
   ROOF_BROWN: def(MAT.BRICK, 0x8e5a3a),
   STONE: def(MAT.BRICK, 0x9a9a94),
   TILE_WHITE: def(MAT.BRICK, 0xf7f7f2),
+  CORAL_PINK: def(MAT.BRICK, 0xff7fa8),
+  CORAL_ORANGE: def(MAT.BRICK, 0xff9a4d),
 
   CONCRETE: def(MAT.CONCRETE, 0xb4b4b0),
   CONCRETE_DARK: def(MAT.CONCRETE, 0x8c8c8a),
@@ -143,6 +151,10 @@ export const T = {
   FABRIC_WHITE: def(MAT.FABRIC, 0xf5f5f0),
   FABRIC_GREEN: def(MAT.FABRIC, 0x5a9a5a),
   FABRIC_YELLOW: def(MAT.FABRIC, 0xf2c94c),
+  // Balloons fly away when they come loose (reactions.js).
+  BALLOON_RED: def(MAT.FABRIC, 0xff4d5e, 0, 50),
+  BALLOON_BLUE: def(MAT.FABRIC, 0x4da3ff, 0, 50),
+  BALLOON_YELLOW: def(MAT.FABRIC, 0xffd84d, 0, 50),
 };
 
 // Rubble twins: same material, dustier colour.

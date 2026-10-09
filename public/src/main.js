@@ -15,6 +15,7 @@ import { Fire } from './fire.js';
 import { Sweeper } from './sweeper.js';
 import { Autopilot } from './autopilot.js';
 import { Reactions } from './reactions.js';
+import { Traffic } from './traffic.js';
 import { Tools, movesFor } from './tools.js';
 import { WORLDS } from './worldgen.js';
 import { Audio } from './audio.js';
@@ -89,12 +90,13 @@ class Game {
     this.absorb = 0; // 0..1: glow of the creature while power flows into it
     this.matCount = new Float64Array(12); // destroyed voxels per material since the last tally
     this.doneTimes = []; // when the last buildings were finished, for "several at once"
-    this.checkT = 0; this.saveT = 0; this.auraT = 0;
+    this.checkT = 0; this.saveT = 0; this.auraT = 0; this.cineT = -99;
     this.slowT = 0; // seconds of slow motion left after a heavy blow
     this.hitStop = 0; // seconds the simulation holds still after a heavy blow
     this.groanT = 0;
     this.setQuality();
     this.actors = new Actors(this);
+    this.traffic = new Traffic(this);
     this.monster = new Monster(this);
     this.tools = new Tools(this);
     this.tool = movesFor(this.progress.species)[0].id; // the selected move
@@ -129,6 +131,8 @@ class Game {
     // If the browser takes the graphics context away (driver reset, memory pressure), start over cleanly.
     this.canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.contextLost = true; });
     this.canvas.addEventListener('webglcontextrestored', () => location.reload());
+    // In the background nothing runs and nothing sounds; the lost time is not caught up afterwards.
+    document.addEventListener('visibilitychange', () => { this.audio.pause(document.hidden); this.last = performance.now(); this.acc = 0; });
 
     this.last = performance.now();
     this.acc = 0;
@@ -194,6 +198,7 @@ class Game {
     this.flyPos = [world.spawn[0], world.spawn[1] + m.h * 2 + 20, world.spawn[2]];
     this.buildMonster();
     this.actors.populate(p.settings.life ? Math.round((world.people ?? 0) * this.quality.people) : 0);
+    this.traffic.reset(p.settings.life);
 
     const c = this.cam;
     // On a planet only a cap around the focus is visible; its size does not depend on the size of the world.
@@ -254,7 +259,7 @@ class Game {
     const s = this.progress.settings;
     if (key === 'volume') this.audio.setVolume(s.volume);
     else if (key === 'detail') { this.setQuality(); this.loadWorld(this.progress.world); }
-    else if (key === 'life') this.actors.populate(s.life ? Math.round((this.world.people ?? 0) * this.quality.people) : 0);
+    else if (key === 'life') { this.actors.populate(s.life ? Math.round((this.world.people ?? 0) * this.quality.people) : 0); this.traffic.reset(s.life); }
     else if (key === 'unlockAll') this.hud.refreshTools();
     else if (key === 'cascade') this.hud.refreshButtons();
     else if (key === 'smoke' && !s.smoke) this.fire.spots = this.fire.spots.filter((x) => x.flames);
@@ -315,14 +320,16 @@ class Game {
   }
 
   // Counters behind the achievements (see achievements.js).
-  stat(key, n = 1) { this.progress.stats[key] += n; }
-  statMax(key, v) { if (v > this.progress.stats[key]) this.progress.stats[key] = v; }
+  // What the game does on its own in idle mode does not count: achievements are for the player.
+  stat(key, n = 1) { if (!this.idle) this.progress.stats[key] += n; }
+  statMax(key, v) { if (!this.idle && v > this.progress.stats[key]) this.progress.stats[key] = v; }
 
   // A few times per second: tally what was destroyed, look for achievements that have just been reached.
   checkStats(dt) {
     const p = this.progress, st = p.stats, c = this.matCount;
     st.time += dt;
-    if (this.idle) st.idle += dt;
+    if (p.playStage === p.stage) p.t += dt; // seconds spent on the current stage, for the play log
+    if (this.idle) { st.idle += dt; c.fill(0); this.fire.lit = 0; }
     st.vox += c[MAT.GLASS] + c[MAT.LEAF] + c[MAT.WOOD] + c[MAT.BRICK] + c[MAT.CONCRETE] + c[MAT.STEEL] + c[MAT.SHEET] + c[MAT.EXPLOSIVE] + c[MAT.FABRIC];
     st.glass += c[MAT.GLASS]; st.wood += c[MAT.WOOD]; st.leaf += c[MAT.LEAF]; st.stone += c[MAT.BRICK] + c[MAT.CONCRETE]; st.steel += c[MAT.STEEL] + c[MAT.SHEET];
     c.fill(0);
@@ -410,6 +417,15 @@ class Game {
 
   onLeapLand() { this.tools.leapLanded(); }
 
+  // The creature grabs a wall (first = the moment it lands on it) or keeps hanging there.
+  // Claws and weight leave their mark: a dent for a small creature, a real hole for a big one.
+  onCling(m, dx, dz, first) {
+    const x = m.x + dx * m.h * 0.3, y = m.y + m.h * 0.75, z = m.z + dz * m.h * 0.3, k = first ? 1 : 0.6;
+    this.lastHit.dx = dx; this.lastHit.dz = dz;
+    this.destruction.sphere(x, y, z, (m.h * 0.09 + 0.8) * k, (1.5 + m.stage * 1.4) * k, { dx, dy: 0, dz, impulse: launch(m.h * 0.4 + 2), debris: 14 });
+    if (first) { this.audio.step(0.8); this.shake(0.12 + m.stage * 0.02); this.fx.dust(x, y, z, m.h * 0.2 + 0.6, 0.78, 0.76, 0.71, 4); }
+  }
+
   // The moment for the ground pound has come: a glint and a short tick.
   onPoundCue(m) {
     this.audio.tick();
@@ -449,7 +465,11 @@ class Game {
     const size = Math.max(st.x1 - st.x0, st.z1 - st.z0), cx = (st.x0 + st.x1) / 2, cz = (st.z0 + st.z1) / 2;
     this.audio.crumble(Math.min(1, st.remaining / 20000));
     this.shake(0.4);
-    if (st.major && !st.counted2) { st.counted2 = true; this.stat('collapses'); this.orbBurst(cx, y, cz, size * 0.4, 8); }
+    if (st.major && !st.counted2) {
+      st.counted2 = true; this.stat('collapses'); this.orbBurst(cx, y, cz, size * 0.4, 8);
+      // While the game plays itself, a big collapse now and then runs in slow motion: something to watch.
+      if (this.idle && st.remaining > 8000 && this.time - this.cineT > 9) { this.cineT = this.time; this.slowT = 0.9; }
+    }
     this.fx.dust(cx, y, cz, size * 0.45, 0.76, 0.74, 0.7, 14);
     for (let i = 0; i < 3; i++) this.fire.spot(st.x0 + this.rng() * (st.x1 - st.x0), y, st.z0 + this.rng() * (st.z1 - st.z0), clamp(size * 0.2, 3, 12), 4 + this.rng() * 4, false, true);
     this.cascade(st, cx, cz, size);
@@ -457,12 +477,13 @@ class Game {
 
   cascade(st, cx, cz, size) {
     const stage = this.monster.stage, s = this.progress.settings;
-    if (st.fell || !s.cascade || (stage < 4 && !this.allUnlocked)) return;
+    if (st.fell || !s.cascade || (stage < 3 && !this.allUnlocked)) return;
     st.fell = true;
     // Stronger with every stage; fades from one generation of the chain to the next.
     // Buildings brought down by falling wreckage start a chain of their own, so on top of the generation
     // every collapse in quick succession tires the chain; it recovers by one step every four seconds.
-    const amount = Math.min(0.55, 0.24 + 0.05 * (stage - 4)) * CHAIN_FADE ** Math.max(st.gen, this.chainLoad);
+    // The shock grows gently from stage 3 on, so that the power income does not leap at a single stage.
+    const amount = Math.min(0.55, 0.12 + 0.06 * Math.max(0, stage - 3)) * CHAIN_FADE ** Math.max(st.gen, this.chainLoad);
     this.chainLoad += 1;
     this.statMax('chain', Math.floor(this.chainLoad));
     if (amount < 0.06) return;
@@ -506,11 +527,20 @@ class Game {
     }
   }
 
-  onStompLand(m) {
-    if (m.stage >= 2 || this.allUnlocked) { this.tools.stompLand(m); this.hud.doneHint('stomp'); return; }
-    // Stage 1 lands softly: a puff of dust, no crater yet.
+  // A landing without a stomp: on a roof with the jump button released, and for stage 1.
+  onSoftLand(m) {
     this.fx.dust(m.x, m.y + 0.5, m.z, m.h * 0.3, 0.8, 0.78, 0.7, 5);
     this.audio.step(0.5);
+  }
+
+  // Loads a world after showing an hourglass: building a planet takes a moment in which the page cannot draw.
+  travel(which, reroll = false) {
+    this.hud.busy(() => this.loadWorld(which, reroll));
+  }
+
+  onStompLand(m) {
+    if (m.stage >= 2 || this.allUnlocked) { this.tools.stompLand(m); this.hud.doneHint('stomp'); return; }
+    this.onSoftLand(m); // stage 1 lands softly: a puff of dust, no crater yet
   }
 
   queueExplosion(x, y, z) {
@@ -538,11 +568,15 @@ class Game {
     const p = this.progress;
     p.power += v;
     this.earned += v;
-    p.stats.power += v;
+    if (!this.idle) p.stats.power += v;
     const need = stageNeed(p.stage);
     if (p.power < need || this.growCool > 0) return;
     p.power = Math.min(p.power - need, stageNeed(p.stage + 1) * 0.8);
     const follow = p.playStage === p.stage;
+    // Play log: how long this stage took. It is what the stage thresholds are tuned with.
+    p.log.push({ c: p.species, s: p.stage, t: Math.round(p.t), a: this.idle ? 1 : 0 });
+    if (p.log.length > 60) p.log.shift();
+    p.t = 0;
     p.stage++;
     this.growCool = 2;
     if (follow) { p.playStage = p.stage; this.grow(); }
@@ -647,7 +681,7 @@ class Game {
     m.update(dt, mx, mz, this.aim.x, this.aim.z);
     const moved = Math.hypot(wrapDelta(m.x - px, this.cam.wrap), wrapDelta(m.z - pz, this.cam.wrap));
     this.walked += moved;
-    if (!this.fly) this.progress.stats.dist += moved;
+    if (!this.fly) this.stat('dist', moved);
     if (this.walked > m.h * 1.2) { this.hud.doneHint('move'); this.hud.requestHint('light'); this.walked = -1e9; }
 
     // Left = the quick version of the selected move, right = the slow, strong one.
@@ -661,6 +695,11 @@ class Game {
     this.sweeper.update();
     this.reactions.update(dt);
     this.chainLoad = Math.max(0, this.chainLoad - dt * 0.25);
+    // Under the sea, bubbles rise all around.
+    if (this.world.sky[0][2] < 0.5 && this.world.quiet && this.rng() < 0.6 * this.fx.thin) {
+      const a = this.rng() * 6.283, d = this.rng() * (m.h * 3 + 50);
+      this.fx.add(m.x + Math.cos(a) * d, m.y + this.rng() * m.h * 1.5, m.z + Math.sin(a) * d, 0, 6 + this.rng() * 6, 0, 0.5 + this.rng() * 0.8, 0.1, 3.5, 0.8, 0.95, 1, 0.5, 0, 0, 0);
+    }
     this.destruction.flush();
     this.lastHit.pop = 0;
     this.debris.update(dt);
@@ -673,6 +712,7 @@ class Game {
       if (this.project(m.x, m.y + m.h * 0.6, m.z, v3)) this.hud.gain(v3[0], v3[1]);
     }
     this.absorb = Math.max(0, this.absorb - dt * 1.6);
+    this.traffic.update(dt);
     this.actors.update(dt);
 
     for (let i = this.pending.length - 1; i >= 0; i--) {
@@ -745,7 +785,7 @@ class Game {
     else this.pitchOffset = clamp(this.pitchOffset + drag[1] * 0.004, -0.6, 0.9);
     // A small monster between tall buildings looks ahead and up at them; a giant looks down on its planet.
     const tallness = clamp(m.h / (this.world.sy * 0.45), 0, 1);
-    this.camPitch = clamp((this.world.wrap ? 0.2 + 0.5 * tallness : 0.52) + this.pitchOffset, 0.02, 1.25);
+    this.camPitch = clamp((this.world.wrap ? 0.2 + 0.5 * tallness : 0.52) + this.pitchOffset + (this.idle ? 0.14 * Math.sin(this.time * 0.053) : 0), 0.02, 1.25);
 
     let tx = 0, ty, tz = 0, dist = 0;
     const yaw = this.camYaw, pitch = this.fly ? this.flyPitch : -this.camPitch, cp = Math.cos(pitch);
@@ -754,6 +794,8 @@ class Game {
     // On an upright phone the picture is narrow, so the camera steps back to keep the surroundings in view.
     const narrow = clamp(1.2 * cv.clientHeight / Math.max(1, cv.clientWidth), 1, 2.2);
     if (!this.fly) { c.focusX = m.x; c.focusZ = m.z; ty = m.y + m.h * (this.progress.species === 'jet' ? 0.5 : 1.3); dist = (m.h * 3.4 + 12) * narrow; }
+    // Idle mode has a camera of its own: it slowly breathes in and out between a close view and a wide one.
+    if (this.idle && !this.fly) dist *= 1.25 + 0.4 * Math.sin(this.time * 0.08);
     c.eye[0] = tx - c.fwd[0] * dist; c.eye[1] = ty - c.fwd[1] * dist; c.eye[2] = tz - c.fwd[2] * dist;
     this.shakeAmt = Math.max(0, this.shakeAmt - dt * 1.8);
     if (this.shakeAmt > 0.01) {
@@ -834,7 +876,7 @@ class Game {
     this.audio.fire(this.fire.level());
     this.audio.heli(this.actors.heliLevel());
     this.audio.hiss(this.reactions.level ?? 0);
-    this.audio.siren(this.actors.siren);
+    this.audio.siren(this.actors.siren * (this.idle ? 0.35 : 1));
     if (!this.paused && (this.checkT += dt) >= 0.5) { this.checkStats(this.checkT); this.checkT = 0; }
     this.govern(dt);
     this.remesh();
@@ -968,6 +1010,7 @@ class Game {
     let o = this.debris.write(this.cubeBuf, 0);
     o = this.tools.write(this.cubeBuf, o, this.time);
     o = this.actors.write(this.cubeBuf, o, this.cubeBuf.length);
+    o = this.traffic.write(this.cubeBuf, o, this.cubeBuf.length);
     r.drawCubes(this.cubeBuf, o / 12);
 
     this.drawGhost();

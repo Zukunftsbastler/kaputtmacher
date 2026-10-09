@@ -56,7 +56,7 @@ Der Flieger ist immer in Bewegung: A/D lenkt, W/S steigt und sinkt, Umschalt ist
 
 **Die Welt reagiert:** Beim ersten Schaden kommt ein Polizeiauto, dann mehr, dazu Reporter im Hubschrauber, die Feuerwehr, sobald es brennt, und schließlich das Militär mit Hubschraubern und Kampffliegern. Niemand kann dem Kaputtmacher etwas anhaben; alle lassen sich umwerfen oder vom Himmel holen. Die Alarmstufe (Sterne) steigt mit der Zeit und ebbt wieder ab, wenn man nichts zerstört.
 
-**Erfolge:** 117 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der fünf Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
+**Erfolge:** 128 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der fünf Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
 
 Das vollständige Konzept mit allen Zahlen steht in [KONZEPT.md](KONZEPT.md).
 
@@ -82,13 +82,16 @@ Spielbar. Geprüft wurde bisher fast nur automatisiert (Durchläufe im Browser m
 
 ```
 serve.py            lokaler Entwicklungsserver ohne Cache
+tools/              Prüfwerkzeuge (Node, ohne Pakete): check.mjs, smoke.mjs, serve.mjs, browser.mjs, web/test.js
+TESTEN.md           Checkliste für Tests von Hand
+VERLAUF.md          was sich von Entwurf zu Entwurf geändert hat
 netlify.toml        veröffentlicht public/
 KONZEPT.md          Spielkonzept und Umsetzungsstand
 PROMPTS/            alle Prompts des Autors
 public/
   index.html, style.css, _headers
   impressum.html, legal.css, legal.js   Impressum, Datenschutzerklärung und der Knopf zum Löschen des Spielstands
-  src/              24 ES-Module, siehe unten
+  src/              27 ES-Module, siehe unten
 ```
 
 ### Module (`public/src`)
@@ -113,7 +116,9 @@ public/
 | `monster.js` | Gelenkmodelle der fünf Figuren je Stufe, Körpersprache (`locomotion`), Steuerung am Boden und in der Luft (`Monster`) |
 | `tools.js` | Angriffe: Tabelle `MOVES` je Figur (leicht/schwer, Pose, Wirkung) und die Bausteine dafür (`blow`, `shock`, `bolt`, `ray`, `rocket`, `bomb`, `grab` …) |
 | `actors.js` | Bewohner und Einsatzkräfte: Polizeiautos, Feuerwehr, Reporter-, Lösch- und Militär-Hubschrauber, Kampfflieger; Alarmstufe |
-| `achievements.js` | Liste der 117 Erfolge, Zähler (`STATS`), Prüfung |
+| `achievements.js` | Liste der 128 Erfolge, Zähler (`STATS`), Prüfung |
+| `traffic.js` | Straßennetz (`Roads`: Kreuzungen, Rechtsverkehr, Ausweichen, Wenden) und fahrende Autos und Busse (`Traffic`) |
+| `landmarks.js`, `landmarks2.js` | Besondere Grundstücke für den Stadtgenerator: Fahrgeschäfte, Hafenanlagen, Riesenbauten; Flughafen, Burg, Raumhafen, Winterwelt, Unterwasserstadt |
 | `autopilot.js` | Idle-Modus: füllt den Eingabezustand, wählt Ziele, Angriffe und Welten |
 | `audio.js` | Erzeugter Ton (Web Audio), keine Dateien |
 | `input.js` | Maus/Tastatur, Gamepad, Touch → ein gemeinsamer Zustand |
@@ -163,7 +168,7 @@ Das Spiel ist rein statisch und spricht nach dem Laden mit keinem Server. Was es
 | Spielstand | `localStorage` gilt als nicht vertrauenswürdig: `sanitize()` in `progress.js` baut aus beliebigem Inhalt einen gültigen Spielstand; Unbekanntes wird verworfen. Ein beschädigter Spielstand kann das Spiel nicht dauerhaft lahmlegen |
 | Gerätefunktionen | Per Permissions-Policy abgeschaltet, bis auf Gamepad und Vollbild |
 | Spielstand löschen | Knopf auf der Seite „Impressum & Datenschutz“ (`legal.js`, zwei Schritte) und als „Von vorn beginnen“ in den Einstellungen. Der Schlüssel `kaputtmacher.v1` steht in `progress.js` und in `legal.js` – wird er umbenannt, dann an beiden Stellen |
-| Veröffentlichter Umfang | Nur `public/`. Konzept, Prompts, README und `serve.py` werden nicht ausgeliefert |
+| Veröffentlichter Umfang | Nur `public/`. Konzept, Prompts, README, `serve.py` und `tools/` werden nicht ausgeliefert |
 
 Regeln, damit das so bleibt: kein `innerHTML` und keine Inline-Styles im Markup; jeder neue Adress-Parameter und jedes neue Feld im Spielstand bekommt eine Prüfung in `progress.js`; keine externen Ressourcen.
 
@@ -171,9 +176,11 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 
 ### Testen ohne Testframework
 
-- **Adress-Parameter** (speichern keinen Fortschritt): `?world=skyline|blocks|garden|house|toyland|village|park|city|factory|random`, `?stage=7`, `?species=dino|gorilla|robot|tank|jet`, `?tool=<Angriffs-Id>`, `?unlock=1`, `?quality=1…5` (Detailstufe; `low` und `high` gehen weiter), `?fly=1`, `?idle=1`.
+- **Adress-Parameter** (speichern keinen Fortschritt): `?world=skyline|blocks|garden|house|toyland|village|park|funfair|castle|winter|city|airport|factory|harbour|reef|spaceport|giants|random`, `?stage=7`, `?species=dino|gorilla|robot|tank|jet`, `?tool=<Angriffs-Id>`, `?unlock=1`, `?quality=1…5` (Detailstufe; `low` und `high` gehen weiter), `?fly=1`, `?idle=1`.
 - **`window.game`** gibt in der Browser-Konsole Zugriff auf alles, z. B. `game.tools.use(game.tool, true)` oder `game.gain += 1e6`.
-- Die Module ohne WebGL (`world`, `worldgen`, `destruction`, `bodies`, `particles`, `mesher`) laufen auch in Node, wenn man sie in einen Ordner mit `{"type":"module"}` kopiert.
+- **`tools/`** (siehe `tools/README.md`): `node --experimental-default-type=module tools/check.mjs` prüft ohne Browser Spielstand-Laden, Erfolgsliste und die Erzeugung aller Welten; `node tools/smoke.mjs` spielt in einem eigenen Headless-Browser jede Welt und einige längere Szenarien durch und meldet Skriptfehler. Nach jeder größeren Änderung beide laufen lassen.
+- **Messen statt schätzen:** `node tools/browser.mjs name "world=skyline&stage=6&idle=1&run=55000" income 58000` liefert die Macht pro Sekunde im Selbstspiel; daraus sind die Stufen-Schwellen (`NEED` in `monster.js`) abgeleitet.
+- **Von Hand:** `TESTEN.md`.
 
 ### Rezepte
 
@@ -181,6 +188,7 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 - **Neue Figur:** in `monster.js` Eintrag in `SPECIES`, Modell in `buildModel` (Teile mit Drehpunkt und Elternteil), Körpersprache in `locomotion`; in `tools.js` eine Angriffsliste.
 - **Neue Welt:** in `worldgen.js` eine Bauplan-Funktion (liefert eine `World`) und einen Eintrag in `WORLDS`. Für Städte genügt ein neuer Parametersatz für `town()`.
 - **Neues Material oder neuer Voxel-Typ:** `materials.js`; höchstens 127 Typen.
+- **Neue Welt:** ein Eintrag in `WORLDS` (`worldgen.js`) mit Gewichten je Grundstücksart; neue Grundstücksarten als Funktion in `LOTS` (`landmarks.js`), dazu ein Eintrag in `WORLD_NAMES` (`achievements.js`) und in der Liste von `tools/smoke.mjs`. Jedes Bauteil muss zusammenhängen und den Boden berühren, sonst hängt es in der Luft, bis es angestoßen wird.
 - **Neuer Erfolg:** eine Zeile in `achievements.js` (`tiers(zähler, symbol, text, [[schwelle, name], …])`). Ein neuer Zähler kommt zusätzlich in `STATS` und wird im Spiel mit `game.stat(key)` oder `game.statMax(key, wert)` gezählt; nur Zähler aus `STATS` überstehen das Laden.
 - **Feuer:** nie Voxel direkt anzünden, sondern Hitze geben (`fire.heatSphere(x, y, z, radius, hitze, versuche)`); Flammpunkte und Brenndauer stehen in `materials.js` (`FLASH`, `BURN`).
 - **Neue Einstellung oder Detailgröße:** Schalter in `TOGGLES` und `DEFAULTS` (`progress.js`) und im Einstellungsblatt (`hud.js`); Größen je Detailstufe in der Tabelle `DETAIL` (`main.js`).

@@ -1,24 +1,8 @@
-# Kaputtmacher – Spielkonzept (Entwurf 10)
+# Kaputtmacher – Spielkonzept (Entwurf 11)
 
 Status: in Umsetzung. Dieser Entwurf nennt überall konkrete Zahlen; sie entsprechen dem Stand im Code. Was fehlt oder abweicht, steht in Abschnitt 16.
 
-**Nachtrag zu Entwurf 10:** Sprung mit Richtung trägt von Dach zu Dach, der Panzer hüpft nur noch (4.2); die Alarmstufe steigt und fällt mit der Zeit, die Polizei fährt ruhiger, stellt sich kleinen Kaputtmachern in den Weg und hält von großen Abstand (8.1).
-
-**Neu gegenüber Entwurf 9:** 117 Erfolge mit Einblendung (18), eigene Progression je Figur (5.4), deutlich sichtbare Macht-Kugeln (5.1), Flieger mit drehbarem Anbauteil statt drehendem Rumpf (9.2), Polizei, Feuerwehr, Reporter und Militär (8), Feuer mit Flammpunkten, Ruß und Löschen (11.7), Grafik-Regler und abschaltbare Effekte (12.4).
-
-**Neu in Entwurf 9 war:** großes Sichtfenster um die Figur (4.3), gleichmäßigere Progression (5.1, 5.3), Wucht fallender Gebäude nach Masse (11.6a), Staubwolken (11.7), Reaktionen der Welt wie Hydranten-Fontänen (11.7a).
-
-**Neu in Entwurf 8 war:** Doppelsprung mit Salto (4.2), Idle-Modus (17), Impressum und Datenschutzerklärung (12.2).
-
-**Neu in Entwurf 7 war:** der Flieger als fünfte Figur (9.2), lose Trümmer räumen sich selbst weg (11.8), geplanter Idle-Modus und der Hintergrund des Projekts (14, README), Entwicklungsserver ohne Cache (16).
-
-**Neu in Entwurf 6 war:** vier Figuren mit völlig verschiedenen Angriffen, jeder in einer schnellen und einer langsamen, starken Fassung (9), Gelenkmodelle und ausgearbeitete Animationen (9.3), Gebäude geben je nach Material früher nach (11.4), Schubsen im Sprint (11.5), Kettenreaktionen als Upgrade (11.6), Hubschrauber (8).
-
-**Neu in Entwurf 5 war:** Schlag mit Ausholen, Sprung wie in einem Jump-and-Run, die Wolkenkratzer-Stadt als Hauptszenario, Einsturzgeräusche je Vorgang, Feuer und Rauch.
-
-**Neu in Entwurf 4 war:** höher fliegende Trümmer, Wolkenkratzer bis 230 m, Kamera blickt bei kleinem Monster an den Fassaden hoch, zusammengefasste Flächen und sparsamere Haltprüfung.
-
-**Neu in Entwurf 3 war:** größere Welten und drei zusätzliche Welttypen, freie Weltauswahl, hohe Schwerkraft und hoher Sprung, sichtbarer Ausschnitt statt ganzer Welt im Grafikspeicher, Zahlen für Stufen, Materialien und Werkzeuge, Feiern bei jedem Viertel.
+**Neu gegenüber Entwurf 10:** Festhalten und Klettern an Hauswänden (4.2), fahrender Verkehr auf einem Straßennetz (8.2), acht neue Welten (7.4), sanft einsetzende Kettenreaktionen mit neuen Schwellen (5.3, 11.6), Dachlandung ohne Krater (4.2), Spielprotokoll und Spielstand als Datei (13), ruhigeres Selbstspiel (17), Testwerkzeuge im Projekt (16). Der Verlauf aller früheren Entwürfe steht in [VERLAUF.md](VERLAUF.md).
 
 ---
 
@@ -108,8 +92,14 @@ Weitere Anpassungen: Vorführ-Hinweise erscheinen oben statt unten, damit sie ni
 | Steuerung in der Luft | voll: Man kann gezielt auf ein Dach springen |
 | **Sprung mit Richtung** | Wer beim Springen eine Richtung hält, fliegt in diese Richtung: beim ersten Sprung mit dem **2-Fachen**, nach dem zweiten Sprung mit dem **3,4-Fachen des Lauftempos**, im Sprint jeweils das 1,75-Fache davon. Kleine Figuren laufen langsam und sind nur kurz in der Luft; für sie gilt ein Mindesttempo von 12 (erster Sprung) und 21 (zweiter Sprung) Welt-Einheiten pro Sekunde. Gemessen: Doppelsprung ohne Sprint rund 40 Würfel auf Stufe 1, 48 auf Stufe 2, 60 auf Stufe 3 – eine normale Straße ist 8, eine Allee 16 Würfel breit, dazu die Gehwege. Ein einfacher Sprung trägt 15 bis 27 Würfel. Ohne Richtung geht es senkrecht hoch; die Stampfattacke (dritter Druck) bricht den Flug ab. Je höher der Absprungpunkt, desto länger der Flug. Es ist kein Angriff: Im Flug bricht nur, was auch beim Laufen bricht |
 | Dachkante | In der Luft wird eine Kante bis zu einer halben Körperhöhe über den Füßen noch gefasst – ein Sprung, der ein Dach fast erreicht, landet darauf |
+| **Festhalten an der Wand** | Ein Sprung, der an der Wand eines Gebäudes endet, reißt nicht mehr einfach ein Loch hinein: Die Figur **krallt sich fest** (Arme hoch, Beine angezogen) und hängt dort, solange die Wand hält. Beim Zupacken bricht ein Stück heraus – eine Delle bei einer kleinen Figur, ein richtiges Loch bei einer großen (Radius 9 % der Körperhöhe plus 0,8 Würfel) |
+| Klettern | Sprungtaste an der Wand: ein Sprung senkrecht nach oben (2,4 Körperhöhen), lenkbar. Zur Wand hin endet er im nächsten Griff weiter oben, über die Kante auf dem Dach, von der Wand weg trägt er über die Straße; danach ist auch der Doppelsprung wieder frei |
+| Loslassen | Von der Wand weg steuern. Wer rennt (Umschalt), krallt sich nicht fest, sondern bricht wie bisher durch die Wand |
+| Gewicht | Ab Stufe 3 reißen die Krallen alle 0,7 Sekunden weiter Stücke heraus. Gibt die Wand nach, fällt die Figur. Im Test hingen Figuren der Stufen 6 und 8 mindestens drei Sekunden und kletterten bis aufs Dach |
+| Angriff | An der Wand hängend kann man zuschlagen |
+| Nicht | Der Panzer, der Flieger und das Selbstspiel halten sich nicht fest; an Bäumen, Laternen und Kleinkram auch niemand |
 | **Panzer** | Springt nicht, er hüpft: 0,7 Körperhöhen hoch, ohne Doppelsprung, ohne Stampfattacke, ohne Schub in der Luft und ohne Krater bei der Landung. Das reicht, um aus einer selbst gegrabenen Kuhle wieder herauszukommen |
-| Landung | Springen kann das Monster von Anfang an. Ab Stufe 2 ist jede Landung ein Stampfer mit Krater und Druckwelle; mit Stufe 1 gibt es nur eine Staubwolke |
+| Landung | Springen kann das Monster von Anfang an. Ab Stufe 2 ist jede Landung am Boden ein Stampfer mit Krater und Druckwelle; mit Stufe 1 gibt es nur eine Staubwolke. **Auf einem Dach** gibt es den Krater nur, solange die Sprungtaste bei der Landung gehalten wird – wer von Dach zu Dach hüpft, schlägt nicht in jedes ein Loch |
 
 Damit sich ein 50 Meter hohes Monster nicht träge anfühlt, wächst seine eigene Fallbeschleunigung mit der Körpergröße; sie ist außerdem doppelt so hoch wie die der Trümmer. Beim Fallen wirkt das 1,7-Fache, beim Aufsteigen ohne gedrückte Taste das Dreifache.
 
@@ -143,16 +133,16 @@ Größe · detailreicheres Modell je Stufe (Rückenstacheln ab 2, Hörner ab 4, 
 |---|---|---|---|
 | 1 | 1,8 m (Auto) | 1 200 | Laufen, Rennen, Springen, erster Angriff (schnell und stark) |
 | 2 | 2,9 m (Garage) | 4 500 | Landung wird zum Stampfer |
-| 3 | 4,7 m (Haus) | 12 000 | zweiter Angriff |
-| 4 | 6,8 m | 380 000 | **Kettenreaktionen** (Upgrade, abschaltbar) |
-| 5 | 10,8 m | 900 000 | dritter Angriff |
-| 6 | 16 m (Wohnblock) | 1 500 000 | stärkere Kettenreaktionen |
-| 7 | 25 m (Kirchturm) | 2 800 000 | vierter Angriff |
-| 8 | 36 m (Hochhaus) | 4 700 000 | Leuchtstreifen, Aura |
+| 3 | 4,7 m (Haus) | 40 000 | zweiter Angriff; **Kettenreaktionen** setzen schwach ein (abschaltbar) |
+| 4 | 6,8 m | 390 000 | Kettenreaktionen werden mit jeder Stufe stärker |
+| 5 | 10,8 m | 750 000 | dritter Angriff |
+| 6 | 16 m (Wohnblock) | 1 300 000 | Schulterpanzer |
+| 7 | 25 m (Kirchturm) | 3 000 000 | vierter Angriff |
+| 8 | 36 m (Hochhaus) | 4 200 000 | Leuchtstreifen, Aura |
 | 9 | 54 m | × 1,7 je Stufe | Brüllen als Waffe |
 | 10+ | × 1,25 je Stufe | × 1,7 je Stufe | mehr Wucht |
 
-- Das erste Wachstum kommt absichtlich nach rund einer Minute. Danach sind die Schwellen so gewählt, dass jede Stufe ungefähr gleich lang dauert (Ziel: rund 100 Sekunden zügiges Spiel). Grundlage sind Messungen im Idle-Modus in der Wolkenkratzer-Stadt, je 55 Sekunden pro Stufe: etwa 7, 40 und 110 Macht pro Sekunde auf den Stufen 1 bis 3, dann mit den Kettenreaktionen sprunghaft 4 000 (Stufe 4), 7 000 bis 8 000 (5 und 6), 28 000, 47 000 und 82 000 (7 bis 9). Daher der große Schritt von Stufe 3 zu 4. Die Messwerte streuen stark (ein einzelner Turm mehr oder weniger ändert viel); die Schwellen sind also eine begründete Schätzung, kein exakter Abgleich.
+- Das erste Wachstum kommt absichtlich nach rund einer Minute. Danach sind die Schwellen so gewählt, dass jede Stufe ungefähr gleich lang dauert (Ziel: rund 100 Sekunden zügiges Spiel). Grundlage sind Messungen im Selbstspiel in der Wolkenkratzer-Stadt, je 55 Sekunden pro Stufe, in Macht pro Sekunde für die Stufen 1 bis 9: 17, 46, rund 400, 3 900, 7 400, 13 000, 37 000, 42 000, 81 000. Die großen Schritte bleiben, obwohl die Kettenreaktionen jetzt sanft einsetzen: Auf Stufe 3 fallen die ersten kleinen Gebäude von selbst, auf Stufe 4 lässt sich der erste Wolkenkratzer fällen, und ein einziger Turm ist Zehntausende wert. Die Messwerte streuen stark (zwei Läufe auf Stufe 3 ergaben 319 und 484); die Schwellen sind eine begründete Schätzung. Das Spielprotokoll in den Einstellungen (13) zeigt, wie lange die Stufen im echten Spiel dauern.
 - Erreichte Stufen bleiben erhalten. In der Weltauswahl kann jede bereits erreichte kleinere Stufe gewählt werden.
 - Grenze: Das Monster wird bei 92 % der Welthöhe gedeckelt. Das sind 58 m auf normalen Planeten, 118 m in der Stadt und 235 m in der Wolkenkratzer-Stadt – dort ist Platz bis etwa Stufe 15.
 
@@ -213,8 +203,16 @@ Ein Treffer hat eine Stärke, die zum Rand hin abnimmt. Ist sie größer als die
 | 🧸 Spielzeugland | Planet | 512 m | 50 cm | 6 400 000 | 848 | 4 |
 | 🏘️ Dorf | Planet | 512 m | 50 cm | 1 290 000 | 548 | 5 |
 | 🌳 Parklandschaft | Planet | 512 m | 50 cm | 2 150 000 | 113 | 5 |
+| 🎡 **Vergnügungspark** | Planet | 512 m | 50 cm | rund 600 000 | rund 370 | 4 |
+| 🏰 **Burg und Dorf** | Planet | 512 m | 50 cm | rund 1 700 000 | rund 380 | 5 |
+| ⛄ **Winterwelt** | Planet | 512 m | 50 cm | rund 1 900 000 | rund 230 | 5 |
 | 🏙️ Stadt | Planet, 128 m hoch | 512 m | 50 cm | 3 970 000 | 233 | 6 |
+| 🛫 **Flughafen** | Planet | 512 m | 50 cm | rund 700 000 | rund 190 | 6 |
 | 🏭 Fabrik | Planet | 512 m | 50 cm | 2 210 000 | 708 | 8 |
+| ⚓ **Hafen** | Planet | 512 m | 50 cm | rund 2 400 000 | rund 360 | 7 |
+| 🐠 **Stadt unter dem Meer** | Planet | 512 m | 50 cm | rund 800 000 | rund 560 | 7 |
+| 🚀 **Raumhafen** | Planet, 128 m hoch | 512 m | 50 cm | rund 2 200 000 | rund 320 | 8 |
+| 🗿 **Welt der Riesenbauten** | Planet, 192 m hoch | 512 m | 50 cm | rund 5 300 000 | rund 230 | 9 |
 | 🎲 Gewürfelt | Planet | 128–512 m | 50 cm | je nach Mischung | – | – |
 
 Gegenüber Entwurf 2 haben die Inseln die vierfache und die Planeten die vierfache Fläche; die Planeten haben 256 statt 64 Häuserblocks. Auf schwachen Geräten und Handys sind Planeten 256 m groß.
@@ -229,6 +227,14 @@ Inhalt:
 - **Parklandschaft:** Wälder und hohe Hügel, dazwischen einzelne Häuser.
 - **Stadt:** Hochhäuser mit Glasfassaden bis 34 Stockwerke (rund 100 m), Wohnblocks, Baustellen mit Kran.
 - **Fabrik:** Hallen mit Maschinen, über 40 m hohe Schornsteine, Tanks, Silos.
+- **Vergnügungspark:** Riesenräder mit Gondeln, Achterbahnen auf Holzgerüsten mit Zug, Karussells und Zirkuszelte mit gestreiften Stoffdächern (brennen gut), Budenreihen mit Markisen, Lichtern und Luftballons, die davonfliegen, wenn man sie losreißt, Freifalltürme. Viele Besucher.
+- **Burg und Dorf:** Burgen mit Ringmauer, Zinnen, vier Rundtürmen mit Spitzdach, Torhaus und hohem Bergfried samt Schatz; Windmühlen mit Stoffsegeln; Bauernhöfe mit Holzscheune und Heuballen, die wie Zunder brennen; Dorfhäuser, Kirchen, Wald und Hügel. Kaum Autos.
+- **Winterwelt:** Schnee statt Rasen, verschneite Tannen statt Laubbäumen. Skisprungschanzen mit Anlaufturm und Aufsprunghang, Holzhäuser unter Schnee, Riesenschneemänner mit Hut, Schal und Möhre, Eisbahnen mit Banden und Flutlicht, Iglus.
+- **Flughafen:** Verkehrsflugzeuge auf dem Vorfeld (mit Treibstoff in den Flügeln), Rollbahnen mit blauen Randfeuern und Kleinflugzeugen, gläserne Abfertigungshallen mit Fluggastbrücken, Kontrolltürme mit Radar, Hangars mit Tonnendach, ein Tanklager.
+- **Stadt unter dem Meer:** Meeresboden statt Rasen, dunkelblaues Wasser, ringsum steigen Luftblasen auf. Glaskuppeln mit Wohnmodul und Verbindungsröhren, verzweigte Korallen mit leuchtenden Spitzen, Tangwälder, ein gelbes U-Boot auf seinem Gestell, versunkene Frachter, Bohrinseln auf vier Beinen mit Tanks und Bohrturm. Hier gibt es weder Einsatzkräfte noch Verkehr.
+- **Raumhafen:** Raketen von rund 50 m auf der Startrampe, randvoll mit Treibstoff, neben dem Startturm – ein Treffer, und sie explodieren Stück für Stück nach oben; Radioteleskope mit großer Schüssel, eine riesige hohle Montagehalle, das Kontrollzentrum mit Antennen, Tanklager.
+- **Hafen:** Containerberge bis fünf Lagen, Portalkräne mit Ausleger und Container am Haken, Frachter in Hafenbecken mit Decksladung, Brücke und Schornstein, Lagerhallen, Silos – und Tanklager aus je vier Treibstofftanks, die einander hochjagen.
+- **Welt der Riesenbauten:** für Kaputtmacher, denen gewöhnliche Häuser zu klein geworden sind. Wenige, gewaltige Bauwerke: Stufenpyramiden mit Schatzkammer, über 50 m hohe Kühltürme, Fernsehtürme bis rund 150 m mit Kanzel und Antenne, Glaskuppeln mit Garten, Stadien mit bunten Rängen und Flutlichtmasten, Kolossalstatuen eines Roboters mit erhobenen Fäusten (67 m), dazu die höchsten Hochhäuser.
 - **Wolkenkratzer-Stadt:** das Hauptszenario, eine Szene wie Manhattan oder Tokio; Aufbau in 7.6. Ein neues Spiel beginnt hier, und sie ist die erste Kachel der Weltauswahl.
 
 Alle Welten entstehen aus Bauplänen im Code mit festem Startwert: Wer eine Welt in der Weltauswahl erneut wählt, bekommt dieselbe Welt heil zurück. Einen eigenen Neu-aufbauen-Knopf gibt es nicht mehr.
@@ -282,7 +288,8 @@ Standardmäßig an; Bewohner und Einsatzkräfte lassen sich in den Einstellungen
 - **Einsatzkräfte:** Polizei, Feuerwehr, Reporter und Militär, siehe 8.1.
 - Gezeichnet werden nur die Bewohner innerhalb des Horizonts.
 - Leben gibt keine Macht und zählt in keinem Zähler.
-- Geplant, noch nicht vorhanden: fahrender Verkehr, Vögel, Hunde.
+- **Verkehr:** siehe 8.2.
+- Geplant, noch nicht vorhanden: Vögel, Hunde.
 
 ### 8.1 Einsatzkräfte
 
@@ -308,7 +315,20 @@ In Welten mit Bewohnern (Dorf, Park, Stadt, Fabrik, Wolkenkratzer-Stadt, Würfel
 - **Alles ist zerstörbar:** Fahrzeuge zerplatzen, wenn ein Schlag in ihrer Nähe landet oder der Kaputtmacher darauf tritt; alles, was fliegt, wird von Schlag, Geschoss, Strahl oder Explosion vom Himmel geholt, trudelt ab und explodiert am Boden. Nachschub kommt nach einigen Sekunden.
 - Abschaltbar in den Einstellungen („Einsatzkräfte“); die Detailstufe bestimmt ihre Zahl.
 
+- **Militär stößt zurück (Schalter, standardmäßig aus):** Wer mag, kann einschalten, dass eine Rakete den Kaputtmacher ein Stück zurückschiebt und kurz zusammenzucken lässt. Mehr nicht; scheitern kann man weiterhin nicht.
+
 Bewohner und Einsatzkräfte laufen über ein gemeinsames Akteur-System.
+
+### 8.2 Straßennetz und Verkehr
+
+Jede Planetenwelt ist auf einem Raster aus Grundstücken gebaut; daraus ergibt sich die Straßenkarte: eine Straße an jeder Grundstücksgrenze, außer im Stadtpark. Der Generator gibt diese Karte an die Welt weiter (`world.roads`), und alles, was fährt, benutzt sie (`traffic.js`).
+
+- **Fahren nach Karte:** Ein Fahrzeug hält sich rechts, entscheidet an jeder Kreuzung neu, weicht einem Hindernis auf die Gegenspur aus und wendet, wenn nach anderthalb Sekunden nichts frei wird (Trümmer, zugeparkte Straße).
+- **Verkehr:** Je nach Welt und Detailstufe sind rund 5 bis 35 Autos und Busse rund um den Kaputtmacher unterwegs (in der Stadt auf Detailstufe 4: 21). Sie fahren meist geradeaus und biegen gelegentlich ab. Kommt der Kaputtmacher näher als gut zwei Körperhöhen, geben sie Gas und nehmen an jeder Kreuzung den Weg von ihm weg. Wer zurückbleibt, verschwindet; voraus taucht ein neues Auto auf.
+- **Zerstörbar:** Ein Schlag in der Nähe oder ein Tritt (sobald der Kaputtmacher größer ist als ein Auto) lässt sie in Teile zerplatzen; jedes vierte explodiert. Die geparkten Autos aus Würfeln bleiben daneben bestehen.
+- **Einsatzkräfte** kommen über das Straßennetz und biegen an jeder Kreuzung zum Ziel hin ab; erst das letzte Stück fahren sie querfeldein.
+- Verkehr gehört zum Schalter „Bewohner und Verkehr“.
+- **Grenzen:** Autos weichen einander nicht aus und können sich durchdringen; Ampeln und Vorfahrt gibt es nicht.
 
 ## 9. Figuren und ihre Angriffe
 
@@ -441,8 +461,8 @@ Rennt das Monster (Umschalt) gegen ein Gebäude, das es nicht einfach durchbrich
 
 ### 11.6 Kettenreaktionen (Upgrade)
 
-- **Freischaltung** mit Stufe 4. Es gibt dafür keinen eigenen Knopf mehr (das Kettensymbol war nicht verständlich); ab- und anschalten lassen sie sich in den Einstellungen, dort mit erklärendem Satz.
-- **Wirkung:** Stürzt ein Gebäude ein oder ist es vollständig zerstört, läuft nach gut einer halben Sekunde ein Stoß zu den Nachbarn im Umkreis von etwa einem Häuserblock. Er beißt sichtbar in deren Fuß und schwächt sie dauerhaft – um 24 Prozentpunkte auf Stufe 4, bis 55 ab Stufe 10.
+- **Freischaltung** mit Stufe 3, zunächst schwach. Es gibt dafür keinen eigenen Knopf mehr (das Kettensymbol war nicht verständlich); ab- und anschalten lassen sie sich in den Einstellungen, dort mit erklärendem Satz.
+- **Wirkung:** Stürzt ein Gebäude ein oder ist es vollständig zerstört, läuft nach gut einer halben Sekunde ein Stoß zu den Nachbarn im Umkreis von etwa einem Häuserblock. Er beißt sichtbar in deren Fuß und schwächt sie dauerhaft – um 12 Prozentpunkte auf Stufe 3 und 6 weitere je Stufe, bis 55 ab Stufe 10. Der sanfte Einstieg soll verhindern, dass die Einnahmen an einer einzigen Stufe springen.
 - **Domino:** Fällt ein Nachbar dadurch, gibt er den Stoß weiter, jede Generation mit 62 % der Stärke; eine Kette läuft sich so nach drei bis fünf Gebäuden tot. Zusätzlich ermüdet die Kette: Jeder Einsturz kurz nach einem anderen zählt wie eine weitere Generation, egal wodurch das Gebäude fiel (auch durch Trümmer); alle vier Sekunden erholt sie sich um einen Schritt. Vorher gaben von Trümmern gefällte Nachbarn den Stoß wieder mit voller Stärke weiter, und ein Drittel der Stadt fiel in unter einer Minute. Holzbauten fallen schon beim ersten Stoß, Ziegelbauten nach einem starken oder zweien, Betontürme erst, wenn sie angeschlagen sind oder mehrere Nachbarn gefallen sind. Mit jeder Stufe reißt eine Kette also weiter.
 - Dazu kommt, was ohnehin gilt: Ein kippender Turm zerschlägt, worauf er fällt (11.6a).
 
@@ -569,25 +589,36 @@ Daneben lassen sich die teuren Effekte einzeln abschalten: Staub- und Rauchwolke
 
 **Oberfläche:** unten Werkzeugleiste, rechts unten Springen und Brüllen, oben Welt-Zähler mit den Sternen der Alarmstufe, links oben Macht-Ring mit Stufe und darunter die Einblendungen der Erfolge, rechts oben Weltauswahl, Selbstspiel, Erfolge und Einstellungen.
 
-**Einstellungen** (Zahnrad, ein gewöhnlicher Knopf; neben dem Impressum-Link der einzige Ort mit Text): Lautstärke, Grafik-Regler (12.4), Staub und Rauch, Feuerausbreitung, Einsatzkräfte, Kamerawackeln, Bewohner, Kettenreaktionen, Selbstspiel nach 2 Minuten, alles freischalten, Vollbild, freie Flugkamera – und **„Von vorn beginnen“**. Früher öffnete sich das Zahnrad erst nach drei Sekunden Halten und war blass dargestellt; das wirkte wie abgeschaltet und ließ sich nicht entdecken.
+**Einstellungen** (Zahnrad, ein gewöhnlicher Knopf; neben dem Impressum-Link der einzige Ort mit Text): Lautstärke, Grafik-Regler (12.4), Staub und Rauch, Feuerausbreitung, Einsatzkräfte, Kamerawackeln, Bewohner und Verkehr, Kettenreaktionen, Militär stößt zurück, Selbstspiel nach 2 Minuten, alles freischalten, Vollbild, freie Flugkamera – und **„Von vorn beginnen“**. Früher öffnete sich das Zahnrad erst nach drei Sekunden Halten und war blass dargestellt; das wirkte wie abgeschaltet und ließ sich nicht entdecken.
+
+**Spielprotokoll.** In den Einstellungen steht aufklappbar, wie lange jede Stufe jeder Figur gedauert hat (die letzten 60 Einträge, Selbstspiel gekennzeichnet). Es ist das Werkzeug, um die Schwellen aus 5.3 an echtem Spiel auszurichten.
+
+**Spielstand als Datei.** „Spielstand als Datei sichern“ lädt den Stand als JSON-Datei herunter, „aus Datei laden“ liest eine solche Datei ein – etwa für den Umzug auf ein anderes Gerät. Eine geladene Datei durchläuft dieselben Prüfungen wie gespeicherte Daten (12.2); was sie nicht besteht, wird verworfen. Der Stand trägt eine Versionsnummer.
+
+**Pause im Hintergrund.** Ist die Seite verborgen (anderer Tab, Bildschirm aus), verstummt aller Ton und die Simulation steht; die verlorene Zeit wird nicht nachgeholt.
+
+**Sanduhr.** Beim Wechsel der Welt erscheint eine Sanduhr, bevor die Seite für den Aufbau kurz stillsteht.
 
 **Von vorn beginnen.** Auf jedem Gerät lässt sich die Progression neu starten: Der Knopf löscht Stufen und Macht aller Figuren, abgeschlossene Welten, Sticker, Erfolge und Einstellungen auf diesem Gerät, und das Spiel beginnt wieder bei Stufe 1. Er verlangt zwei Schritte („Von vorn beginnen …“, dann „Ja, alles löschen“) und steht zusätzlich auf der Seite „Impressum & Datenschutz“.
 
 ## 14. Nächste Schritte
 
-Reihenfolge nach Wirkung auf das Spielgefühl:
+Offen aus der Analyse vom Oktober 2026, nach Wirkung sortiert:
 
-| # | Schritt | Warum |
+| # | Schritt | Warum / Stand |
 |---|---|---|
-| 1 | Spielen lassen und Balance nachziehen | Wachstumstempo, Werkzeugstärken und Sprung sind bisher geschätzt |
-| 2 | Feinabstimmung der Stabilität | Die Schwellen je Material (11.4) sind geschätzt |
-| 3 | Bruchstücke stoßen einander | Trümmer stapeln sich glaubwürdiger |
-| 4 | Fahrender Verkehr, Vögel, Hunde | Mehr Leben |
-| 5 | Schlagschatten | Tiefe und Größe werden lesbarer |
-| 6 | Lauflängen-Kodierung, vereinfachte Ferne | Voraussetzung für 1-km-Planeten und größere Monster |
-| 7 | Idle-Modus verfeinern: Kamerafahrten, Wechsel der Figur, klügere Zielwahl | Der Modus ist da (Abschnitt 17); ob er beim Zusehen trägt, muss sich im Einsatz zeigen |
-| 8 | Zeitlupe, Zurückspulen; Feuer auch an fallenden Bruchstücken | Vom Auftraggeber als spätere Optionen gewünscht |
-| 9 | „Welt wehrt sich“ | Zuschaltbare Herausforderung, klar nachrangig |
+| 1 | Von Hand testen (TESTEN.md) und Balance nach dem Spielprotokoll nachziehen | Schwellen, Erfolge und Sprungweiten beruhen auf Selbstspiel-Messungen |
+| 2 | Entscheiden, ob Figuren erst freigeschaltet werden müssen | Derzeit sind alle fünf von Anfang an wählbar |
+| 3 | Meshing in einen Hintergrund-Thread | Würde Masseneinstürze und schwache Geräte am meisten entlasten; größerer Umbau |
+| 4 | Speicherbedarf der großen Welten senken (12.3) | Rund 190 MB in der Wolkenkratzer-Stadt |
+| 5 | Bruchstücke stoßen einander | Trümmer stapeln sich glaubwürdiger |
+| 6 | Ruß ohne Nebenwirkung | Verrußte Würfel zählen als zerstört und schwächen das Gebäude; sauberer wäre eine reine Färbung |
+| 7 | Verkehr verfeinern: Ausweichen, Ampeln; Vögel, Hunde | Autos durchdringen sich noch |
+| 8 | Als App installierbar, offline spielbar | Braucht ein App-Symbol und eine saubere Versionierung des Zwischenspeichers |
+| 9 | Oberfläche ausdünnen | Ring, Zähler, Sterne, Karten und vier Knöpfe stehen im Bild |
+| 10 | Stellgrößen bündeln, `main.js` und `tools.js` teilen | Beide Dateien haben rund 1 000 Zeilen |
+| 11 | Schlagschatten; Zeitlupe und Zurückspulen; Feuer an fallenden Bruchstücken | Ältere Wünsche |
+| 12 | Weitere Welten | Ideen: Wüste mit Oase und Pyramidenfeld, Vulkaninsel, Wildwest-Stadt mit Eisenbahn, Süßigkeitenland, Mondbasis |
 
 ## 15. Entscheidungen
 
@@ -602,15 +633,19 @@ Reihenfolge nach Wirkung auf das Spielgefühl:
 | 3 | **191 MB für die Wolkenkratzer-Stadt** sind für einen Rechner in Ordnung, für ältere Geräte viel. Lauflängen-Kodierung vorziehen? | Ja, sobald die Welt auf einem eurer Geräte ruckelt oder nicht lädt; auf Handys ist sie schon jetzt nur 256 m groß (51 MB) |
 | 4 | **Sprunghöhe mit Halten steuern** (kurz tippen = kleiner Hüpfer)? | Nein, ein Sprung ist für einen 5-Jährigen leichter zu lernen |
 
-## 16. Umsetzungsstand (9. Oktober 2026, Entwurf 10)
+## 16. Umsetzungsstand (9. Oktober 2026, Entwurf 11)
 
 **Starten:** im Projektordner `python3 serve.py` ausführen und `http://localhost:8000` öffnen. Der mitgelieferte Server verbietet dem Browser das Zwischenspeichern; mit einem gewöhnlichen Dateiserver kann nach einem Update eine alte Quelldatei neben einer neuen im Cache bleiben, und das Spiel bleibt mit „… is not a function“ stehen.
 
-**Testhilfen in der Adresse** (speichern keinen Fortschritt): `?world=blocks|garden|house|toyland|village|park|city|factory|skyline|random`, `?stage=1…`, `?unlock=1`, `?tool=rocket`, `?quality=low`, `?fly=1`.
+**Testhilfen in der Adresse** (speichern keinen Fortschritt): `?world=skyline|blocks|garden|house|toyland|village|park|funfair|castle|winter|city|airport|factory|harbour|reef|spaceport|giants|random`, `?stage=1…`, `?unlock=1`, `?tool=rocket`, `?quality=low`, `?fly=1`.
 
 **Vorhanden:** alles, was in den Abschnitten 4 bis 13 beschrieben ist, mit den dort genannten Zahlen – außer den folgenden Punkten.
 
 **Stand der Neuerungen aus Entwurf 9:** Sichtfenster und Hydranten-Fontäne (samt Löschen eines Brandherds) sind auf Standbildern geprüft, die Progression über Messläufe je Stufe (5.3). Das Zerdrücken kleiner Gebäude, das tote Gewicht, die Staubwolken, die Funken an Lampen, explodierende Autos und das Zischen des Wassers liefen in den Messläufen fehlerfrei mit, wurden aber nicht einzeln begutachtet. Ein durchgehender Lauf von Stufe 1 bis 9 mit den neuen Schwellen wurde nicht gemessen.
+
+**Prüfwerkzeuge.** Im Ordner `tools/` (wird nicht veröffentlicht) liegen `check.mjs` (ohne Browser: Laden beschädigter Spielstände, Erfolgsliste, Erzeugung aller Welten) und `smoke.mjs` (spielt in einem eigenen Headless-Browser alle 18 Welten und sechs längere Szenarien durch). Beide liefen mit diesem Stand fehlerfrei. Was nur ein Mensch beurteilen kann, steht als Checkliste in `TESTEN.md`; sie ist noch nicht abgearbeitet.
+
+**Stand der Neuerungen aus Entwurf 11:** Auf Standbildern gesehen: alle acht neuen Welten (Riesenrad, Achterbahn, Zelte, Buden; Schiffe, Tanklager, Containerberge; Statue, Kühltürme, Stadion; Burgen, Windmühle; Schanze, Schneemann, Eisbahn, Tannen; Flugzeuge, Hangars, Kontrollturm; Kuppeln, Korallen, Tang, Bohrinsel; Raketen samt Explosion beim ersten Treffer, Montagehalle); das Festhalten an der Wand ist gemessen (Griff, Halten, Klettern, Loslassen auf den Stufen 1, 3, 6 und 8), aber nicht im Bild begutachtet; fahrende Autos auf den Straßen. Gemessen: Im Stadtverkehr warteten Autos in 3 bis 6 % der Zeit vor einem Hindernis, keines stand neben der Straße; die Einnahmen je Stufe (5.3). **Nicht begutachtet:** wie der Verkehr in Bewegung aussieht (Abbiegen, Ausweichen, Durchdringen), ob Einsatzfahrzeuge über das Straßennetz sauber ans Ziel kommen, die Dachlandung, die Selbstspiel-Kamera, Ballons, das Zurückstoßen durch das Militär, Sichern und Laden des Spielstands als Datei (die Prüfung der Daten ist getestet, der Dialog des Browsers nicht), die Pause im Hintergrund. Die Schwellen der Erfolge sind weiter geschätzt.
 
 **Stand der Neuerungen aus Entwurf 10:** In automatisierten Durchläufen ohne Fehler gelaufen und auf Standbildern gesehen: Einblendung und Liste der Erfolge, Sterne der Alarmstufe, Polizeiautos, Feuerwehr, Reporter-, Lösch- und Militär-Hubschrauber, Leuchtspur, das Anbauteil des Fliegers bei gerader Flugrichtung, die Einstellungen mit Regler. Gemessen: Ein angezündeter Baum brennt in rund fünf Sekunden ab (43 Würfel) und das Feuer erlischt von selbst; in 55 Sekunden Selbstspiel auf Stufe 8 in der Stadt wurde Alarmstufe 5 erreicht. **Nicht begutachtet:** wie die Fahrzeuge in Bewegung wirken (ob sie sich festfahren), das Löschen durch die Feuerwehr im Bild, der Überflug der Kampfflieger, Ruß an Beton unter dem Flammenwerfer, alle neuen Töne, die Darstellung auf dem Handy, und ob Detailstufe 1 auf einem schwachen Gerät wirklich flüssig läuft. Die Schwellen der Erfolge sind geschätzt; im Test fielen bei einem Start auf Stufe 6 in 50 Sekunden 41 Erfolge – von Stufe 1 an verteilt es sich, aber das ist nicht gemessen.
 
@@ -629,7 +664,7 @@ Reihenfolge nach Wirkung auf das Spielgefühl:
 | Idle-Modus | Vorhanden, siehe Abschnitt 17; nur automatisiert und kurz geprüft, nicht über Stunden |
 | Zeitlupe, Zurückspulen, „Welt wehrt sich“ | Nicht begonnen; feste Zeitschritte und Akteur-System sind als Vorbereitung da |
 | Feuer in Hochhäusern | Beton und Stahl brennen nicht, sie verrußen nur; Glas platzt in der Hitze. Ein Feuer frisst sich also nicht durch einen Betonturm |
-| Verkehr | Nur Einsatzfahrzeuge fahren; die übrigen Autos stehen. Die Fahrzeuge kennen keine Straßenkarte, sie tasten sich am Raster entlang |
+| Verkehr | Autos weichen einander nicht aus; keine Ampeln, keine Vorfahrt |
 
 **Geprüft in diesem Stand:** alle 16 Angriffe der vier Figuren in beiden Fassungen liefen in automatisierten Durchläufen ohne Fehler; Standbilder zeigen die Modelle von Roboter und Panzer, den Wirbelschlag des Dinos, einstürzende Hochhäuser nach einem Sprint durch die Stadt (15 Gebäude in 7 Sekunden auf Stufe 7, davon mehrere durch Kettenreaktion) und kreisende Hubschrauber. Bei diesem Massen-Einsturz lag die Bildzeit kurz bei 26 ms. **Nicht begutachtet:** die Animationen in Bewegung – ich sehe nur Standbilder – und das Rotorgeräusch.
 
@@ -671,14 +706,15 @@ Macht und Stufen wachsen dabei ganz normal und werden gespeichert. Figur und Stu
 - Auf Stufe 1 in der Wolkenkratzer-Stadt passiert lange wenig: Die Figur braucht eine Viertelminute aus dem Park heraus und kratzt dann mit schwachen Schlägen an Beton. Für den Hintergrundbetrieb lohnt eine höhere Stufe.
 - Ohne vorherige Eingabe (Start über `?idle=1`) bleibt das Spiel stumm, weil Browser Ton erst nach einer Nutzeraktion erlauben. Beim Start über den Knopf ist der Ton an.
 - In einem Tab, der nicht sichtbar ist, hält der Browser das Spiel an.
-- Die Kamera folgt wie im normalen Spiel; es gibt keine eigenen Kamerafahrten.
+- **Kamera:** Sie folgt der Figur wie im normalen Spiel, atmet dabei aber langsam zwischen einer nahen und einer weiten Einstellung (Abstand 0,85- bis 1,65-fach, ein Zyklus rund 80 Sekunden) und neigt sich leicht. Bei einem großen Einsturz läuft höchstens alle neun Sekunden knapp eine Sekunde Zeitlupe. Echte Kamerafahrten um die Figur herum gibt es nicht, weil der Autopilot über das Bild zielt.
+- **Ruhe:** Im Selbstspiel sind die Karten der Erfolge und die Sterne ausgeblendet, die Sirenen leiser. Das Selbstspiel sammelt Macht, aber **keine Erfolge und keine Zähler** – die sind für den Spieler.
 
 ## 18. Erfolge
 
-117 kleine Ziele, jedes eine Schwelle auf einem Zähler: zerstörte Würfel insgesamt und nach Material, Gebäude und Hochhäuser, Einstürze, zerdrückte Häuser, die längste Kettenreaktion, mehrere Gebäude in zehn Sekunden, zerstörte Welten (auch jede einzeln), erreichte Stufen (insgesamt, je Figur, mit allen Figuren), Explosionen, Brände, Hydranten, Lampen, umgeworfene Polizei- und Feuerwehrautos, abgeschossene Reporter-, Militär-Hubschrauber und Kampfflieger, die Alarmstufe, Sprünge, Saltos, Stampfbomben, Brüller, Rempler, zurückgelegte Strecke, durch die Luft gewirbelte Bewohner, Angriffe, gesammelte Macht, Zeit im Selbstspiel und Spielzeit, Sticker und die Zahl der Erfolge selbst.
+128 kleine Ziele, jedes eine Schwelle auf einem Zähler: zerstörte Würfel insgesamt und nach Material, Gebäude und Hochhäuser, Einstürze, zerdrückte Häuser, die längste Kettenreaktion, mehrere Gebäude in zehn Sekunden, zerstörte Welten (auch jede der 18 einzeln), erreichte Stufen (insgesamt, je Figur, mit allen Figuren), Explosionen, Brände, Hydranten, Lampen, erwischte fahrende Autos, umgeworfene Polizei- und Feuerwehrautos, abgeschossene Reporter-, Militär-Hubschrauber und Kampfflieger, die Alarmstufe, Sprünge, Saltos, Stampfbomben, Brüller, Rempler, zurückgelegte Strecke, durch die Luft gewirbelte Bewohner, Angriffe, gesammelte Macht, Zeit im Selbstspiel und Spielzeit, Sticker und die Zahl der Erfolge selbst.
 
 - **Einblendung:** Wird ein Erfolg erreicht, schiebt sich links unter dem Macht-Ring für gut vier Sekunden eine Karte herein: großes Symbol, Name, ein Satz dazu, ein Pokal an der Ecke, dazu ein kurzer heller Klang. Höchstens zwei Karten zugleich; warten mehr als drei, bleibt jede nur knapp zwei Sekunden.
 - **Lesen ist freiwillig.** Die Karten sind der einzige Text im Spielfeld. Wer nicht lesen kann, sieht Symbol und Pokal und hört den Klang; für das Spielen braucht man den Text nie.
 - **Liste:** Der Pokal-Knopf oben rechts öffnet alle Erfolge. Erreichte sind farbig, die übrigen grau mit einem Balken, der zeigt, wie weit es noch ist.
-- **Zähler** werden in der Simulation nur hochgezählt und zweimal pro Sekunde ausgewertet. Sie gelten für alle Figuren gemeinsam, liegen im Spielstand und werden mit „Von vorn beginnen“ gelöscht. Auch das Selbstspiel sammelt Erfolge.
+- **Zähler** werden in der Simulation nur hochgezählt und zweimal pro Sekunde ausgewertet. Sie gelten für alle Figuren gemeinsam, liegen im Spielstand und werden mit „Von vorn beginnen“ gelöscht. Im Selbstspiel wird nicht gezählt (außer der Zeit im Selbstspiel).
 - Die Liste steht in `achievements.js`; ein neuer Erfolg ist eine Zeile.

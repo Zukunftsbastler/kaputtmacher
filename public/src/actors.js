@@ -37,7 +37,8 @@ export class Actors {
     this.list.length = 0;
     this.helis.length = 0; this.heliT = 3; this.heliOn = count > 0 || !g.world.people;
     this.units.length = 0; this.jets.length = 0; this.shots.length = 0; this.unitT = 1; this.jetT = 6; this.alarmT = 0; this.slot = 0;
-    this.cityOn = (g.world.people ?? 0) > 0;
+    this.cityOn = (g.world.people ?? 0) > 0 && !g.world.quiet;
+    if (g.world.quiet) this.heliOn = false;
     for (let i = 0, tries = 0; i < count && tries < count * 8; tries++) {
       const x = rnd() * w.sx, z = rnd() * w.sz, y = w.heightBelow(x, z, w.sy - 1);
       if (y > 16 || w.structures[w.footprint[Math.floor(x) + w.sx * Math.floor(z)]].id) continue; // not on roofs
@@ -153,8 +154,13 @@ export class Actors {
     // Arrivals: one vehicle at a time, a few seconds apart.
     this.unitT -= dt;
     if (this.unitT <= 0) for (const kind of ['police', 'fire']) {
-      if (this.count(this.units, kind) >= this.want[kind] || !this.spawnSpot(v3, Math.min(210, w.sx * 0.4))) continue;
-      this.units.push({ kind, x: v3[0], y: v3[1], z: v3[2], yaw: 0, ax: 0, az: 1, dodge: 0, state: 'drive', slot: this.slot++, t: 0, blink: rnd() * 3, tx: v3[0], ty: 0, tz: v3[2], has: false, work: 0, stuck: 0, age: 0, plan: 0 });
+      if (this.count(this.units, kind) >= this.want[kind]) continue;
+      // They arrive by road where there is a street map, otherwise across open ground.
+      const c = { x: 0, y: 0, z: 0, want: 0, line: 0, s: 0, dir: 1, lane: 1, swerve: 0, wait: 0, ax: 0 }, roads = g.traffic.roads;
+      const road = roads.ok && roads.spawn(c, m.x, m.z, Math.min(210, w.sx * 0.4), rnd);
+      if (road) { v3[0] = c.x; v3[2] = c.z; v3[1] = w.heightBelow(c.x, c.z, w.sy - 1); if (v3[1] > 16 + 8 * u) continue; }
+      else if (!this.spawnSpot(v3, Math.min(210, w.sx * 0.4))) continue;
+      this.units.push({ ...c, road, kind, x: v3[0], y: v3[1], z: v3[2], yaw: c.want, az: 1, dodge: 0, state: 'drive', slot: this.slot++, t: 0, blink: rnd() * 3, tx: v3[0], ty: 0, tz: v3[2], has: false, work: 0, stuck: 0, age: 0, plan: 0 });
       this.unitT = 4;
       break;
     }
@@ -214,7 +220,23 @@ export class Actors {
         want = Math.atan2(Math.sin(want), Math.cos(want));
         c.yaw += want * Math.min(1, dt * 2);
         if (c.kind === 'fire' && c.has && d < stop * 1.6) this.spray(c, dt);
-      } else this.drive(c, dx, dz, speed, dt);
+      } else if (c.road && (c.state === 'leave' || d > 44 * u + stop)) {
+        // The long way goes by road, turning at every crossing towards the target (or away, when leaving).
+        const roads = g.traffic.roads, away = c.state === 'leave';
+        roads.advance(c, speed * dt, dt, u, (o, ci, cj) => roads.toward(o, ci, cj, away ? m.x : c.tx, away ? m.z : c.tz, away));
+        let turn = c.want - c.yaw;
+        turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+        c.yaw += turn * Math.min(1, dt * 4);
+      } else {
+        // The last stretch leaves the road. Far from the target again, the vehicle goes back onto the next street.
+        if (c.road) { c.road = false; c.ax = 0; c.az = 1; c.dodge = 0; }
+        else if (d > 90 * u + stop && g.traffic.roads.ok) {
+          const ox = c.x, oz = c.z;
+          g.traffic.roads.join(c, c.x, c.z, c.tx, c.tz);
+          if (Math.hypot(wrapDelta(c.x - ox, size), wrapDelta(c.z - oz, size)) < 7) c.road = true; else { c.x = ox; c.z = oz; c.ax = 0; c.az = 1; }
+        }
+        if (!c.road) this.drive(c, dx, dz, speed, dt);
+      }
       const ed = Math.hypot(wrapDelta(c.x - g.eye[0], size), c.y - g.eye[1], wrapDelta(c.z - g.eye[2], size));
       siren = Math.max(siren, 1 - ed / 240);
     }
@@ -227,6 +249,8 @@ export class Actors {
       if ((s.t -= dt) <= 0 || d < m.h * 0.25 + step + 1) {
         if (s.t > 0) {
           if (s.rocket) { g.fx.explosion(s.x, s.y, s.z, 2 + m.h * 0.05); g.audio.boom(0.2); g.shake(0.12); }
+          // Optional (settings): a rocket shoves the creature back a little and makes it flinch. Nothing more.
+          if (s.rocket && g.progress.settings.fightBack && m.onGround) { m.x += (dx / d) * m.h * 0.25; m.z += (dz / d) * m.h * 0.25; m.stun = Math.max(m.stun, 0.3); m.pose.squash = 1; g.shake(0.35); }
           else g.fx.sparks(s.x, s.y, s.z, 14, 3, 1, 0.9, 0.5);
         }
         this.shots.splice(i, 1);

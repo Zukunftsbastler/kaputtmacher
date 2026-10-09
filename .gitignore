@@ -221,3 +221,6 @@ __marimo__/
 
 # macOS
 .DS_Store
+
+# Kaputtmacher: screenshots written by the test tools
+tools/out/
