@@ -1,0 +1,1 @@
+Die Sprünge reichen noch nicht weit genug. Speziell ein double jump sollte ruhig deutlich über eine normale Straße hinweg reichen, wenn er nicht durch ein drittes mal leertaste drücken unterbrochen wird oder ohne Richtung stattfindet.

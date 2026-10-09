@@ -30,7 +30,9 @@ const JUMP_HEIGHT = 3.2; // apex of a full jump in monster heights
 const JUMP_CUT = 3; // extra gravity while rising with the button released
 const FALL_GRAVITY = 1.7; // extra gravity on the way down
 const SPRINT = 1.75;
-const AIR_SPEED = 1.8; // a jump with a direction carries: horizontal speed in the air, relative to walking
+const AIR_SPEED = 2; // a jump with a direction carries: horizontal speed in the air, relative to walking
+const AIR_FLOOR = 12, AIR_FLOOR2 = 21; // least horizontal speed of a first and of a second jump, in world units per second
+const AIR_SPEED2 = 3.4; // the same after the second jump: a double jump clears a street with room to spare
 const TANK_HOP = 0.7; // the tank only hops, in its own heights: enough to climb out of a crater it has dug
 const JUMP2_HEIGHT = 2.4; // extra height of the second jump in mid-air, in monster heights
 const FLIP_TIME = 0.55; // seconds the somersault of the second jump takes
@@ -430,8 +432,11 @@ export class Monster {
     } else if (input > 0.05) {
       // In a jump the creature keeps going where it is steered, and faster than on foot: that is what carries it
       // across a street from one roof to the next. The higher it starts, the longer it flies and the further it gets.
-      const air = !this.onGround && this.jumps > 0 && species !== 'tank' ? AIR_SPEED : 1;
-      const dx = mx / input, dz = mz / input, v = (5 + h * 0.9) * Math.min(1, input) * (this.sprint ? SPRINT : 1) * air;
+      const air = this.onGround || !this.jumps || species === 'tank' ? 1 : this.jumps >= 2 ? AIR_SPEED2 : AIR_SPEED;
+      const dx = mx / input, dz = mz / input, push = Math.min(1, input) * (this.sprint ? SPRINT : 1);
+      // Small creatures are slow on foot and short in the air, so their jumps have a minimum speed of their own
+      // (in the world's scale): even the smallest gets across a street with a double jump.
+      const v = Math.max((5 + h * 0.9) * air, air === 1 ? 0 : (air === AIR_SPEED2 ? AIR_FLOOR2 : AIR_FLOOR) * w.unit) * push;
       const want = Math.atan2(dx, dz);
       let dh = want - this.heading;
       dh = Math.atan2(Math.sin(dh), Math.cos(dh));
