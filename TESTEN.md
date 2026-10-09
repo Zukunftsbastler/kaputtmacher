@@ -16,7 +16,9 @@ Zu jedem Punkt reicht ein Haken oder ein Stichwort, was stört.
 
 - [ ] Sprung: Höhe und Dauer angenehm? Kurz tippen ergibt einen kleinen Hüpfer?
 - [ ] Sprung mit Richtung: Kommt man mit einem Doppelsprung sicher über eine Straße auf das nächste Dach? Zu weit, zu kurz?
-- [ ] Wand: Hält sich die Figur nach einem Sprung an der gegenüberliegenden Hauswand fest? Kommt man mit weiteren Sprüngen bis aufs Dach? Lässt sie los, wenn man wegsteuert? Passt der Schaden an der Wand zur Größe der Figur?
+- [ ] Klettern: Hält sich die Figur nach einem Sprung an der Hauswand fest? Geht es mit „vorwärts“ hinauf, mit „rückwärts“ hinunter, seitlich an der Wand entlang und um die Ecke? Am Handy mit dem Stick? Stößt die Sprungtaste nach oben und hinten ab, und landet man mit „vorwärts“ wieder an der Wand? Passt der Schaden zur Größe der Figur?
+- [ ] Affe: Hebt er beim Wurf ein Auto, einen Baum oder sonst einen Gegenstand aus der Nähe auf? Immer irgendetwas?
+- [ ] Flieger: Prallt er sichtbar von Gebäuden ab, statt hindurchzufliegen? Fühlt sich das gut an oder nur störend?
 - [ ] Dachlandung: Ohne gehaltene Sprungtaste bleibt das Dach heil, mit gehaltener gibt es einen Krater. Ist das verständlich?
 - [ ] Salto und Stampfattacke: Ist der goldene Moment zu treffen?
 - [ ] Panzer: Reicht der Hüpfer, um aus einer Kuhle zu kommen?
@@ -31,6 +33,9 @@ Zu jedem Punkt reicht ein Haken oder ein Stichwort, was stört.
 - [ ] Kettenreaktionen (ab Stufe 3 schwach, dann stärker): spannend oder räumt es die Stadt zu schnell leer?
 - [ ] Feuer: Brennt ein Baum ab, ohne dass die halbe Stadt brennt? Sieht man Ruß nach Flammenwerfer und Laser?
 - [ ] Hydranten, Lampen, Ballons, Wassertürme: Fallen die Reaktionen auf?
+- [ ] Schlanke Bauten: Brechen Riesenrad, Achterbahn und Kran zusammen, statt sich irgendwo aufzufangen und in der Luft zu hängen? Fallen Baumgruppen, wenn die Stämme durch sind?
+- [ ] Feuer: Hat ein Brand jetzt Zeit, sich auszubreiten, bevor die Feuerwehr ihn löscht?
+- [ ] Fernangriffe: Lassen sich Hubschrauber und Kampfflieger gezielt abschießen? Ziehen die Militärhubschrauber ab, wenn die Sterne verschwinden?
 
 ## 4. Die Welt lebt
 
@@ -48,6 +53,11 @@ Zu jedem Punkt reicht ein Haken oder ein Stichwort, was stört.
 - [ ] Welt der Riesenbauten: Machen Statue, Kühlturm, Fernsehturm und Stadion einem großen Kaputtmacher Spaß?
 - [ ] Burg und Dorf, Winterwelt, Flughafen, Stadt unter dem Meer, Raumhafen: Erkennt man, was man sieht? Welche Welt macht am meisten Spaß, welche wirkt leer?
 - [ ] Raumhafen: Ist die Rakete, die nach einem Treffer explodiert, ein Höhepunkt oder zu schnell vorbei?
+- [ ] Unter dem Meer: Fühlt sich die Bewegung nach Wasser an (langsames Sinken, Schwimmzüge)? Passen Haie, Wale, Fische und U-Boote?
+- [ ] Hafen: Kann man ins Becken steigen und hindurchwaten? Sieht das Wasser nach Wasser aus?
+- [ ] Wahrzeichen: verschlungene Achterbahn, große Burg, Jumbojets, Ozeanriesen – lohnen sie den Weg?
+- [ ] Viertel in den Städten: Erkennt man Hochhaus- und Wohnviertel?
+- [ ] Innenleben: Sieht man beim Zerlegen Möbel, Fernseher, Büros? Schon ein Fundstück (Ente, Pokal, Klavier …) entdeckt?
 - [ ] Wechsel der Welt: Erscheint die Sanduhr, dauert das Laden erträglich?
 
 ## 6. Tempo des Spiels
@@ -59,6 +69,8 @@ Das Spielprotokoll in den Einstellungen zeigt, wie lange jede Stufe gedauert hat
 - [ ] Kommen Erfolge in angenehmen Abständen?
 
 ## 7. Ton (mit Lautsprecher oder Kopfhörer)
+
+- [ ] **Musik:** Klingt sie überhaupt nach Musik – erkennbares Thema, saubere Harmonien? Treibend und fröhlich? Wird sie mit der Zerstörung und den Sternen voller und schneller, und beruhigt sie sich wieder? Stimmt die Lautstärke im Verhältnis zu den Geräuschen? Nervt etwas (zu schrill, zu eintönig)?
 
 - [ ] Bruchgeräusche je Material unterscheidbar?
 - [ ] Einsturz: Knacken, Ächzen, Bröckeln – stimmig oder Lärm?

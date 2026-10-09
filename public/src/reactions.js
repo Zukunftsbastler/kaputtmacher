@@ -6,12 +6,13 @@ import { T } from './materials.js';
 import { GRAVITY } from './particles.js';
 import { wrapDelta } from './math.js';
 
-const HYDRANT = 1, WATER = 2, LIGHT = 3, BALLOON = 4;
+const HYDRANT = 1, WATER = 2, LIGHT = 3, BALLOON = 4, SECRET = 5;
 const BALLOON_RGB = { [T.BALLOON_RED]: [1, 0.3, 0.37], [T.BALLOON_BLUE]: [0.3, 0.64, 1], [T.BALLOON_YELLOW]: [1, 0.85, 0.3] };
 // What a destroyed voxel sets off, by type. Looked up for every destroyed voxel, so it has to be cheap.
 const REACT = new Uint8Array(256);
 REACT[T.HYDRANT] = HYDRANT;
 REACT[T.WATER] = WATER;
+REACT[T.SECRET] = SECRET;
 for (const t of [T.BALLOON_RED, T.BALLOON_BLUE, T.BALLOON_YELLOW]) REACT[t] = BALLOON;
 for (const t of [T.LAMP, T.HEADLIGHT, T.NEON_RED, T.NEON_BLUE, T.NEON_GREEN, T.NEON_PINK, T.NEON_YELLOW]) REACT[t] = LIGHT;
 
@@ -31,7 +32,16 @@ export class Reactions {
     const r = REACT[type];
     if (!r) return;
     if (r === HYDRANT) { this.g.stat('hydrants'); this.jet(x + 0.5, y, z + 0.5, 9 + this.g.rng() * 5, 1); } // a tall fountain for ten seconds or so
-    else if (r === BALLOON) { // set free: it drifts up and away
+    else if (r === SECRET) { // a hidden find: a shower of gold and a chime
+      const g = this.g;
+      if (g.time - (this.secretT ?? -9) < 0.5) return; // one find, even if it has several golden voxels
+      this.secretT = g.time;
+      g.stat('eggs');
+      g.fx.sparks(x + 0.5, y + 0.5, z + 0.5, 30, 40, 1, 0.85, 0.3);
+      g.fx.firework(x + 0.5, y + 6, z + 0.5, 14);
+      g.audio.achieve();
+      g.addPower(400 * g.monster.stage ** 2); // worth looking for
+    } else if (r === BALLOON) { // set free: it drifts up and away
       const c = BALLOON_RGB[type], rnd = this.g.rng;
       this.g.fx.add(x + 0.5, y + 0.5, z + 0.5, (rnd() - 0.5) * 5, 5 + rnd() * 4, (rnd() - 0.5) * 5, 1.6, 0, 6 + rnd() * 4, c[0], c[1], c[2], 1, 0, -3, 0.1);
     } else if (r === WATER) this.jet(x + 0.5, y, z + 0.5, 2.5, 0.6); // a short gush where the basin broke
@@ -44,6 +54,7 @@ export class Reactions {
   }
 
   jet(x, y, z, time, size) {
+    if (this.g.world.under) return; // no fountains under water
     const wrap = this.g.cam.wrap;
     // One source per spot: more water from the same place just keeps it running.
     for (const j of this.jets) if (Math.hypot(wrapDelta(j.x - x, wrap), wrapDelta(j.z - z, wrap)) < 5 && Math.abs(j.y - y) < 12) { j.t = Math.max(j.t, time); j.size = Math.max(j.size, size); return; }
@@ -66,7 +77,7 @@ export class Reactions {
       }
       if (rnd() < 0.4) g.fx.add(j.x + (rnd() - 0.5) * 8, j.y + 1, j.z + (rnd() - 0.5) * 8, 0, 2, 0, 3 * j.size, 3, 1, 0.85, 0.94, 1, 0.35, 0, -1, 1); // mist at the foot
       // Water against fire: whatever burns close to the fountain goes out.
-      if ((j.douse -= dt) <= 0) { j.douse = 0.3; g.fire.douse(j.x, j.y, j.z, 9 + 6 * j.size); }
+      if ((j.douse -= dt) <= 0) { j.douse = 0.3; g.fire.douse(j.x, j.y, j.z, 5 + 3 * j.size, 8); }
       const d = Math.hypot(wrapDelta(j.x - g.eye[0], g.cam.wrap), j.y - g.eye[1], wrapDelta(j.z - g.eye[2], g.cam.wrap));
       loud = Math.max(loud, k * Math.max(0, 1 - d / 220));
     }

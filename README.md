@@ -56,7 +56,7 @@ Der Flieger ist immer in Bewegung: A/D lenkt, W/S steigt und sinkt, Umschalt ist
 
 **Die Welt reagiert:** Beim ersten Schaden kommt ein Polizeiauto, dann mehr, dazu Reporter im Hubschrauber, die Feuerwehr, sobald es brennt, und schließlich das Militär mit Hubschraubern und Kampffliegern. Niemand kann dem Kaputtmacher etwas anhaben; alle lassen sich umwerfen oder vom Himmel holen. Die Alarmstufe (Sterne) steigt mit der Zeit und ebbt wieder ab, wenn man nichts zerstört.
 
-**Erfolge:** 128 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der fünf Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
+**Erfolge:** 131 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der fünf Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
 
 Das vollständige Konzept mit allen Zahlen steht in [KONZEPT.md](KONZEPT.md).
 
@@ -91,7 +91,7 @@ PROMPTS/            alle Prompts des Autors
 public/
   index.html, style.css, _headers
   impressum.html, legal.css, legal.js   Impressum, Datenschutzerklärung und der Knopf zum Löschen des Spielstands
-  src/              27 ES-Module, siehe unten
+  src/              29 ES-Module, siehe unten
 ```
 
 ### Module (`public/src`)
@@ -116,7 +116,9 @@ public/
 | `monster.js` | Gelenkmodelle der fünf Figuren je Stufe, Körpersprache (`locomotion`), Steuerung am Boden und in der Luft (`Monster`) |
 | `tools.js` | Angriffe: Tabelle `MOVES` je Figur (leicht/schwer, Pose, Wirkung) und die Bausteine dafür (`blow`, `shock`, `bolt`, `ray`, `rocket`, `bomb`, `grab` …) |
 | `actors.js` | Bewohner und Einsatzkräfte: Polizeiautos, Feuerwehr, Reporter-, Lösch- und Militär-Hubschrauber, Kampfflieger; Alarmstufe |
-| `achievements.js` | Liste der 128 Erfolge, Zähler (`STATS`), Prüfung |
+| `frail.js` | Standfestigkeit schlanker Bauten: Was mit dem Schwerpunkt neben seiner Standfläche hängt, kippt |
+| `music.js` | Musik, die der Handlung folgt: ein auskomponiertes Thema, Schichten und Tempo nach Zerstörung und Alarmstufe, Tonart je Welt |
+| `achievements.js` | Liste der 131 Erfolge, Zähler (`STATS`), Prüfung |
 | `traffic.js` | Straßennetz (`Roads`: Kreuzungen, Rechtsverkehr, Ausweichen, Wenden) und fahrende Autos und Busse (`Traffic`) |
 | `landmarks.js`, `landmarks2.js` | Besondere Grundstücke für den Stadtgenerator: Fahrgeschäfte, Hafenanlagen, Riesenbauten; Flughafen, Burg, Raumhafen, Winterwelt, Unterwasserstadt |
 | `autopilot.js` | Idle-Modus: füllt den Eingabezustand, wählt Ziele, Angriffe und Welten |
@@ -189,6 +191,8 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 - **Neue Welt:** in `worldgen.js` eine Bauplan-Funktion (liefert eine `World`) und einen Eintrag in `WORLDS`. Für Städte genügt ein neuer Parametersatz für `town()`.
 - **Neues Material oder neuer Voxel-Typ:** `materials.js`; höchstens 127 Typen.
 - **Neue Welt:** ein Eintrag in `WORLDS` (`worldgen.js`) mit Gewichten je Grundstücksart; neue Grundstücksarten als Funktion in `LOTS` (`landmarks.js`), dazu ein Eintrag in `WORLD_NAMES` (`achievements.js`) und in der Liste von `tools/smoke.mjs`. Jedes Bauteil muss zusammenhängen und den Boden berühren, sonst hängt es in der Luft, bis es angestoßen wird.
+- **Wahrzeichen:** ein Eintrag in `BIG` (`landmarks2.js`) mit Größe in Grundstücken, Bodenart und `build`; in der Welt über `big: { name: anzahl }` einschalten. `enlarged(bauplan, 2)` macht aus jedem Grundstücks-Bauplan ein Wahrzeichen in doppelter Größe.
+- **Eigene Naturgesetze:** `world.grav` (Schwerkraft relativ), `world.under` (alles unter Wasser), `world.water` (offene Wasserfläche), `world.quiet` (keine Einsatzkräfte); gesetzt im Generator, ausgewertet in `monster.js`, `bodies.js`, `particles.js`, `fire.js`.
 - **Neuer Erfolg:** eine Zeile in `achievements.js` (`tiers(zähler, symbol, text, [[schwelle, name], …])`). Ein neuer Zähler kommt zusätzlich in `STATS` und wird im Spiel mit `game.stat(key)` oder `game.statMax(key, wert)` gezählt; nur Zähler aus `STATS` überstehen das Laden.
 - **Feuer:** nie Voxel direkt anzünden, sondern Hitze geben (`fire.heatSphere(x, y, z, radius, hitze, versuche)`); Flammpunkte und Brenndauer stehen in `materials.js` (`FLASH`, `BURN`).
 - **Neue Einstellung oder Detailgröße:** Schalter in `TOGGLES` und `DEFAULTS` (`progress.js`) und im Einstellungsblatt (`hud.js`); Größen je Detailstufe in der Tabelle `DETAIL` (`main.js`).

@@ -70,6 +70,8 @@ export class Autopilot {
   update(dt) {
     const g = this.g, inp = g.input, m = g.monster, size = g.cam.wrap, jet = g.progress.species === 'jet';
     inp.forward = 0; inp.turn = 0; inp.lift = 0; inp.sprint = false; inp.jumpHeld = true;
+    // Hanging on a wall: climb up it. On the roof the walk goes on.
+    if (m.cling) { inp.forward = 1; return; }
     if (g.fly) g.doAction('camera'); // the show needs its star in the picture
     g.pitchOffset = Math.sin(g.time * 0.11) * 0.12; // the camera breathes a little
 

@@ -57,7 +57,8 @@ export class Debris {
     const w = this.g.world;
     const { px, py, pz, vx, vy, vz } = this;
     for (let i = this.n - 1; i >= 0; i--) {
-      vy[i] -= GRAVITY * dt;
+      vy[i] -= GRAVITY * w.grav * dt;
+      if (w.under) { const k = 1 - 1.5 * dt; vx[i] *= k; vy[i] *= k; vz[i] *= k; } // water brakes everything
       let nx = px[i] + vx[i] * dt, ny = py[i] + vy[i] * dt, nz = pz[i] + vz[i] * dt;
       let grounded = false;
       if (ny < -4) { this.kill(i); continue; }

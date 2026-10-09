@@ -28,6 +28,9 @@ export class World {
     this.monsterBase = 8; // height of a stage-1 monster in voxels
     this.spawn = [sx / 2, 0, sz / 2];
     this.sky = [[0.45, 0.68, 0.95], [0.82, 0.91, 0.98]];
+    // Rules of nature that differ from world to world.
+    this.grav = 1; // gravity relative to the usual one
+    this.under = false; // the whole world lies under water: things sink slowly, nothing burns, the creature swims
   }
 
   get(x, y, z) {

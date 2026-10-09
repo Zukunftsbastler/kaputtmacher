@@ -2,6 +2,8 @@
 
 Was sich von Entwurf zu Entwurf des Spielkonzepts (KONZEPT.md) geändert hat, neueste zuerst. Die Zahlen in Klammern verweisen auf Abschnitte des Konzepts.
 
+**Entwurf 12:** Klettermodus an Wänden mit Steuerung in alle Richtungen (4.2); eigene Naturgesetze unter dem Meer mit Schwimmzügen, Meerestieren und U-Booten (11.1a, 8.2); Großgrundstücke mit Wahrzeichen in doppelter Größe, die verschlungene Achterbahn, das Hafenbecken mit Wasser zum Hindurchwaten, Stadtviertel, eingerichtete Häuser und Büros, versteckte Fundstücke (7.4a); Standfestigkeit schlanker Bauten und Nachgeben aufgefangener Gerippe (11.4a); Musik, die der Handlung folgt (13a); gezieltes Abschießen von Fliegendem, geordnetes Abziehen der Einsatzkräfte, geduldigere Feuerwehr (8.1); der Flieger prallt an Gebäuden ab (9.2); der Affe hebt immer etwas auf (9.2).
+
 **Entwurf 11:** fahrender Verkehr auf einem Straßennetz, das auch die Einsatzkräfte benutzen (8.2); Festhalten und Klettern an Hauswänden nach einem Sprung (4.2); acht neue Welten: Vergnügungspark, Burg und Dorf, Winterwelt, Flughafen, Hafen, Stadt unter dem Meer, Raumhafen, Welt der Riesenbauten (7.4); Kettenreaktionen setzen ab Stufe 3 sanft ein, neue Stufen-Schwellen (5.3, 11.6); Dachlandung ohne Krater (4.2); Spielprotokoll, Spielstand als Datei, Pause im Hintergrund, Sanduhr beim Laden (13); ruhigeres Selbstspiel mit eigener Kamera, das keine Erfolge sammelt (17, 18); Schalter „Militär stößt zurück“ (8.1); Testwerkzeuge im Projekt und Checkliste für Tests von Hand (16).
 
 **Nachtrag zu Entwurf 10:** Sprung mit Richtung trägt von Dach zu Dach, der Panzer hüpft nur noch (4.2); die Alarmstufe steigt und fällt mit der Zeit, die Polizei fährt ruhiger, stellt sich kleinen Kaputtmachern in den Weg und hält von großen Abstand (8.1).

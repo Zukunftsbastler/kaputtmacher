@@ -6,7 +6,7 @@ import { T, isTerrain } from './materials.js';
 import { makeRng } from './math.js';
 import { skyscraper, twinTowers, lowrise, carPark, fountain, trafficLight, busStop, hydrant } from './citykit.js';
 import { LOTS as LOTS1, PAVED, WATER } from './landmarks.js';
-import { LOTS2, GROUND, PAVED2, pine } from './landmarks2.js';
+import { LOTS2, GROUND, PAVED2, BIG, pine, egg } from './landmarks2.js';
 
 const LOTS = { ...LOTS1, ...LOTS2 };
 
@@ -82,7 +82,7 @@ function windowsRow(g, x, y, z, len, alongX, ww, wh, gap, t = T.GLASS) {
 }
 
 function furniture(g, x, y, z, w, d) {
-  const u = g.u, kind = g.int(0, 5);
+  const u = g.u, kind = g.int(0, 9);
   const fw = Math.min(w, g.m(1.6, 2)), fd = Math.min(d, g.m(0.9, 2));
   if (kind === 0) { // table
     g.box(x, y + g.m(0.7), z, fw, 1, fd, T.WOOD_LIGHT);
@@ -100,6 +100,20 @@ function furniture(g, x, y, z, w, d) {
   } else if (kind === 4) { // kitchen counter
     g.box(x, y, z, fw, g.m(0.9), fd, T.TILE_WHITE);
     g.box(x, y + g.m(0.9), z, fw, 1, fd, T.STEEL);
+  } else if (kind === 6) { // television on a low board
+    g.box(x, y, z, fw, g.m(0.45), 1, T.WOOD_DARK);
+    g.box(x, y + g.m(0.45), z, fw, g.m(0.8, 2), 1, T.CAR_BLACK);
+    if (fw > 2) g.box(x + 1, y + g.m(0.45), z, fw - 2, Math.max(1, g.m(0.8, 2) - 1), 1, T.NEON_BLUE);
+  } else if (kind === 7) { // desk with a computer and a chair
+    g.box(x, y + g.m(0.7), z, fw, 1, fd, T.WOOD_LIGHT);
+    g.box(x, y, z, 1, g.m(0.7), fd, T.WOOD_DARK); g.box(x + fw - 1, y, z, 1, g.m(0.7), fd, T.WOOD_DARK);
+    g.set(x + (fw >> 1), y + g.m(0.7) + 1, z, T.STEEL_DARK); g.set(x + (fw >> 1), y + g.m(0.7) + 2, z, T.NEON_GREEN);
+    g.box(x + (fw >> 1), y, z + fd + 1, 1, g.m(0.5), 1, T.FABRIC_BLUE);
+  } else if (kind === 8) { // wardrobe
+    g.box(x, y, z, fw, g.m(2), 1, T.WOOD_DARK);
+    if (fw > 2) g.box(x + 1, y + 1, z + 1, fw - 2, g.m(2) - 2, 0, T.WOOD_LIGHT);
+  } else if (kind === 9) { // pot plant
+    g.box(x, y, z, 1, g.m(0.4), 1, T.BRICK_RED); g.box(x, y + g.m(0.4), z, 1, g.m(0.6), 1, T.LEAF_DARK); g.set(x, y + g.m(1), z, T.LEAF_LIGHT);
   } else { // bathtub or cupboard
     g.box(x, y, z, fw, g.m(0.6), fd, T.TILE_WHITE);
     if (fw > 2 && fd > 2) g.box(x + 1, y + 1, z + 1, fw - 2, g.m(0.6), fd - 2, 0);
@@ -132,6 +146,7 @@ function house(g, x, y, z, w, d, floors, o = {}) {
         furniture(g, rx + 1, fy + 1, rz, (w >> 1) - 3, g.m(1.2, 2));
         if (g.chance(0.7)) furniture(g, rx + (w >> 2), fy + 1, rz + g.m(1.6), (w >> 2) - 2, g.m(1.2, 2));
       }
+      if (f === 0 && o.egg) egg(g, mx + 2, fy + 1, mz + 2);
       if (f < floors - 1) { // staircase with an opening in the ceiling
         const sw = g.m(1, 2);
         for (let i = 0; i < fh; i++) g.box(x + w - 1 - sw, fy + 1, z + 1 + i, sw, i + 1, 1, T.WOOD);
@@ -533,13 +548,44 @@ function town(seed, p) {
   const lots = [];
   for (let i = 0; i < n * n; i++) lots.push({ type: 'park', hill: 0 });
   // Deal lot types by weight; unique ones first (their number grows with the world's area).
-  const order = lots.map((_, i) => i).filter((i) => !inPark(i % n, Math.floor(i / n))).sort(() => g.rnd() - 0.5);
+  // Big plots: several lots joined into one, without streets in between, for the landmarks of a world (BIG in landmarks2.js).
+  const blocks = [], blockMap = new Int16Array(n * n).fill(-1);
+  const blockOf = (i, j) => (i < 0 || j < 0 || i >= n || j >= n ? -1 : blockMap[i + n * j]);
+  for (const [type, count] of Object.entries(p.big ?? {})) {
+    const def = BIG[type];
+    for (let c = Math.max(1, Math.round((count * n * n) / 64)), tries = 0; c > 0 && tries < 60; tries++) {
+      const i0 = g.int(0, n - def.w), j0 = g.int(0, n - def.h);
+      let free = i0 + j0 > 0; // not on the starting corner
+      for (let j = j0; j < j0 + def.h && free; j++) for (let i = i0; i < i0 + def.w; i++) if (blockMap[i + n * j] >= 0 || inPark(i, j)) free = false;
+      if (!free) continue;
+      for (let j = j0; j < j0 + def.h; j++) for (let i = i0; i < i0 + def.w; i++) { blockMap[i + n * j] = blocks.length; lots[i + n * j].type = 'block'; }
+      blocks.push({ type, def, i0, j0 });
+      c--;
+    }
+  }
+  const order = lots.map((_, i) => i).filter((i) => !inPark(i % n, Math.floor(i / n)) && blockMap[i] < 0).sort(() => g.rnd() - 0.5);
+  // Districts: the town is divided into neighbourhoods around a few centres, and each neighbourhood favours
+  // its own kinds of lots (a cluster of towers here, low houses there) instead of an even mix everywhere.
+  const centres = [];
+  if (p.districts) for (let k = 0; k < Math.max(p.districts.length, Math.round((n * n) / 20)); k++) centres.push([g.rnd() * n, g.rnd() * n, p.districts[k % p.districts.length]]);
+  const districtOf = (li) => {
+    let best = null, bd = 1e9;
+    for (const c of centres) {
+      let dx = Math.abs(c[0] - (li % n)), dz = Math.abs(c[1] - Math.floor(li / n));
+      dx = Math.min(dx, n - dx); dz = Math.min(dz, n - dz);
+      if (dx * dx + dz * dz < bd) { bd = dx * dx + dz * dz; best = c[2]; }
+    }
+    return best;
+  };
   const uniq = Object.entries(p.unique ?? {}).flatMap(([k, c]) => Array(Math.round(c * (n * n) / 64)).fill(k));
   const wsum = Object.values(p.weights).reduce((a, b) => a + b, 0);
   order.forEach((li, k) => {
     if (k < uniq.length) { lots[li].type = uniq[k]; return; }
-    let r = g.rnd() * wsum;
-    for (const [type, wt] of Object.entries(p.weights)) { r -= wt; if (r <= 0) { lots[li].type = type; break; } }
+    const zone = districtOf(li);
+    let sum = wsum;
+    if (zone) { sum = 0; for (const [type, wt] of Object.entries(p.weights)) sum += wt * (zone[type] ?? 1); }
+    let r = g.rnd() * sum;
+    for (const [type, wt] of Object.entries(p.weights)) { r -= wt * (zone ? zone[type] ?? 1 : 1); if (r <= 0) { lots[li].type = type; break; } }
   });
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) if (inPark(i, j)) lots[i + n * j].type = 'cpark';
   if (!metro && (lots[0].type === 'tower' || lots[0].type === 'factory' || LOTS[lots[0].type])) lots[0].type = 'park'; // keep the view open at the start
@@ -554,17 +600,32 @@ function town(seed, p) {
   };
   // The world's ordinary soil: lawn, snow or the bottom of the sea.
   const SOIL = { snow: [T.SNOW, T.SNOW2], seabed: [T.SEABED, T.SEABED2] }[p.soil] ?? [T.GRASS, T.GRASS2];
+  // The water of a harbour basin: a rectangle inside its plot whose sides are multiples of 16 (the size of the water tiles).
+  const BASIN_DEPTH = 10;
+  const basinRect = (bk) => {
+    const x0 = bk.i0 * P + roadW(bk.i0) + 4, z0 = bk.j0 * P + roadW(bk.j0) + 4, bw = Math.floor((bk.def.w * P - roadW(bk.i0) - 8) / 16) * 16, bd = Math.floor((bk.def.h * P - roadW(bk.j0) - 8) / 16) * 16;
+    return [x0, z0, x0 + bw, z0 + bd];
+  };
   const grass = (x, z) => ((((x * 7 + z * 13) ^ (x * z)) & 7) < 2 ? SOIL[1] : SOIL[0]);
   const plant = p.soil === 'snow' ? pine : tree;
   if (p.sky) w.sky = p.sky;
-  w.quiet = !!p.quiet; // no emergency services, no traffic (e.g. under water)
+  w.quiet = !!p.quiet; // no emergency services, no road traffic (e.g. under water)
+  w.under = p.soil === 'seabed';
+  if (w.under) w.grav = 0.3;
   const green = new Set(['park', 'forest', 'houses', 'church', 'cpark']);
   const pcx = (pk0 + pk / 2) * P + 4, pcz = pcx; // park centre
   for (let z = 0; z < S; z++) for (let x = 0; x < S; x++) {
     const i = x >> 6, j = z >> 6, lx = x & 63, lz = z & 63, h = height(x, z), l = lots[i + n * j];
-    const rwx = roadW(i), rwz = roadW(j);
-    let top;
-    if (l.type === 'cpark' && (lx >= rwx || inPark(i - 1, j)) && (lz >= rwz || inPark(i, j - 1))) {
+    const rwx = roadW(i), rwz = roadW(j), bi = blockMap[i + n * j];
+    let top, floor = h;
+    if (bi >= 0 && (lx >= rwx || blockOf(i - 1, j) === bi) && (lz >= rwz || blockOf(i, j - 1) === bi)) {
+      // Inside a big plot there are no streets. A harbour basin is dug out and filled with water (drawn by the game, not made of voxels).
+      const kind = blocks[bi].def.ground, bk = blocks[bi];
+      if (kind === 'basin') {
+        const r = basinRect(bk);
+        if (x >= r[0] && x < r[2] && z >= r[1] && z < r[3]) { floor = G - BASIN_DEPTH; top = ((x >> 2) + (z >> 2)) & 1 ? T.SEABED : T.SEABED2; } else top = T.PAVE2;
+      } else top = kind === 'asphalt' ? ((z & 63) === 34 && (x >> 2) & 1 ? T.ROADLINE : T.ROAD) : kind === 'soil' ? grass(x, z) : ((x >> 2) + (z >> 2)) & 1 ? T.PAVE : T.PAVE2;
+    } else if (l.type === 'cpark' && (lx >= rwx || inPark(i - 1, j)) && (lz >= rwz || inPark(i, j - 1))) {
       // Lawn with a round plaza in the middle and paths leading out to the four sides.
       const dx = Math.abs(x - pcx), dz = Math.abs(z - pcz), r = Math.hypot(dx, dz);
       top = r < 18 ? ((x >> 1) + (z >> 1)) & 1 ? T.PAVE : T.PAVE2 : dx < 3 || dz < 3 || Math.abs(r - pk * 26) < 2 ? T.PAVE_RED : grass(x, z);
@@ -584,8 +645,8 @@ function town(seed, p) {
     else if (GROUND[l.type] === 'ice') top = T.ICE;
     else top = WATER.has(l.type) ? T.SEA : (metro && !green.has(l.type)) || PAVED.has(l.type) || PAVED2.has(l.type) ? (((x >> 2) + (z >> 2)) & 1 ? T.PAVE : T.PAVE2) : grass(x, z);
     w.set(x, 0, z, T.BEDROCK);
-    for (let y = 1; y < h - 1; y++) w.set(x, y, z, T.DIRT);
-    w.set(x, h - 1, z, top);
+    for (let y = 1; y < floor - 1; y++) w.set(x, y, z, T.DIRT);
+    w.set(x, floor - 1, z, top);
   }
 
   const hf = p.height;
@@ -601,6 +662,7 @@ function town(seed, p) {
     const l = lots[lx + n * lz], rwx = roadW(lx), rwz = roadW(lz);
     // Usable square of the lot: L x L with its corner at (x0, z0).
     const x0 = lx * P + rwx + 2, z0 = lz * P + rwz + 2, L = P - Math.max(rwx, rwz) - 4;
+    if (l.type === 'block') continue; // part of a big plot, built below as one piece
     switch (l.type) {
       case 'cpark': break; // planted below, as one piece
       case 'houses':
@@ -608,7 +670,8 @@ function town(seed, p) {
           if (g.chance(0.12)) { tree(g, x0 + a + 10, G, z0 + b + 10, 1.2); continue; }
           const hw = g.int(g.m(7), g.m(10)), hd = g.int(g.m(6), g.m(8));
           g.begin('house', '🏠', { major: true });
-          house(g, x0 + a + g.int(0, 3), G, z0 + b + g.int(0, 3), hw, hd, hf > 0.7 && g.chance(0.5) ? 3 : g.int(1, 2));
+          // Most houses have rooms with furniture: whoever takes a house apart gets to see how people live. Now and then something odd is hidden inside.
+          house(g, x0 + a + g.int(0, 3), G, z0 + b + g.int(0, 3), hw, hd, hf > 0.7 && g.chance(0.5) ? 3 : g.int(1, 2), { interior: g.chance(0.75), egg: g.chance(0.07) });
           g.end();
           if (g.chance(p.green)) tree(g, x0 + a + hw + 2, G, z0 + b + g.int(0, 10), 0.9);
         }
@@ -716,9 +779,14 @@ function town(seed, p) {
       default: { // special lots (landmarks.js), or else park and forest
         if (LOTS[l.type]) { LOTS[l.type](g, x0, G, z0, L, kit, H); g.end(); break; }
         const count = l.type === 'forest' ? g.int(12, 18) : Math.round(2 + p.green * 8 * g.rnd());
-        for (let i = 0; i < count; i++) {
-          const tx = x0 + g.int(3, L - 6), tz = z0 + g.int(3, L - 6);
-          plant(g, tx, height(tx, tz), tz, (0.9 + g.rnd() * 0.7) * (l.type === 'forest' ? 1.3 : 1));
+        // Trees keep their distance: crowns that grow into each other would hold each other up when one trunk is cut.
+        const stand = [];
+        for (let i = 0, tries = 0; i < count && tries < count * 6; tries++) {
+          const tx = x0 + g.int(4, L - 7), tz = z0 + g.int(4, L - 7), sc = (0.9 + g.rnd() * 0.7) * (l.type === 'forest' ? 1.3 : 1), r = 2.4 * sc * g.u + 1.5;
+          if (stand.some((s) => Math.hypot(s[0] - tx, s[1] - tz) < s[2] + r)) continue;
+          stand.push([tx, tz, r]);
+          plant(g, tx, height(tx, tz), tz, sc);
+          i++;
         }
       }
     }
@@ -728,7 +796,7 @@ function town(seed, p) {
     g.begin('lamp', '💡', {});
     lamp(g, bx + rwx, G, bz + rwz + 20);
     lamp(g, bx + rwx + 30, G, bz + rwz);
-    if (!metro && g.chance(0.35)) hydrant(g, bx + rwx + 1, G, bz + rwz + 12);
+    if (!metro && !w.under && g.chance(0.35)) hydrant(g, bx + rwx + 1, G, bz + rwz + 12);
     if (metro) { trafficLight(g, bx + rwx, G, bz + rwz); if (g.chance(0.8)) hydrant(g, bx + rwx + 1, G, bz + rwz + 12); if (g.chance(0.3)) busStop(g, bx + rwx + 14, G, bz + rwz); }
     g.end();
     if (g.chance(p.cars * 0.6)) car(g, bx + rwx + 16 + g.int(0, 18), G, bz + 1, true, g.chance(0.12));
@@ -760,10 +828,23 @@ function town(seed, p) {
     w.spawn = [4, G, 4];
     w.heading = Math.PI / 4;
   }
+  // The big plots.
+  for (const bk of blocks) {
+    const bx = bk.i0 * P + roadW(bk.i0) + 2, bz = bk.j0 * P + roadW(bk.j0) + 2, bw = bk.def.w * P - roadW(bk.i0) - 4, bd = bk.def.h * P - roadW(bk.j0) - 4;
+    if (bk.def.ground === 'basin') {
+      const r = basinRect(bk);
+      (w.water ??= { level: G - 2, rects: [] }).rects.push(r);
+      bk.def.build(g, r[0], G - BASIN_DEPTH, r[1], r[2] - r[0], r[3] - r[1], kit, H);
+    } else bk.def.build(g, bx, G, bz, bw, bd, kit, H);
+    g.end();
+  }
   w.people = Math.round(n * n * 4 * (p.people ?? 0.5));
   // The street map, for everything that drives (traffic.js): one street along every lot border, except inside the park.
   w.roads = { pitch: P, n, width: roadW, cars: p.cars ?? 0.5,
-    closed: (alongX, line, cell) => (alongX ? inPark(cell, line) && inPark(cell, line - 1) : inPark(line, cell) && inPark(line - 1, cell)) };
+    closed: (alongX, line, cell) => {
+      const a = alongX ? [cell, line, cell, line - 1] : [line, cell, line - 1, cell], b = blockOf(a[0], a[1]);
+      return (inPark(a[0], a[1]) && inPark(a[2], a[3])) || (b >= 0 && b === blockOf(a[2], a[3]));
+    } };
   return w;
 }
 
@@ -772,24 +853,24 @@ function town(seed, p) {
 // stage: the monster stage a world is built for (shown on its tile). `unique` counts are per 8 x 8 lots.
 export const WORLDS = [
   // The skyscraper city is the main scenario and the first tile.
-  { id: 'skyline', icon: '🌆', stage: 1, make: (seed, q) => town(seed, { size: q.tall, sy: 512, skew: 1.8, metro: true, weights: { tower: 10, lowrise: 2.4, apartment: 0.8, garage: 0.7, square: 0.8, twin: 0.22 }, unique: { crane: 2, gas: 1, church: 1 }, height: 1, cars: 0.8, hills: 0, green: 0.4, people: 1 }) },
+  { id: 'skyline', icon: '🌆', stage: 1, make: (seed, q) => town(seed, { districts: [{ tower: 3, twin: 3, lowrise: 0.15, apartment: 0.1, garage: 0.4, square: 0.6 }, { tower: 0.5, twin: 0, lowrise: 3, apartment: 3, garage: 2.5, square: 2.5 }, { tower: 1.2, twin: 1, lowrise: 1, apartment: 0.6, garage: 1, square: 1 }], big: { stadium: 0.5 }, size: q.tall, sy: 512, skew: 1.8, metro: true, weights: { tower: 10, lowrise: 2.4, apartment: 0.8, garage: 0.7, square: 0.8, twin: 0.22 }, unique: { crane: 2, gas: 1, church: 1 }, height: 1, cars: 0.8, hills: 0, green: 0.4, people: 1 }) },
   { id: 'blocks', icon: '🧱', stage: 1, make: (seed) => blockRoom(seed) },
   { id: 'garden', icon: '🌷', stage: 2, make: (seed) => garden(seed) },
   { id: 'house', icon: '🏠', stage: 3, make: (seed) => houseWorld(seed) },
   { id: 'toyland', icon: '🧸', stage: 4, make: (seed, q) => town(seed, { size: q.planet, weights: { toys: 8, park: 1.5, parking: 0.5 }, unique: { water: 1 }, height: 0.6, cars: 0.6, hills: 0.5, green: 0.6, people: 0.4 }) },
-  { id: 'village', icon: '🏘️', stage: 5, make: (seed, q) => town(seed, { size: q.planet, weights: { houses: 6, park: 3, apartment: 0.6, parking: 0.5 }, unique: { church: 1, gas: 1, water: 1 }, height: 0.4, cars: 0.5, hills: 0.7, green: 0.8, people: 0.6 }) },
+  { id: 'village', icon: '🏘️', stage: 5, make: (seed, q) => town(seed, { districts: [{ houses: 3, apartment: 2, parking: 2, park: 0.3 }, { houses: 0.4, park: 3, apartment: 0.1 }], size: q.planet, weights: { houses: 6, park: 3, apartment: 0.6, parking: 0.5 }, unique: { church: 1, gas: 1, water: 1 }, height: 0.4, cars: 0.5, hills: 0.7, green: 0.8, people: 0.6 }) },
   { id: 'park', icon: '🌳', stage: 5, make: (seed, q) => town(seed, { size: q.planet, weights: { forest: 5, park: 4, houses: 1 }, unique: { church: 1, water: 1 }, height: 0.3, cars: 0.2, hills: 1.5, green: 1, people: 0.5 }) },
-  { id: 'funfair', icon: '🎡', stage: 4, make: (seed, q) => town(seed, { size: q.planet, weights: { wheel: 1.2, coaster: 1.6, carousel: 1.6, tent: 1.6, stalls: 2.6, drop: 0.9, park: 1.6, parking: 0.8 }, unique: { water: 1 }, height: 0.5, cars: 0.5, hills: 0.2, green: 0.7, people: 1.2 }) },
-  { id: 'city', icon: '🏙️', stage: 6, make: (seed, q) => town(seed, { size: q.planet, sy: 256, skew: 1.6, metro: true, weights: { tower: 5, apartment: 2.5, lowrise: 2, park: 1, parking: 0.6, houses: 0.4, square: 0.5, garage: 0.5 }, unique: { church: 1, gas: 1, crane: 1 }, height: 1, cars: 0.8, hills: 0.2, green: 0.5, people: 1 }) },
+  { id: 'funfair', icon: '🎡', stage: 4, make: (seed, q) => town(seed, { big: { megacoaster: 1.5, bigwheel: 0.5 }, size: q.planet, weights: { wheel: 1.2, coaster: 1.6, carousel: 1.6, tent: 1.6, stalls: 2.6, drop: 0.9, park: 1.6, parking: 0.8 }, unique: { water: 1 }, height: 0.5, cars: 0.5, hills: 0.2, green: 0.7, people: 1.2 }) },
+  { id: 'city', icon: '🏙️', stage: 6, make: (seed, q) => town(seed, { districts: [{ tower: 3.5, apartment: 0.4, lowrise: 0.6, houses: 0, park: 0.3, parking: 0.6 }, { tower: 0.1, apartment: 3, lowrise: 2.5, houses: 0.6, garage: 2 }, { tower: 0, apartment: 0.5, lowrise: 0.6, houses: 6, park: 3, square: 2 }], big: { stadium: 0.5 }, size: q.planet, sy: 256, skew: 1.6, metro: true, weights: { tower: 5, apartment: 2.5, lowrise: 2, park: 1, parking: 0.6, houses: 0.4, square: 0.5, garage: 0.5 }, unique: { church: 1, gas: 1, crane: 1 }, height: 1, cars: 0.8, hills: 0.2, green: 0.5, people: 1 }) },
   { id: 'factory', icon: '🏭', stage: 8, make: (seed, q) => town(seed, { size: q.planet, weights: { factory: 6, parking: 1, tower: 0.7, park: 0.6, apartment: 0.5 }, unique: { gas: 2, water: 2, crane: 2 }, height: 0.8, cars: 0.5, hills: 0.1, green: 0.3, people: 0.4 }) },
-  { id: 'castle', icon: '🏰', stage: 5, make: (seed, q) => town(seed, { size: q.planet, weights: { keep: 1.6, houses: 4, farm: 2, windmill: 1.2, forest: 2, park: 2, square: 0.5 }, unique: { church: 2 }, height: 0.4, cars: 0.05, hills: 1, green: 0.9, people: 0.8 }) },
-  { id: 'winter', icon: '⛄', stage: 5, make: (seed, q) => town(seed, { size: q.planet, soil: 'snow', sky: [[0.62, 0.74, 0.9], [0.93, 0.96, 1]], weights: { skijump: 1, chalet: 3.5, snowman: 1.3, icerink: 1, igloos: 1.2, forest: 3, park: 2 }, unique: { church: 1 }, height: 0.4, cars: 0.3, hills: 1.4, green: 0.8, people: 0.7 }) },
-  { id: 'airport', icon: '🛫', stage: 6, make: (seed, q) => town(seed, { size: q.planet, weights: { airliner: 3, runway: 3, terminal: 1.5, atc: 0.6, hangar: 1.5, tanks: 0.6, warehouse: 0.8, parking: 1.2, park: 0.6 }, unique: { gas: 1 }, height: 0.5, cars: 0.7, hills: 0, green: 0.3, people: 0.8 }) },
-  { id: 'harbour', icon: '⚓', stage: 7, make: (seed, q) => town(seed, { size: q.planet, weights: { containers: 4, gantry: 1.3, tanks: 1.4, ship: 1.6, warehouse: 2, silos: 0.8, parking: 0.6 }, unique: { crane: 2, gas: 1, water: 1 }, height: 0.6, cars: 0.6, hills: 0, green: 0.2, people: 0.4 }) },
+  { id: 'castle', icon: '🏰', stage: 5, make: (seed, q) => town(seed, { big: { bigcastle: 1 }, size: q.planet, weights: { keep: 1.6, houses: 4, farm: 2, windmill: 1.2, forest: 2, park: 2, square: 0.5 }, unique: { church: 2 }, height: 0.4, cars: 0.05, hills: 1, green: 0.9, people: 0.8 }) },
+  { id: 'winter', icon: '⛄', stage: 5, make: (seed, q) => town(seed, { big: { bigsnowman: 0.5 }, size: q.planet, soil: 'snow', sky: [[0.62, 0.74, 0.9], [0.93, 0.96, 1]], weights: { skijump: 1, chalet: 3.5, snowman: 1.3, icerink: 1, igloos: 1.2, forest: 3, park: 2 }, unique: { church: 1 }, height: 0.4, cars: 0.3, hills: 1.4, green: 0.8, people: 0.7 }) },
+  { id: 'airport', icon: '🛫', stage: 6, make: (seed, q) => town(seed, { big: { jumbo: 1.5, bigterminal: 0.5 }, size: q.planet, weights: { airliner: 3, runway: 3, terminal: 1.5, atc: 0.6, hangar: 1.5, tanks: 0.6, warehouse: 0.8, parking: 1.2, park: 0.6 }, unique: { gas: 1 }, height: 0.5, cars: 0.7, hills: 0, green: 0.3, people: 0.8 }) },
+  { id: 'harbour', icon: '⚓', stage: 7, make: (seed, q) => town(seed, { big: { basin: 1 }, size: q.planet, weights: { containers: 4, gantry: 1.3, tanks: 1.4, ship: 1.6, warehouse: 2, silos: 0.8, parking: 0.6 }, unique: { crane: 2, gas: 1, water: 1 }, height: 0.6, cars: 0.6, hills: 0, green: 0.2, people: 0.4 }) },
   // The giants: few, enormous structures for a creature that has outgrown ordinary houses.
-  { id: 'giants', icon: '🗿', stage: 9, make: (seed, q) => town(seed, { size: q.planet, sy: 384, skew: 0.7, weights: { pyramid: 1.5, cooling: 1.6, tvtower: 1, dome: 1.3, statue: 1.1, arena: 1.3, tower: 1.6, park: 1.2 }, unique: { crane: 1 }, height: 1, cars: 0.3, hills: 0.2, green: 0.5, people: 0.6 }) },
-  { id: 'reef', icon: '🐠', stage: 7, make: (seed, q) => town(seed, { size: q.planet, soil: 'seabed', quiet: true, sky: [[0.02, 0.2, 0.42], [0.1, 0.5, 0.68]], weights: { habitat: 2.5, coral: 3, kelp: 2.5, sub: 1.2, wreck: 1, rig: 0.8, park: 0.5 }, unique: {}, height: 0.5, cars: 0, hills: 0.8, green: 0, people: 0.25 }) },
-  { id: 'spaceport', icon: '🚀', stage: 8, make: (seed, q) => town(seed, { size: q.planet, sy: 256, weights: { rocket: 2, dish: 1.5, assembly: 1.2, control: 1.5, tanks: 1.2, warehouse: 1, parking: 0.8, park: 1.5 }, unique: { crane: 2, gas: 1, water: 1 }, height: 0.7, cars: 0.4, hills: 0.1, green: 0.3, people: 0.5 }) },
+  { id: 'giants', icon: '🗿', stage: 9, make: (seed, q) => town(seed, { big: { bigpyramid: 0.5, stadium: 0.5 }, size: q.planet, sy: 384, skew: 0.7, weights: { pyramid: 1.5, cooling: 1.6, tvtower: 1, dome: 1.3, statue: 1.1, arena: 1.3, tower: 1.6, park: 1.2 }, unique: { crane: 1 }, height: 1, cars: 0.3, hills: 0.2, green: 0.5, people: 0.6 }) },
+  { id: 'reef', icon: '🐠', stage: 7, make: (seed, q) => town(seed, { big: { bighabitat: 1 }, size: q.planet, soil: 'seabed', quiet: true, sky: [[0.02, 0.2, 0.42], [0.1, 0.5, 0.68]], weights: { habitat: 2.5, coral: 3, kelp: 2.5, sub: 1.2, wreck: 1, rig: 0.8, park: 0.5 }, unique: {}, height: 0.5, cars: 0, hills: 0.8, green: 0, people: 0.25 }) },
+  { id: 'spaceport', icon: '🚀', stage: 8, make: (seed, q) => town(seed, { big: { bigassembly: 0.5, bigdish: 0.5 }, size: q.planet, sy: 256, weights: { rocket: 2, dish: 1.5, assembly: 1.2, control: 1.5, tanks: 1.2, warehouse: 1, parking: 0.8, park: 1.5 }, unique: { crane: 2, gas: 1, water: 1 }, height: 0.7, cars: 0.4, hills: 0.1, green: 0.3, people: 0.5 }) },
   { id: 'random', icon: '🎲', stage: 0, make: (seed, q, mix) => town(seed, mixToParams(mix, q)) },
 ];
 

@@ -17,7 +17,10 @@ export class Audio {
     this.master = ctx.createGain();
     this.master.gain.value = this.volume;
     const comp = ctx.createDynamicsCompressor();
-    this.master.connect(comp).connect(ctx.destination);
+    // Under water everything sounds dull: a low-pass filter that is wide open on land.
+    this.dull = ctx.createBiquadFilter();
+    this.dull.type = 'lowpass'; this.dull.frequency.value = this.muffled ? 700 : 20000;
+    this.master.connect(this.dull).connect(comp).connect(ctx.destination);
     const len = ctx.sampleRate, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     this.noiseBuf = buf;
@@ -64,6 +67,11 @@ export class Audio {
       src.start();
     }
     this.hissGain.gain.setTargetAtTime(level * 0.2, this.ctx.currentTime, 0.2);
+  }
+
+  muffle(on) {
+    this.muffled = on;
+    if (this.dull) this.dull.frequency.setTargetAtTime(on ? 700 : 20000, this.ctx.currentTime, 0.3);
   }
 
   // The page is hidden (other tab, screen off) or shown again: all sound stops and comes back.

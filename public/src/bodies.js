@@ -173,7 +173,7 @@ export class Bodies {
       if (b.kinematic) continue;
       if (b.pos[1] < -40 || (!w.wrap && (b.pos[0] < -60 || b.pos[2] < -60 || b.pos[0] > w.sx + 60 || b.pos[2] > w.sz + 60))) { this.remove(b); continue; }
       // Small bits do not get to rattle around for long.
-      if (b.rest > 0.4 || b.age > (b.count < 60 ? 2.5 : b.count < 600 ? 7 : 14)) this.bake(b);
+      if (b.rest > 0.4 || b.age > (b.count < 60 ? 2.5 : b.count < 600 ? 7 : 14)) { if (!this.giveWay(b)) this.bake(b); }
     }
     // Too many pieces at once: the smallest ones stop being simulated.
     while (this.list.length > MAX_BODIES) {
@@ -192,7 +192,8 @@ export class Bodies {
     const sub = clamp(Math.ceil((Math.hypot(v[0], v[1], v[2]) * dt) / 0.8), 1, 4), h = dt / sub;
     let contacts = 0, hitSpeed = 0, nHits = 0;
     for (let s = 0; s < sub; s++) {
-      v[1] -= GRAVITY * h;
+      v[1] -= GRAVITY * w.grav * h;
+      if (w.under) { const k = 1 - 1.2 * h; v[0] *= k; v[1] *= k; v[2] *= k; av[0] *= k; av[1] *= k; av[2] *= k; } // wreckage sinks, it does not crash
       pos[0] += v[0] * h; pos[1] += v[1] * h; pos[2] += v[2] * h;
       quat.integrate(q, av[0], av[1], av[2], h);
       let pushX = 0, pushY = 0, pushZ = 0;
@@ -391,6 +392,33 @@ export class Bodies {
   }
 
   // Writes a resting body back into the static grid as rubble.
+  // A fragment has come to rest. A solid block may lie or lean wherever it has landed. A slender lattice
+  // (a wheel, a stretch of track, a crane boom, a tree) that has only caught itself on something and hangs
+  // propped up in the air cannot carry its own weight like that: it gives way. How much it can take depends
+  // on how massive it is and what it is made of: thin wood folds at once, a thick steel girder holds.
+  // Returns true if the fragment broke up instead of staying where it is.
+  giveWay(b) {
+    const g = this.g, w = g.world, t = b.tally;
+    if (b.count < 30 || b.kinematic) return false;
+    let strength = 0;
+    for (let m = 1; m < t.length; m++) strength += t[m] * Math.min(16, MATS[m].strength);
+    const fill = b.count / (b.sx * b.sy * b.sz), sturdy = fill * (strength / b.count); // massive x strong
+    const low = Math.min(b.sx, b.sy, b.sz) * 0.5, gap = b.pos[1] - w.heightBelow(b.pos[0], b.pos[2], b.pos[1]);
+    if (sturdy > 2.2 || gap < low + 3) return false; // solid enough, or lying flat on the ground
+    b.breaks = (b.breaks ?? 0) + 1;
+    b.rest = 0; b.age = 0;
+    g.audio.crack(Math.min(1, b.count / 3000)); g.audio.hit('metal', 0.5);
+    if (b.count < 2500 || b.breaks > 3) { // it comes down as a shower of parts
+      const p = Math.min(1, 500 / b.count);
+      for (let i = 0; i < b.vox.length; i++) if (b.vox[i] && g.rng() < p) this.spill(b, i);
+      this.remove(b);
+      return true;
+    }
+    // Too big to dissolve in one go: it snaps in the middle and the halves go on falling.
+    g.destruction.sphere(b.pos[0], b.pos[1], b.pos[2], Math.max(3, b.radius * 0.22), 60, { quiet: true, spare: true, debris: 30 });
+    return true;
+  }
+
   bake(b) {
     const w = this.g.world, { sx, sy, sz, vox } = b, small = b.count < 60; // small wreckage is tidied away later
     for (let y = 0, i = 0; y < sy; y++) for (let z = 0; z < sz; z++) for (let x = 0; x < sx; x++, i++) {

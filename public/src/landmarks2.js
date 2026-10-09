@@ -146,7 +146,7 @@ export const LOTS2 = {
     g.box(kx - 1, G + kh, kz - 1, 18, 1, 18, stone);
     for (let i = -1; i < 17; i += 2) { g.set(kx + i, G + kh + 1, kz - 1, stone); g.set(kx + i, G + kh + 1, kz + 16, stone); g.set(kx - 1, G + kh + 1, kz + i, stone); g.set(kx + 16, G + kh + 1, kz + i, stone); }
     g.box(kx + 8, G + kh + 1, kz + 8, 1, 10, 1, T.WOOD_DARK); g.box(kx + 9, G + kh + 7, kz + 8, 6, 4, 1, g.pick([T.FABRIC_RED, T.FABRIC_BLUE, T.FABRIC_YELLOW]));
-    g.box(kx + 6, G, kz + 6, 4, 2, 4, T.STEEL_YELLOW); // the treasure
+    g.box(kx + 6, G, kz + 6, 4, 2, 4, T.STEEL_YELLOW); g.set(kx + 7, G + 1, kz + 7, T.SECRET); // the treasure
     g.end();
   },
 
@@ -404,6 +404,100 @@ export const LOTS2 = {
     g.box(cx + 6, G + 4, cz + 6, 1, h - 4, 1, T.STEEL_DARK); g.set(cx + 6, G + h + 36, cz + 6, T.NEON_RED); // the drill string
     g.end();
   },
+};
+
+// Building at a multiple of the usual size: a stand-in for the generator that enlarges everything a builder
+// draws by the whole factor q around (ox, oy, oz). Every voxel becomes a block of q x q x q, so walls get
+// thicker and stronger too. That turns any lot into a landmark: a castle, a jumbo jet, an ocean liner.
+function scaled(g, ox, oy, oz, q) {
+  const X = (v) => ox + (v - ox) * q, Y = (v) => oy + (v - oy) * q, Z = (v) => oz + (v - oz) * q, e = (q - 1) >> 1;
+  return {
+    u: g.u, rnd: () => g.rnd(), int: (a, b) => g.int(a, b), pick: (arr) => g.pick(arr), chance: (p) => g.chance(p), m: (a, b) => g.m(a, b),
+    begin: (kind, icon, o) => g.begin(kind, icon, o), end: () => g.end(),
+    set: (x, y, z, t) => g.box(X(x), Y(y), Z(z), q, q, q, t),
+    box: (x, y, z, w, h, d, t) => g.box(X(x), Y(y), Z(z), w * q, h * q, d * q, t),
+    shell(x, y, z, w, h, d, t) { this.box(x, y, z, w, h, 1, t); this.box(x, y, z + d - 1, w, h, 1, t); this.box(x, y, z, 1, h, d, t); this.box(x + w - 1, y, z, 1, h, d, t); },
+    cyl: (cx, cz, r, y, h, t, hollow) => g.cyl(X(cx) + e, Z(cz) + e, r * q + e, Y(y), h * q, t, hollow),
+    ball: (cx, cy, cz, r, types) => g.ball(X(cx) + e, Y(cy) + e, Z(cz) + e, r * q, types),
+  };
+}
+// Turns a lot builder into the builder of a big plot: the lot at q times its size, in the middle of the plot.
+const enlarged = (fn, q) => (g, x, G, z, W, D, kit, H) => {
+  const L = Math.min(52, Math.floor(Math.min(W, D) / q)), ox = x + ((W - L * q) >> 1), oz = z + ((D - L * q) >> 1);
+  fn(scaled(g, ox, G, oz, q), ox, G, oz, L, kit, G + Math.floor((H - G) / q));
+};
+
+// A hidden find: something odd that only shows when the building around it comes apart.
+// Each has a golden voxel at its heart; breaking it counts (reactions.js).
+export function egg(g, x, y, z) {
+  const k = g.int(0, 5);
+  if (k === 0) { // rubber duck
+    g.box(x, y, z, 4, 2, 3, T.TOY_YELLOW); g.box(x + 2, y + 2, z, 2, 2, 3, T.TOY_YELLOW); g.box(x + 4, y + 2, z + 1, 1, 1, 1, T.TOY_ORANGE); g.set(x + 3, y + 3, z, T.CAR_BLACK); g.set(x + 1, y + 1, z + 1, T.SECRET);
+  } else if (k === 1) { // golden cup
+    g.box(x + 1, y, z + 1, 2, 1, 2, T.GRANITE); g.box(x + 1, y + 1, z + 1, 1, 1, 1, T.STEEL_YELLOW); g.box(x, y + 2, z, 3, 2, 3, T.STEEL_YELLOW); g.set(x + 1, y + 3, z + 1, T.SECRET);
+  } else if (k === 2) { // a little Kaputtmacher statue
+    g.box(x, y, z, 1, 2, 1, T.TOY_GREEN); g.box(x + 2, y, z, 1, 2, 1, T.TOY_GREEN); g.box(x, y + 2, z, 3, 3, 2, T.TOY_GREEN); g.box(x, y + 5, z, 3, 2, 3, T.TOY_GREEN); g.set(x, y + 6, z + 2, T.TILE_WHITE); g.set(x + 2, y + 6, z + 2, T.TILE_WHITE); g.set(x + 1, y + 3, z + 1, T.SECRET);
+  } else if (k === 3) { // piano
+    g.box(x, y, z, 5, 3, 2, T.CAR_BLACK); g.box(x, y + 3, z, 5, 1, 3, T.CAR_BLACK); for (let i = 0; i < 5; i++) g.set(x + i, y + 2, z + 2, i & 1 ? T.CAR_BLACK : T.TILE_WHITE); g.set(x + 2, y + 1, z + 1, T.SECRET);
+  } else if (k === 4) { // treasure chest
+    g.box(x, y, z, 4, 2, 3, T.WOOD_DARK); g.box(x, y + 2, z, 4, 1, 3, T.STEEL_YELLOW); g.box(x + 1, y + 1, z + 1, 2, 1, 1, T.SECRET);
+  } else { // disco ball on a stand
+    g.box(x + 1, y, z + 1, 1, 3, 1, T.STEEL_DARK);
+    for (let b = 0; b < 3; b++) for (let c = 0; c < 3; c++) for (let d = 0; d < 3; d++) g.set(x + b, y + 3 + c, z + d, (b + c + d) & 1 ? T.NEON_PINK : T.NEON_BLUE);
+    g.set(x + 1, y + 4, z + 1, T.SECRET);
+  }
+}
+
+// Big plots: several lots joined into one, without streets in between (worldgen.js). w, h: size in lots.
+// ground: what the plot is paved with. build(g, x, G, z, W, D, kit, H) fills the rectangle W x D at (x, z).
+export const BIG = {
+  // A roller coaster that is not a ride of its own but winds around the others: its track is a figure of
+  // eight, one loop round a Ferris wheel, the other round a circus tent and a carousel. Where the track
+  // crosses itself one stretch is high and the other low. The height follows three overlaid waves (one long
+  // climb and drop, three hills, and a wave that keeps the crossing apart), so no two coasters are alike.
+  megacoaster: { w: 2, h: 2, ground: 'pave', build(g, x, G, z, W, D, kit) {
+    const cx = x + (W >> 1), cz = z + (D >> 1), a = (W >> 1) - 5, b = (D >> 1) - 6;
+    LOTS.wheel(g, cx - Math.round(a * 0.62) - 26, G, cz - 26, 52);
+    LOTS.tent(g, cx + Math.round(a * 0.62) - 26, G, cz - 30, 46);
+    LOTS.carousel(g, cx + Math.round(a * 0.6) - 26, G, cz + 2, 52, { tree() {} });
+    const rail = g.pick([T.STEEL_RED, T.STEEL_YELLOW, T.CAR_BLUE, T.CAR_GREEN]), p1 = 0.4 + g.rnd() * 0.5, p2 = 0.3 + g.rnd() * 0.6, hill = g.rnd() * 6.283;
+    const at = (t) => {
+      const sx = Math.sin(t), wob = 1 + 0.1 * Math.sin(5 * t + hill);
+      return [cx + a * sx * wob, G + 9 + 11 * (1 + Math.sin(3 * t + p1)) + 9 * (1 + Math.sin(t + p2)) + 8 * (1 + Math.cos(t)) + 16 * Math.exp(-((Math.sin((t - hill) / 2)) ** 2) * 14), cz + b * Math.sin(2 * t) * wob];
+    };
+    g.begin('megacoaster', '🎢', { major: true });
+    const n = 900;
+    let px = 0, py = 0, pz = 0;
+    for (let i = 0; i <= n; i++) {
+      const q = at((i / n) * 6.283), X = Math.round(q[0]), Y = Math.round(q[1]), Z = Math.round(q[2]);
+      if (i && X === px && Y === py && Z === pz) continue;
+      const lo = i ? Math.min(Y, py) : Y;
+      g.box(X, lo - 1, Z, 2, Math.abs(Y - (i ? py : Y)) + 2, 2, rail); // deep enough to stay in one piece on the steep parts
+      if (i % 9 === 0) for (let yy = lo - 2; yy >= G; yy--) { if (g.w.get(X, yy, Z)) break; g.set(X, yy, Z, T.WOOD_WHITE); if (i % 18 === 0) g.set(X + 1, yy, Z + 1, T.WOOD_WHITE); } // posts, down to whatever is below
+      if (i > 60 && i < 110 && i % 7 === 0) g.box(X, Y + 1, Z, 2, 2, 2, TOYS[(i / 7) % TOYS.length | 0]); // the train
+      px = X; py = Y; pz = Z;
+    }
+    const s0 = at(0.55), bx = Math.round(s0[0]) + 5, bz = Math.round(s0[2]) + 5; // a ticket hut next to the track
+    g.box(bx, G, bz, 9, 6, 7, T.WOOD_LIGHT); g.box(bx - 1, G + 6, bz - 1, 11, 1, 9, T.FABRIC_YELLOW); g.box(bx + 3, G + 1, bz + 6, 3, 4, 1, T.WOOD_DARK);
+    g.end();
+  } },
+  bigwheel: { w: 2, h: 2, ground: 'pave', build: enlarged((g, x, G, z, L) => LOTS.wheel(g, x, G, z, L), 2) },
+  bigcastle: { w: 2, h: 2, ground: 'soil', build: enlarged((g, x, G, z, L, kit) => LOTS2.keep(g, x, G, z, L, kit), 2) },
+  jumbo: { w: 2, h: 2, ground: 'asphalt', build: enlarged((g, x, G, z, L) => LOTS2.airliner(g, x, G, z, L), 2) },
+  bigterminal: { w: 2, h: 2, ground: 'pave', build: enlarged((g, x, G, z, L) => { LOTS2.terminal(g, x, G, z, L); LOTS2.atc(g, x, G, z + 12, L); }, 2) },
+  bigassembly: { w: 2, h: 2, ground: 'pave', build: enlarged((g, x, G, z, L) => LOTS2.assembly(g, x, G, z, L), 2) },
+  bigdish: { w: 2, h: 2, ground: 'soil', build: enlarged((g, x, G, z, L) => LOTS2.dish(g, x, G, z, L), 2) },
+  bigsnowman: { w: 2, h: 2, ground: 'soil', build: enlarged((g, x, G, z, L) => LOTS2.snowman(g, x, G, z, L), 2) },
+  bighabitat: { w: 2, h: 2, ground: 'soil', build: enlarged((g, x, G, z, L, kit) => LOTS2.habitat(g, x, G, z, L, kit), 2) },
+  stadium: { w: 2, h: 2, ground: 'pave', build: enlarged((g, x, G, z, L) => LOTS.arena(g, x, G, z, L), 2) },
+  bigpyramid: { w: 2, h: 2, ground: 'pave', build: enlarged((g, x, G, z, L) => LOTS.pyramid(g, x, G, z, L), 2) },
+  // The harbour basin: deep water with two ocean-going ships in it. G is the bottom of the basin here.
+  basin: { w: 3, h: 2, ground: 'basin', build(g, x, G, z, W, D) {
+    for (const [ax, az] of [[x + 2, z + (D >> 2) - 52], [x + W - 106, z + D - (D >> 2) - 52]]) LOTS.ship(scaled(g, ax, G, az, 2), ax, G, az, 52);
+    g.begin('buoys', '🛟', {});
+    for (let i = 0; i < 4; i++) { const bx = x + 20 + i * ((W - 40) / 3 | 0), bz = z + (D >> 1); g.box(bx, G, bz, 1, 9, 1, T.STEEL_DARK); g.box(bx - 1, G + 9, bz - 1, 3, 2, 3, i & 1 ? T.CAR_RED : T.CAR_GREEN); g.set(bx, G + 11, bz, T.NEON_YELLOW); }
+    g.end();
+  } },
 };
 
 // What the ground of a lot is made of, where it is not the world's ordinary soil.

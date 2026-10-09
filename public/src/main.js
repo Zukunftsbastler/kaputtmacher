@@ -1,7 +1,7 @@
 // Kaputtmacher: game object, fixed-step simulation loop, camera and frame rendering.
 
 import { m4, makeRng, clamp, wrapDelta } from './math.js';
-import { MATS, TYPE_MAT, MAT } from './materials.js';
+import { MATS, TYPE_MAT, MAT, T } from './materials.js';
 import { CS } from './world.js';
 import { meshChunk, meshVolume } from './mesher.js';
 import { Renderer } from './renderer.js';
@@ -16,6 +16,8 @@ import { Sweeper } from './sweeper.js';
 import { Autopilot } from './autopilot.js';
 import { Reactions } from './reactions.js';
 import { Traffic } from './traffic.js';
+import { Frail } from './frail.js';
+import { Music } from './music.js';
 import { Tools, movesFor } from './tools.js';
 import { WORLDS } from './worldgen.js';
 import { Audio } from './audio.js';
@@ -26,6 +28,7 @@ import { checkAchievements } from './achievements.js';
 
 const STEP = 1 / 60; // the simulation always advances in equal steps (needed later for slow motion and rewind)
 const FOV = (55 * Math.PI) / 180;
+const GRAVITY_FX = 60; // gravity of spray particles
 const CHAIN_FADE = 0.62; // share of a chain reaction's strength that reaches the next generation: a chain dies out after three to five buildings in a row
 // Detail levels 1 (fastest) to 5 (richest), chosen with one slider in the settings.
 // planet: edge length of planet worlds in voxels (tall: of the skyscraper world). cap: radius of the part of a planet
@@ -60,6 +63,8 @@ class Game {
     if (params.has('quality')) this.progress.settings.detail = cleanDetail(params.get('quality'));
     if (params.has('unlock')) this.progress.settings.unlockAll = true;
     this.audio.setVolume(this.progress.settings.volume);
+    this.music = new Music(this.audio);
+    this.music.setVolume(this.progress.settings.music);
 
     this.rng = makeRng(1);
     this.time = 0;
@@ -80,6 +85,7 @@ class Game {
     this.stability = new Stability(this);
     this.sweeper = new Sweeper(this);
     this.reactions = new Reactions(this);
+    this.frail = new Frail(this);
     this.gainScale = 1; // below 1 while a collapse is being processed: falling voxels are worth less
     this.chainLoad = 0; // how many collapses the running chain reaction has behind it
     this.earned = 0; // all power earned in this session (for tuning the stages)
@@ -169,6 +175,8 @@ class Game {
     const world = WORLDS[index].make(seed, this.quality, p.mix);
     world.finalize();
     world.onDestroyed = (type, x, y, z, st) => this.onDestroyed(type, x, y, z, st);
+    this.audio.muffle(world.under);
+    this.music.setWorld(p.world);
     this.world = world;
     this.rng = makeRng(seed + 5);
 
@@ -180,6 +188,7 @@ class Game {
     this.stability.reset();
     this.sweeper.clear();
     this.reactions.clear();
+    this.frail.clear();
     this.heat = 0;
     this.wanted = 0; this.alarm = 0; this.lastGainT = -99; this.chainLoad = 0; this.doneTimes.length = 0;
     this.debris.clear();
@@ -208,6 +217,10 @@ class Game {
     c.cap2 = world.wrap ? cap * cap : 1e12;
     c.fogDist = world.wrap ? cap * 2.2 : 1400;
     c.top = world.sky[0]; c.low = world.sky[1];
+    // Open water (the harbour basin) is not made of voxels: it is a see-through sheet laid out in tiles of 16 x 16.
+    this.waterTiles = [];
+    for (const r of world.water?.rects ?? []) for (let z = r[1]; z < r[3]; z += 16) for (let x = r[0]; x < r[2]; x += 16) this.waterTiles.push(x, z);
+    if (this.waterTiles.length && !this.waterMesh) { const slab = meshVolume(new Uint8Array(256).fill(T.WATER), 16, 1, 16); this.waterMesh = this.renderer.createMesh(slab.data, slab.quads); }
     this.hud.setStructures(world);
     this.hud.setWanted(0);
     this.hud.showNext(false);
@@ -258,6 +271,7 @@ class Game {
   applySettings(key) {
     const s = this.progress.settings;
     if (key === 'volume') this.audio.setVolume(s.volume);
+    else if (key === 'music') this.music.setVolume(s.music);
     else if (key === 'detail') { this.setQuality(); this.loadWorld(this.progress.world); }
     else if (key === 'life') { this.actors.populate(s.life ? Math.round((this.world.people ?? 0) * this.quality.people) : 0); this.traffic.reset(s.life); }
     else if (key === 'unlockAll') this.hud.refreshTools();
@@ -416,6 +430,26 @@ class Game {
   }
 
   onLeapLand() { this.tools.leapLanded(); }
+
+  // Wading through open water: spray around the legs.
+  onWade(m, level) {
+    for (let i = 0; i < 2; i++) this.fx.add(m.x + (this.rng() - 0.5) * m.h * 0.5, level, m.z + (this.rng() - 0.5) * m.h * 0.5, (this.rng() - 0.5) * 8, 6 + this.rng() * 8, (this.rng() - 0.5) * 8, 0.6 + m.h * 0.02, 0.8, 0.7, 0.8, 0.93, 1, 0.7, 0, GRAVITY_FX, 0.3);
+  }
+
+  // A swimming stroke: a ring of bubbles.
+  onSwim(m) {
+    this.audio.whoosh();
+    this.stat('jumps');
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * 6.283; this.fx.add(m.x + Math.cos(a) * m.h * 0.3, m.y + m.h * 0.3, m.z + Math.sin(a) * m.h * 0.3, Math.cos(a) * m.h * 0.6, 4, Math.sin(a) * m.h * 0.6, 0.5 + m.h * 0.03, 0.2, 1.6, 0.85, 0.95, 1, 0.6, 0, -6, 1.5); }
+  }
+
+  // The aircraft has flown into something.
+  onCrash(m) {
+    this.audio.hit('metal', 1); this.audio.crumble(0.5);
+    this.shake(0.7);
+    this.fx.sparks(m.x, m.y, m.z, 30, 14);
+    this.hitStop = Math.max(this.hitStop, 0.06);
+  }
 
   // The creature grabs a wall (first = the moment it lands on it) or keeps hanging there.
   // Claws and weight leave their mark: a dent for a small creature, a real hole for a big one.
@@ -671,10 +705,16 @@ class Game {
         this.camYaw += clamp(d, -1, 1) * dt * 2.5;
       }
       m.heading = this.camYaw - inp.turn * dt * 1.9;
+    } else if (m.cling) {
+      // On a wall the same controls climb: forwards is up, backwards down, left and right along the wall.
+      // The camera settles behind the creature, so that "forwards" keeps meaning "towards the wall".
+      m.climbV = inp.forward; m.climbH = inp.turn;
+      const d = Math.atan2(Math.sin(m.heading - this.camYaw), Math.cos(m.heading - this.camYaw));
+      this.camYaw += d * Math.min(1, dt * 5);
     } else if (!this.tools.rooted) { // a planted move holds the feet still
       mx = Math.sin(this.camYaw) * inp.forward; mz = Math.cos(this.camYaw) * inp.forward;
     }
-    this.camYaw -= inp.turn * dt * 1.9; // forward is (sin yaw, cos yaw), so turning right lowers the yaw
+    if (!m.cling) this.camYaw -= inp.turn * dt * 1.9; // forward is (sin yaw, cos yaw), so turning right lowers the yaw
     const px = m.x, pz = m.z;
     m.jumpHeld = inp.jumpHeld;
     m.sprint = inp.sprint;
@@ -694,9 +734,10 @@ class Game {
     this.stability.update(dt);
     this.sweeper.update();
     this.reactions.update(dt);
+    this.frail.update();
     this.chainLoad = Math.max(0, this.chainLoad - dt * 0.25);
     // Under the sea, bubbles rise all around.
-    if (this.world.sky[0][2] < 0.5 && this.world.quiet && this.rng() < 0.6 * this.fx.thin) {
+    if (this.world.under && this.rng() < 0.6 * this.fx.thin) {
       const a = this.rng() * 6.283, d = this.rng() * (m.h * 3 + 50);
       this.fx.add(m.x + Math.cos(a) * d, m.y + this.rng() * m.h * 1.5, m.z + Math.sin(a) * d, 0, 6 + this.rng() * 6, 0, 0.5 + this.rng() * 0.8, 0.1, 3.5, 0.8, 0.95, 1, 0.5, 0, 0, 0);
     }
@@ -827,8 +868,9 @@ class Game {
     dx /= l; dy /= l; dz /= l;
     aim.hit = false;
     const check = this.bodies.list.length > 0;
-    let x = 0, y = 0, z = 0;
+    let x = 0, y = 0, z = 0, hitT = 1100;
     for (let t = 2; t < 1100; t += t < 300 ? 0.6 : 1.5) {
+      hitT = t;
       const vx = c.eye[0] + dx * t, vz = c.eye[2] + dz * t;
       x = c.focusX + vx; z = c.focusZ + vz;
       y = c.eye[1] + dy * t + (vx * vx + vz * vz) * c.curv;
@@ -837,6 +879,19 @@ class Game {
       if (t > 320 && !c.curv && dy >= 0) break;
     }
     aim.x = x; aim.y = y; aim.z = z;
+    // Things that fly (or swim) can be aimed at as well: whatever is close to the pointer's ray and in front of
+    // the wall behind it becomes the target. Rockets follow it, beams and shots go straight there.
+    aim.lock = null;
+    let best = hitT;
+    for (const list of [this.actors.helis, this.actors.jets, this.traffic.swimmers]) for (const o of list) {
+      if (o.state !== 'fly') continue;
+      const rx = wrapDelta(o.x - c.focusX, c.wrap) - c.eye[0], rz = wrapDelta(o.z - c.focusZ, c.wrap) - c.eye[2];
+      const fx = rx + c.eye[0], fz = rz + c.eye[2], ry = o.y - (fx * fx + fz * fz) * c.curv - c.eye[1];
+      const along = rx * dx + ry * dy + rz * dz;
+      if (along < 4 || along > best) continue;
+      const off2 = rx * rx + ry * ry + rz * rz - along * along, reach = w.unit * 5 + along * 0.035; // generous: they move
+      if (off2 < reach * reach) { best = along; aim.lock = o; aim.x = o.x; aim.y = o.y; aim.z = o.z; aim.hit = true; }
+    }
   }
 
   // World point -> screen pixels. Returns false if it is behind the camera.
@@ -877,6 +932,8 @@ class Game {
     this.audio.heli(this.actors.heliLevel());
     this.audio.hiss(this.reactions.level ?? 0);
     this.audio.siren(this.actors.siren * (this.idle ? 0.35 : 1));
+    // The music follows the action: how much is breaking right now, and how alarmed the world is.
+    this.music.update(dt, this.paused ? 0.05 : clamp(0.1 + this.heat * 0.55 + (this.alarm / 5) * 0.45, 0, 1), clamp((this.time - this.lastGainT < 0.3 ? 0.5 : 0) + this.heat * 0.5, 0, 1));
     if (!this.paused && (this.checkT += dt) >= 0.5) { this.checkStats(this.checkT); this.checkT = 0; }
     this.govern(dt);
     this.remesh();
@@ -1014,6 +1071,12 @@ class Game {
     r.drawCubes(this.cubeBuf, o / 12);
 
     this.drawGhost();
+
+    // Water last of the solid things, so that whatever stands in it shows through.
+    for (let i = 0; i < this.waterTiles.length; i += 2) {
+      const dx = wrapDelta(this.waterTiles[i] + 8 - c.focusX, c.wrap), dz = wrapDelta(this.waterTiles[i + 1] + 8 - c.focusZ, c.wrap);
+      if (dx * dx + dz * dz < lim * lim) r.drawMesh(this.waterMesh, m4.translation(mat, dx - 8, this.world.water.level - 1, dz - 8), 0.6, null, this.waterTiles[i], this.world.water.level - 1, this.waterTiles[i + 1]);
+    }
 
     let n = this.fx.write(this.billBuf);
     const bb = this.billBuf;

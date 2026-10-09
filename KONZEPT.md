@@ -1,8 +1,10 @@
-# Kaputtmacher – Spielkonzept (Entwurf 11)
+# Kaputtmacher – Spielkonzept (Entwurf 12)
 
 Status: in Umsetzung. Dieser Entwurf nennt überall konkrete Zahlen; sie entsprechen dem Stand im Code. Was fehlt oder abweicht, steht in Abschnitt 16.
 
-**Neu gegenüber Entwurf 10:** Festhalten und Klettern an Hauswänden (4.2), fahrender Verkehr auf einem Straßennetz (8.2), acht neue Welten (7.4), sanft einsetzende Kettenreaktionen mit neuen Schwellen (5.3, 11.6), Dachlandung ohne Krater (4.2), Spielprotokoll und Spielstand als Datei (13), ruhigeres Selbstspiel (17), Testwerkzeuge im Projekt (16). Der Verlauf aller früheren Entwürfe steht in [VERLAUF.md](VERLAUF.md).
+**Neu gegenüber Entwurf 11:** Klettermodus an Wänden (4.2), Welten mit eigenen Naturgesetzen und Meeresbewohnern (11.1a, 8.2), Großgrundstücke mit Wahrzeichen, Hafenbecken, Stadtviertel, eingerichtete Häuser und Büros, versteckte Fundstücke (7.4a), Standfestigkeit schlanker Bauten (11.4a), Musik, die der Handlung folgt (13a), gezieltes Abschießen von Fliegendem (8.1), der Flieger prallt ab (9.2), der Affe hebt immer etwas auf (9.2), die Feuerwehr lässt Bränden Zeit (8.1).
+
+**Neu in Entwurf 11 war:** Festhalten und Klettern an Hauswänden (4.2), fahrender Verkehr auf einem Straßennetz (8.2), acht neue Welten (7.4), sanft einsetzende Kettenreaktionen mit neuen Schwellen (5.3, 11.6), Dachlandung ohne Krater (4.2), Spielprotokoll und Spielstand als Datei (13), ruhigeres Selbstspiel (17), Testwerkzeuge im Projekt (16). Der Verlauf aller früheren Entwürfe steht in [VERLAUF.md](VERLAUF.md).
 
 ---
 
@@ -92,12 +94,13 @@ Weitere Anpassungen: Vorführ-Hinweise erscheinen oben statt unten, damit sie ni
 | Steuerung in der Luft | voll: Man kann gezielt auf ein Dach springen |
 | **Sprung mit Richtung** | Wer beim Springen eine Richtung hält, fliegt in diese Richtung: beim ersten Sprung mit dem **2-Fachen**, nach dem zweiten Sprung mit dem **3,4-Fachen des Lauftempos**, im Sprint jeweils das 1,75-Fache davon. Kleine Figuren laufen langsam und sind nur kurz in der Luft; für sie gilt ein Mindesttempo von 12 (erster Sprung) und 21 (zweiter Sprung) Welt-Einheiten pro Sekunde. Gemessen: Doppelsprung ohne Sprint rund 40 Würfel auf Stufe 1, 48 auf Stufe 2, 60 auf Stufe 3 – eine normale Straße ist 8, eine Allee 16 Würfel breit, dazu die Gehwege. Ein einfacher Sprung trägt 15 bis 27 Würfel. Ohne Richtung geht es senkrecht hoch; die Stampfattacke (dritter Druck) bricht den Flug ab. Je höher der Absprungpunkt, desto länger der Flug. Es ist kein Angriff: Im Flug bricht nur, was auch beim Laufen bricht |
 | Dachkante | In der Luft wird eine Kante bis zu einer halben Körperhöhe über den Füßen noch gefasst – ein Sprung, der ein Dach fast erreicht, landet darauf |
-| **Festhalten an der Wand** | Ein Sprung, der an der Wand eines Gebäudes endet, reißt nicht mehr einfach ein Loch hinein: Die Figur **krallt sich fest** (Arme hoch, Beine angezogen) und hängt dort, solange die Wand hält. Beim Zupacken bricht ein Stück heraus – eine Delle bei einer kleinen Figur, ein richtiges Loch bei einer großen (Radius 9 % der Körperhöhe plus 0,8 Würfel) |
-| Klettern | Sprungtaste an der Wand: ein Sprung senkrecht nach oben (2,4 Körperhöhen), lenkbar. Zur Wand hin endet er im nächsten Griff weiter oben, über die Kante auf dem Dach, von der Wand weg trägt er über die Straße; danach ist auch der Doppelsprung wieder frei |
-| Loslassen | Von der Wand weg steuern. Wer rennt (Umschalt), krallt sich nicht fest, sondern bricht wie bisher durch die Wand |
-| Gewicht | Ab Stufe 3 reißen die Krallen alle 0,7 Sekunden weiter Stücke heraus. Gibt die Wand nach, fällt die Figur. Im Test hingen Figuren der Stufen 6 und 8 mindestens drei Sekunden und kletterten bis aufs Dach |
+| **Festhalten an der Wand** | Ein Sprung, der an der Wand eines Gebäudes endet, reißt nicht einfach ein Loch hinein: Die Figur **krallt sich fest** (Arme hoch, Beine angezogen) und ist damit im **Klettermodus**. Beim Zupacken bricht ein Stück heraus – eine Delle bei einer kleinen Figur, ein richtiges Loch bei einer großen (Radius 9 % der Körperhöhe plus 0,8 Würfel) |
+| **Klettern** | Dieselbe Steuerung wie am Boden, nur an der Wand: **vorwärts = hinauf, rückwärts = hinunter, links und rechts = seitlich an der Wand entlang**. Am Handy ist das der Stick. An einer Hausecke geht es von selbst um die Ecke herum auf die nächste Seite, in einer Innenecke auf die Querwand. Oben zieht sich die Figur aufs Dach oder auf einen Sims; unten steht sie wieder auf dem Boden. Tempo: 4 + 1,1 × Körperhöhe Würfel pro Sekunde. Die Kamera stellt sich hinter die Figur |
+| Klettermodus verlassen | Nur auf drei Arten: Es gibt nichts mehr zum Greifen (die Wand ist weg), die Füße stehen (Boden, Dach, Sims), oder man drückt die Sprungtaste. Wer rennt (Umschalt), krallt sich gar nicht erst fest, sondern bricht wie bisher durch die Wand |
+| Sprung von der Wand | Die Sprungtaste stößt die Figur **nach oben und ein Stück nach hinten** ab (2,4 Körperhöhen hoch). Wer danach wieder nach vorn drückt, landet weiter oben erneut an der Wand; der Doppelsprung ist danach wieder frei |
+| Gewicht | Ab Stufe 3 reißen die Krallen beim Klettern jede Sekunde weiter Stücke heraus. Gibt die Wand nach, fällt die Figur |
 | Angriff | An der Wand hängend kann man zuschlagen |
-| Nicht | Der Panzer, der Flieger und das Selbstspiel halten sich nicht fest; an Bäumen, Laternen und Kleinkram auch niemand |
+| Wer klettert | Alle Figuren außer Panzer und Flieger, auch im Selbstspiel (dort klettert die Figur einfach hinauf). An Bäumen, Laternen und Kleinkram hält sich niemand fest |
 | **Panzer** | Springt nicht, er hüpft: 0,7 Körperhöhen hoch, ohne Doppelsprung, ohne Stampfattacke, ohne Schub in der Luft und ohne Krater bei der Landung. Das reicht, um aus einer selbst gegrabenen Kuhle wieder herauszukommen |
 | Landung | Springen kann das Monster von Anfang an. Ab Stufe 2 ist jede Landung am Boden ein Stampfer mit Krater und Druckwelle; mit Stufe 1 gibt es nur eine Staubwolke. **Auf einem Dach** gibt es den Krater nur, solange die Sprungtaste bei der Landung gehalten wird – wer von Dach zu Dach hüpft, schlägt nicht in jedes ein Loch |
 
@@ -239,6 +242,36 @@ Inhalt:
 
 Alle Welten entstehen aus Bauplänen im Code mit festem Startwert: Wer eine Welt in der Weltauswahl erneut wählt, bekommt dieselbe Welt heil zurück. Einen eigenen Neu-aufbauen-Knopf gibt es nicht mehr.
 
+### 7.4a Großgrundstücke, Viertel und Innenleben
+
+**Großgrundstücke.** Der Stadtgenerator kann mehrere Grundstücke zu einem zusammenlegen; die Straßen dazwischen entfallen (auch auf der Straßenkarte). Darauf stehen die Wahrzeichen einer Welt, deutlich größer als alles andere:
+
+| Welt | Wahrzeichen (je 2 × 2 Grundstücke, rund 58 × 58 m) |
+|---|---|
+| Vergnügungspark | **Verschlungene Achterbahn** (siehe unten), Riesenrad in doppelter Größe |
+| Burg und Dorf | Große Burg: die Burg in doppelter Größe, Mauern zwei Würfel dick, Bergfried rund 40 m |
+| Flughafen | Jumbojets (doppelte Größe) auf eigenem Vorfeld; Großterminal mit Kontrollturm |
+| Hafen | **Hafenbecken** (3 × 2 Grundstücke) mit zwei Ozeanriesen |
+| Raumhafen | Große Montagehalle, großes Radioteleskop |
+| Winterwelt | Schneemann in doppelter Größe (rund 50 m) |
+| Stadt unter dem Meer | Große Kuppel |
+| Welt der Riesenbauten | Große Pyramide, großes Stadion |
+| Stadt, Wolkenkratzer-Stadt | Stadion |
+
+Die doppelte Größe entsteht ohne eigene Baupläne: Ein Stellvertreter des Generators vergrößert alles, was ein Bauplan zeichnet, um einen ganzen Faktor; jeder Würfel wird zu einem Block aus 2 × 2 × 2. Dadurch werden auch Wände dicker und halten mehr aus.
+
+**Die verschlungene Achterbahn.** Sie ist kein Fahrgeschäft für sich, sondern windet sich um die anderen: Ihre Strecke ist eine liegende Acht, eine Schleife um ein Riesenrad, die andere um Zirkuszelt und Karussell. Die Höhe folgt drei überlagerten Wellen – ein langer Anstieg mit Abfahrt, drei Hügel und eine Welle, die dafür sorgt, dass an der Kreuzung der Acht ein Strang hoch und der andere tief liegt – dazu ein einzelner hoher Buckel an zufälliger Stelle und eine leichte seitliche Schlängelung. Stützen reichen jeweils bis zu dem, was darunter liegt. Keine zwei Bahnen sind gleich.
+
+**Hafenbecken.** Ein ausgehobenes Becken, 5 m tief, gefüllt mit Wasser. Das Wasser besteht nicht aus Würfeln: Es ist eine durchscheinende Fläche, die das Spiel über das Becken legt, und lässt sich deshalb nicht zerstören. Man kann hineinsteigen und hindurchwaten; kleine Kaputtmacher verschwinden darin ganz, große stehen bis zu den Knien drin. Solange das Wasser über Kniehöhe reicht, geht es nur mit 60 % des Tempos voran, und es spritzt. Im Becken liegen zwei Ozeanriesen (Frachter in doppelter Größe, über 45 m lang, der Rumpf steht auf dem Grund), dazu Bojen; auf dem Wasser kreuzen je drei Boote (ein Fährschiff, zwei Schlepper), die sich versenken lassen. Bewohner laufen nicht ins Becken.
+
+**Viertel.** Wolkenkratzer-Stadt, Stadt und Dorf sind in Viertel geteilt: Um zufällige Mittelpunkte herum bevorzugt jedes Viertel seine eigenen Grundstücksarten. In der Wolkenkratzer-Stadt gibt es Hochhausviertel (Türme und Zwillingstürme dreimal so häufig, kaum Flachbauten), Geschäfts- und Wohnviertel (Ladenzeilen, Wohnblocks, Parkhäuser, Plätze, nur halb so viele Türme) und gemischte Viertel. In der Stadt kommen Viertel mit Einfamilienhäusern und Parks dazu.
+
+**Innenleben.** Wer ein Gebäude zerlegt, sieht, was darin ist:
+
+- **Wohnhäuser** in allen Planetenwelten haben zu drei Vierteln Zimmer mit Möbeln: Tisch, Bett, Sofa, Regal, Küchenzeile, Badewanne – und neu Fernseher mit leuchtendem Bild, Schreibtisch mit Computer und Stuhl, Kleiderschrank, Topfpflanze.
+- **Bürotürme** haben auf jedem zweiten Stockwerk Schreibtische mit leuchtenden Bildschirmen und Bürostuhl, Aktenschränke, Topfpflanzen und hier und da ein Sofa.
+- **Versteckte Fundstücke.** In etwa jedem vierzehnten Wohnhaus und in den Schatzkammern von Burg und Pyramide steckt etwas Unerwartetes: eine Gummiente, ein goldener Pokal, eine kleine Kaputtmacher-Statue, ein Klavier, eine Schatztruhe, eine Diskokugel. Jedes hat einen goldenen Würfel im Kern. Wer ihn zerbricht, bekommt einen Goldregen, ein kleines Feuerwerk, einen Klang und Macht (400 × Stufe²); es zählt für die Erfolge „Entdecker“, „Schatzsucher“ und „Spürnase“.
+
 ### 7.5 Weltauswahl
 
 Die nächste Welt bestimmt der Spieler selbst.
@@ -312,6 +345,9 @@ In Welten mit Bewohnern (Dorf, Park, Stadt, Fabrik, Wolkenkratzer-Stadt, Würfel
 - **Feuerwehr:** kommt unabhängig von der Alarmstufe, sobald etwas brennt – ein Löschzug, bei viel Feuer oder hoher Alarmstufe bis zu drei. Sie fahren bis auf etwa 26 m an den Brand, spritzen einen Wasserbogen darauf und löschen alle 0,35 Sekunden, was im Umkreis von rund 9 m brennt. Der rote Lösch-Hubschrauber mit Wassersack löscht aus der Luft einen Umkreis von über 20 m, fliegt zum Nachfüllen weg und kommt wieder. Lässt man sie in Ruhe, ist ein Brand in wenigen Sekunden aus.
 - **Reporter:** die bisherigen Hubschrauber, jetzt erkennbar als Presse (weiß oder blau mit gelbem Streifen und Lampe). Ihr Suchscheinwerfer ist ein breiter, weicher Lichtkegel, der in einem hellen Fleck um den Kaputtmacher endet – kein dünner Strahl, den man für einen Schuss halten könnte.
 - **Militär:** olivgrüne Hubschrauber mit Stummelflügeln kreisen enger und feuern alle paar Sekunden eine Leuchtspur-Garbe; Kampfflieger schießen im Überflug zwei Raketen ab. Beides prallt wirkungslos am Kaputtmacher ab (Funken, kleiner Blitz). Es gibt weiterhin kein Scheitern.
+- **Abziehen:** Sinkt die Alarmstufe, ziehen alle überzähligen Hubschrauber gleichzeitig und zügig ab (spätestens nach neun Sekunden sind sie weg), ebenso die überzähligen Fahrzeuge. Vorher gingen sie einzeln, und Militärhubschrauber blieben teils hängen.
+- **Die Feuerwehr lässt Bränden Zeit.** Sie rückt erst aus, wenn es neun Sekunden gebrannt hat; ein Schlauch löscht höchstens fünf Würfel pro halber Sekunde im Umkreis von gut 3 m, der Lösch-Hubschrauber kommt erst bei großen, lange brennenden Feuern. Auch die Hydranten-Fontäne löscht nur noch die nächste Umgebung. So kann ein Feuer sich erst einmal ausbreiten.
+- **Gezielt abschießen:** Was fliegt oder schwimmt, lässt sich anvisieren. Liegt ein Hubschrauber, Kampfflieger, U-Boot oder Boot nahe am Zielstrahl (großzügig bemessen, weil sie sich bewegen) und vor der Wand dahinter, wird es zum Ziel: Schüsse und Strahlen gehen genau dorthin, Raketen verfolgen es. Auch Schläge und Explosionen in der Nähe holen Fliegendes herunter.
 - **Alles ist zerstörbar:** Fahrzeuge zerplatzen, wenn ein Schlag in ihrer Nähe landet oder der Kaputtmacher darauf tritt; alles, was fliegt, wird von Schlag, Geschoss, Strahl oder Explosion vom Himmel geholt, trudelt ab und explodiert am Boden. Nachschub kommt nach einigen Sekunden.
 - Abschaltbar in den Einstellungen („Einsatzkräfte“); die Detailstufe bestimmt ihre Zahl.
 
@@ -329,6 +365,8 @@ Jede Planetenwelt ist auf einem Raster aus Grundstücken gebaut; daraus ergibt s
 - **Einsatzkräfte** kommen über das Straßennetz und biegen an jeder Kreuzung zum Ziel hin ab; erst das letzte Stück fahren sie querfeldein.
 - Verkehr gehört zum Schalter „Bewohner und Verkehr“.
 - **Grenzen:** Autos weichen einander nicht aus und können sich durchdringen; Ampeln und Vorfahrt gibt es nicht.
+- **Unter dem Meer** fährt nichts auf den Straßen, dafür schwimmt der Verkehr: Haie, die den Kaputtmacher umkreisen, Wale hoch oben, Fischschwärme und kleine U-Boote mit Scheinwerfer, zusammen rund 16. Sie weichen Gebäuden aus. Tieren kann man nichts tun – ein Schlag in ihrer Nähe lässt sie davonschießen –, U-Boote zerplatzen wie Autos.
+- **Im Hafen** kreuzen Boote auf dem Becken (7.4a).
 
 ## 9. Figuren und ihre Angriffe
 
@@ -361,6 +399,8 @@ Jede Planetenwelt ist auf einem Raster aus Grundstücken gebaut; daraus ergibt s
 | 💥 Stampfen (5) | Stampft mit einem Fuß auf: Stoßring ringsum | Sprungschlag: springt in hohem Bogen bis zu 6 H weit auf den Zielpunkt und landet mit beiden Fäusten – Krater und zwei Stoßringe nacheinander |
 | 🥁 Raserei (7) | Brusttrommeln: fünf Druckringe, die Glas weit im Umkreis zerspringen lassen | Neun Hammerschläge in 1,7 Sekunden, abwechselnd links und rechts |
 
+**Was der Affe wirft.** Er hebt immer etwas auf, und zwar bevorzugt etwas, das nach einem Gegenstand aussieht: zuerst das nächste Ding in gut einer Armlänge (1,3 Körperhöhen plus 3 m), das er im Ganzen heben kann – je nach Größe ein Gartenzwerg, ein Auto, ein Baum –, und dreht sich dorthin. Gibt es keins, reißt er einen Brocken aus dem Gebäude vor sich. Steht er im Freien, bleibt ein Klumpen Boden vor seinen Füßen. Mit leeren Händen wirft er nie.
+
 **🤖 Roboter**
 
 | Angriff | Schnell | Stark |
@@ -390,7 +430,7 @@ Der Panzer zielt mit dem Turm unabhängig von der Fahrtrichtung.
 | 💣 Bombenteppich (5) | Drei Bomben nacheinander | Zwölf Bomben in 1,3 Sekunden entlang der Flugbahn |
 | 🔥 Schwer (7) | Drei Brandbomben: kleine Explosion, großes Feuer | Eine Riesenbombe (Radius 14 + 2,4 S) |
 
-Der Flieger steht nie still: A/D lenkt, W/S steigt und sinkt, Umschalt ist der Nachbrenner (Tempo 42 + 1,3 H Würfel pro Sekunde, mit Nachbrenner das 1,7-Fache). **Die Schnauze zeigt immer in Flugrichtung** – der Flieger dreht sich nicht mehr zum Ziel. Stattdessen trägt er unter dem Bauch ein Anbauteil je Waffe: einen Zwillingsgeschützturm (Bordwaffen) und einen Raketenwerfer mit zwei Behältern (Raketen), die sich rundum zum Zielpunkt drehen, der Turm neigt zusätzlich seine Rohre; eine Reihe Bomben (Bombenteppich) und zwei leuchtende Brandbehälter (Brandbomben), die keine Richtung brauchen. Gezeichnet wird nur das Teil der gewählten Waffe; Schüsse und Raketen starten dort. Er legt sich in die Kurve, gleitet über alles, was unter ihm liegt, und bricht mit der Nase durch alles, was vor ihm steht. Über Inseln dreht er am Rand von selbst um. Springen und Brüllen gibt es für ihn nicht.
+Der Flieger steht nie still: A/D lenkt, W/S steigt und sinkt, Umschalt ist der Nachbrenner (Tempo 42 + 1,3 H Würfel pro Sekunde, mit Nachbrenner das 1,7-Fache). **Die Schnauze zeigt immer in Flugrichtung** – der Flieger dreht sich nicht mehr zum Ziel. Stattdessen trägt er unter dem Bauch ein Anbauteil je Waffe: einen Zwillingsgeschützturm (Bordwaffen) und einen Raketenwerfer mit zwei Behältern (Raketen), die sich rundum zum Zielpunkt drehen, der Turm neigt zusätzlich seine Rohre; eine Reihe Bomben (Bombenteppich) und zwei leuchtende Brandbehälter (Brandbomben), die keine Richtung brauchen. Gezeichnet wird nur das Teil der gewählten Waffe; Schüsse und Raketen starten dort. **Durch Gebäude fliegen geht nicht mehr.** Trifft die Nase etwas Festes, reißt der Flieger ein großes Loch hinein (Radius 0,75 Körperhöhen plus 1,5 m, kräftiger Stoß gegen das Gebäude – es kann durchaus fallen) und **prallt ab**: Eine Dreiviertelsekunde lang wird er herumgeworfen, steigt und reagiert nicht auf die Steuerung. Im Test prallte er in 14 Sekunden Geradeausflug dreimal ab und steckte nur in 2 % der Zeit in etwas Festem. **Unter die Erde** kommt er nicht mehr: Er fliegt nie tiefer als knapp über dem Boden, und sein Aufprall schont den Boden. Er legt sich in die Kurve, gleitet über alles, was unter ihm liegt, und bricht mit der Nase durch alles, was vor ihm steht. Über Inseln dreht er am Rand von selbst um. Springen und Brüllen gibt es für ihn nicht.
 
 ### 9.3 Animation und Wucht
 
@@ -420,6 +460,23 @@ Reihenfolge: Laufen → Schlag → Springen → Zähler füllt sich → Macht fl
 - Fallbeschleunigung für Trümmer, Bruchstücke und Geschosse: **85 Würfel pro Sekunde²**. Das sind auf Planeten 42 m/s² (gut das Vierfache der Erde), in Garten und Wohnstraße 21 m/s², im Bauklotz-Zimmer 17 m/s².
 - Entwurf 2 rechnete mit 30. Der Wert ist bewusst unrealistisch hoch: Große Dinge wirken in echt träge, und genau diese Trägheit liest ein Kind als „schwebt“.
 - Das Monster fällt zusätzlich proportional zu seiner Größe schneller (4.2).
+
+### 11.1a Naturgesetze je Welt
+
+Die meisten Welten teilen dieselben Regeln. Wo das nicht passt, hat die Welt eigene:
+
+| Regel | Überall sonst | Stadt unter dem Meer |
+|---|---|---|
+| Schwerkraft | 85 | 30 % davon, für Figur, Trümmer und Bruchstücke |
+| Widerstand | keiner | Wasser bremst alles: Trümmer sinken, statt zu krachen |
+| Springen | Sprung, Doppelsprung, Stampfattacke | Der Sprung ist hoch und langsam. **Jeder weitere Druck in der Schwebe ist ein Schwimmzug** nach oben (1,3 Körperhöhen), beliebig oft, mit Blasenring. Sinken ist langsam |
+| Feuer | nach Flammpunkten (11.7) | Nichts brennt, nichts verrußt. Sprengstoff explodiert trotzdem; statt Flammen steigen Blasen auf, statt eines Brandherds bleibt eine Schlickwolke |
+| Hydranten | Wasserfontäne | Es gibt keine, und nichts spritzt |
+| Ton | klar | dumpf (Tiefpass) |
+| Leben | Bewohner, Verkehr, Einsatzkräfte | Bewohner als Taucher; Meerestiere und U-Boote statt Autos (8.2); keine Einsatzkräfte |
+| Umgebung | – | Ringsum steigen Luftblasen auf |
+
+Die anderen Welten wurden daraufhin durchgesehen: Sie brauchen keine eigenen Regeln. In der Winterwelt ändern sich nur Boden und Bäume; ob Schnee Feuer bremsen oder Eis rutschig sein sollte, ist eine offene Frage (Abschnitt 14).
 
 ### 11.2 Drei Zustände eines Voxels
 
@@ -454,6 +511,23 @@ Ein Gebäude muss nicht mehr Würfel für Würfel vom Boden getrennt werden.
   Ein Holzschuppen fällt also, wenn unten ein gutes Fünftel fehlt; ein Betonturm erst, wenn unten fast die Hälfte fehlt. Je höher im Gebäude, desto mehr darf fehlen.
 - **Ankündigung:** Erst knackt und ächzt es, Staub rieselt aus der Schicht; nach 0,45 bis 0,95 Sekunden bricht sie.
 - **Einsturz:** Die Schicht und ihre beiden Nachbarn werden zerdrückt. Alles darüber verliert den Halt, wird zum Bruchstück und kippt zu der Seite, an der am meisten fehlt.
+
+### 11.4a Schlanke Bauten: Was auf zu wenig steht, fällt
+
+Die Haltprüfung (11.3) fragt nur, ob ein Stück noch irgendwo den Boden berührt. Für schlanke Dinge reicht das nicht: Eine Baumgruppe mit verwachsenen Kronen hing am letzten Stamm, ein halbes Riesenrad an einem Bein. Zwei Mechanismen kommen dazu; beide berücksichtigen Dicke und Material.
+
+**Standfestigkeit (`frail.js`).** Nach jedem Schaden wird, was dort noch steht, als Ganzes betrachtet (bis 45 000 Würfel; größere Gebäude regelt weiter 11.4): Gewicht, Schwerpunkt und Standfläche. Es fällt, wenn
+
+- der Schwerpunkt weiter neben der Standfläche liegt, als sie breit ist plus eine Nachsicht von 1,5 Würfeln + 0,12 × Wurzel der Tragkraft der Standfläche – ein Stahlfuß verzeiht also mehr Überhang als ein Holzstamm –, oder
+- das Gewicht die Tragkraft der Standfläche um mehr als das 160-Fache übersteigt.
+
+Dann bricht die Standfläche, und das Stück kippt in Richtung seines Schwerpunkts. Ein Baum, dem die Nachbarn fehlen, steht weiter; eine Baumgruppe auf einem Stamm kippt.
+
+**Nachgeben beim Auffangen (`bodies.js`).** Ein gefallenes Bruchstück, das zur Ruhe kommt, darf liegen oder lehnen, wenn es massiv ist. Ist es aber ein schlankes Gerippe (Anteil gefüllter Würfel × mittlere Festigkeit unter 2,2 – ein Riesenrad, ein Stück Gleis, ein Kranausleger, ein Baum) und hängt aufgestützt in der Luft statt flach am Boden zu liegen, dann gibt es nach: Kleine Stücke gehen als Schauer von Einzelteilen nieder, große brechen in der Mitte und fallen weiter. Ein dicker Stahlträger hält, dünnes Holz knickt sofort.
+
+**Bäume** stehen in Parks und Wäldern jetzt so weit auseinander, dass sich die Kronen nicht mehr berühren.
+
+**Was fehlt:** Verbiegen. Stücke fallen und brechen, sie verformen sich nicht.
 
 ### 11.5 Schubsen
 
@@ -587,6 +661,35 @@ Daneben lassen sich die teuren Effekte einzeln abschalten: Staub- und Rauchwolke
 
 **Ton:** Bruchklang je Materialfamilie, abhängig von der Größe des Ereignisses. Ein Einsturz klingt nach seinen Vorgängen: **Beton knackt**, wenn sich ein großes Teil löst; **Stahl ächzt** mit einem langen, schwankenden Ton, solange ein großes Teil fällt; beim Aufschlag **bröckelt Mauerwerk** in vielen kurzen Stößen auf einem tiefen Schlag, **Glasfassaden regnen** als Klirr-Schauer herab, Blech und Stahl scheppern, Holz kracht. Welche Geräusche fallen, richtet sich danach, woraus das Bruchstück tatsächlich besteht. Dazu Feuerknistern, das mit der Menge des Brennenden lauter wird, Schritte, Brüllen, Rufe der Bewohner, Fanfaren.
 
+### 13a Musik
+
+Musik, die der Handlung folgt, vollständig im Browser erzeugt (`music.js`, keine Dateien). Stil: **Electro Swing** – geswingte Achtel, laufender Bass, Bläser-Einwürfe auf den Nachschlägen, bei Hochbetrieb durchgehende Bassdrum und knurrender Wobble-Bass.
+
+**Komponiert, nicht gewürfelt.** Es gibt ein Thema von 16 Takten in der Form A A B A, ausgeschrieben als Tonleiterstufen über einer festen Akkordfolge:
+
+- **Motiv** (Takt 1): Quinte, Quinte, Sexte, Quinte, Terz, Grundton, Terz – der Dreiklang, umspielt, mit einem punktierten Auftakt.
+- **Antwort:** hinauf zum Grundton und zurück; dann das Motiv eine Stufe höher (Sequenz) und ein Halbschluss auf der Dominante.
+- **Zweite Hälfte:** das Motiv kehrt wieder, ein Lauf die Tonleiter hinab, Leitton und Ganzschluss auf dem Grundton.
+- **Mittelteil (B):** lange Töne, höher gelegen, über anderen Akkorden; die letzte Zeile führt zum Motiv zurück.
+- Betonte Zählzeiten liegen auf Akkordtönen; in Moll wird auf der Dominante die siebte Stufe erhöht.
+- Akkorde in Moll: i i iv V | i VI iv V–i, Mittelteil VI III iv V. In Dur: I vi IV V | I vi IV V–I, Mittelteil IV I ii V.
+
+**Was sich im Spiel ändert:**
+
+| Auslöser | Wirkung |
+|---|---|
+| Intensität (aus dem, was gerade zerstört wird, und der Alarmstufe) steigt | Schichten kommen dazu: Fläche → Bass und Becken → Bassdrum, Snare und Melodie → Bläser-Einwürfe, Shaker, Melodie in Terzen → Wobble-Bass, Bassdrum auf allen Vieren, Trommelwirbel zum Abschnittswechsel |
+| | Tempo von 98 auf 138 Schläge pro Minute; je schneller, desto gerader der Swing |
+| | lauter |
+| Etwas geht gerade kaputt | kurzes Anschwellen der Lautstärke |
+| Alarmstufe ebbt ab, Ruhe | die Musik beruhigt sich langsam (steigt in gut einer Sekunde, fällt über sieben) |
+| Neuer Abschnitt | das Thema wandert durch die Instrumente: Glocken, Lead, Bläser |
+| Andere Welt | eigene Tonart, Dur oder Moll, eigener Lead-Klang – das Thema bleibt dasselbe. Spielzeug-, Garten-, Dorf- und Winterwelten stehen in Dur, Städte, Hafen, Fabrik, Burg und Meer in Moll |
+| Unter Wasser | alles klingt dumpf |
+| Menü offen | leise Grundschicht |
+
+Eigener Lautstärkeregler in den Einstellungen (0 = aus). **Niemand hat diese Musik bisher gehört:** Der Ablauf ist rechnerisch geprüft (rund 13 800 Töne in allen Welten, alle zwischen 52 und 3 950 Hz), ob sie gut klingt und die Lautstärken stimmen, kann nur ein Mensch sagen.
+
 **Oberfläche:** unten Werkzeugleiste, rechts unten Springen und Brüllen, oben Welt-Zähler mit den Sternen der Alarmstufe, links oben Macht-Ring mit Stufe und darunter die Einblendungen der Erfolge, rechts oben Weltauswahl, Selbstspiel, Erfolge und Einstellungen.
 
 **Einstellungen** (Zahnrad, ein gewöhnlicher Knopf; neben dem Impressum-Link der einzige Ort mit Text): Lautstärke, Grafik-Regler (12.4), Staub und Rauch, Feuerausbreitung, Einsatzkräfte, Kamerawackeln, Bewohner und Verkehr, Kettenreaktionen, Militär stößt zurück, Selbstspiel nach 2 Minuten, alles freischalten, Vollbild, freie Flugkamera – und **„Von vorn beginnen“**. Früher öffnete sich das Zahnrad erst nach drei Sekunden Halten und war blass dargestellt; das wirkte wie abgeschaltet und ließ sich nicht entdecken.
@@ -618,6 +721,7 @@ Offen aus der Analyse vom Oktober 2026, nach Wirkung sortiert:
 | 9 | Oberfläche ausdünnen | Ring, Zähler, Sterne, Karten und vier Knöpfe stehen im Bild |
 | 10 | Stellgrößen bündeln, `main.js` und `tools.js` teilen | Beide Dateien haben rund 1 000 Zeilen |
 | 11 | Schlagschatten; Zeitlupe und Zurückspulen; Feuer an fallenden Bruchstücken | Ältere Wünsche |
+| 12a | Verbiegen statt Brechen; rutschiges Eis und Schnee, der Feuer bremst | Aus der Durchsicht der Naturgesetze je Welt (11.1a, 11.4a) |
 | 12 | Weitere Welten | Ideen: Wüste mit Oase und Pyramidenfeld, Vulkaninsel, Wildwest-Stadt mit Eisenbahn, Süßigkeitenland, Mondbasis |
 
 ## 15. Entscheidungen
@@ -644,6 +748,8 @@ Offen aus der Analyse vom Oktober 2026, nach Wirkung sortiert:
 **Stand der Neuerungen aus Entwurf 9:** Sichtfenster und Hydranten-Fontäne (samt Löschen eines Brandherds) sind auf Standbildern geprüft, die Progression über Messläufe je Stufe (5.3). Das Zerdrücken kleiner Gebäude, das tote Gewicht, die Staubwolken, die Funken an Lampen, explodierende Autos und das Zischen des Wassers liefen in den Messläufen fehlerfrei mit, wurden aber nicht einzeln begutachtet. Ein durchgehender Lauf von Stufe 1 bis 9 mit den neuen Schwellen wurde nicht gemessen.
 
 **Prüfwerkzeuge.** Im Ordner `tools/` (wird nicht veröffentlicht) liegen `check.mjs` (ohne Browser: Laden beschädigter Spielstände, Erfolgsliste, Erzeugung aller Welten) und `smoke.mjs` (spielt in einem eigenen Headless-Browser alle 18 Welten und sechs längere Szenarien durch). Beide liefen mit diesem Stand fehlerfrei. Was nur ein Mensch beurteilen kann, steht als Checkliste in `TESTEN.md`; sie ist noch nicht abgearbeitet.
+
+**Stand der Neuerungen aus Entwurf 12:** Gemessen: Klettern auf Stufe 2 (hinauf, hinunter, seitlich um eine Ecke, Sprung von der Wand und erneutes Greifen), auf den Stufen 5 und 7 mit Einschränkungen (große Figuren reißen die Wand ein und fallen; an einem Sims wechselte die Figur ins Gebäude); Schwimmen unter dem Meer (sechs Züge, 35 Würfel Höhe) mit zwölf Meerestieren und U-Booten; der Flieger prallt ab und bleibt über dem Boden; eine Baumgruppe mit durchtrennten Stämmen fällt; alle 18 Welten werden mit Großgrundstücken erzeugt. Auf Standbildern gesehen: die verschlungene Achterbahn um ein Riesenrad, das Hafenbecken mit durchscheinendem Wasser und Ozeanriesen. **Nicht geprüft oder nicht begutachtet:** die Musik (nie gehört), das Anvisieren von Hubschraubern in der Praxis, der Wurf des Affen, das Abziehen der Hubschrauber bei sinkendem Alarm, das Nachgeben aufgefangener Gerippe (ein Riesenrad ließ sich im Test nicht zum Kippen bringen, weil seine Fußbalken breit sind), Waten und Boote, Büros und Möbel im Bild, Fundstücke, das Klettern im Selbstspiel, die große Burg und die Jumbojets im Bild.
 
 **Stand der Neuerungen aus Entwurf 11:** Auf Standbildern gesehen: alle acht neuen Welten (Riesenrad, Achterbahn, Zelte, Buden; Schiffe, Tanklager, Containerberge; Statue, Kühltürme, Stadion; Burgen, Windmühle; Schanze, Schneemann, Eisbahn, Tannen; Flugzeuge, Hangars, Kontrollturm; Kuppeln, Korallen, Tang, Bohrinsel; Raketen samt Explosion beim ersten Treffer, Montagehalle); das Festhalten an der Wand ist gemessen (Griff, Halten, Klettern, Loslassen auf den Stufen 1, 3, 6 und 8), aber nicht im Bild begutachtet; fahrende Autos auf den Straßen. Gemessen: Im Stadtverkehr warteten Autos in 3 bis 6 % der Zeit vor einem Hindernis, keines stand neben der Straße; die Einnahmen je Stufe (5.3). **Nicht begutachtet:** wie der Verkehr in Bewegung aussieht (Abbiegen, Ausweichen, Durchdringen), ob Einsatzfahrzeuge über das Straßennetz sauber ans Ziel kommen, die Dachlandung, die Selbstspiel-Kamera, Ballons, das Zurückstoßen durch das Militär, Sichern und Laden des Spielstands als Datei (die Prüfung der Daten ist getestet, der Dialog des Browsers nicht), die Pause im Hintergrund. Die Schwellen der Erfolge sind weiter geschätzt.
 
@@ -711,7 +817,7 @@ Macht und Stufen wachsen dabei ganz normal und werden gespeichert. Figur und Stu
 
 ## 18. Erfolge
 
-128 kleine Ziele, jedes eine Schwelle auf einem Zähler: zerstörte Würfel insgesamt und nach Material, Gebäude und Hochhäuser, Einstürze, zerdrückte Häuser, die längste Kettenreaktion, mehrere Gebäude in zehn Sekunden, zerstörte Welten (auch jede der 18 einzeln), erreichte Stufen (insgesamt, je Figur, mit allen Figuren), Explosionen, Brände, Hydranten, Lampen, erwischte fahrende Autos, umgeworfene Polizei- und Feuerwehrautos, abgeschossene Reporter-, Militär-Hubschrauber und Kampfflieger, die Alarmstufe, Sprünge, Saltos, Stampfbomben, Brüller, Rempler, zurückgelegte Strecke, durch die Luft gewirbelte Bewohner, Angriffe, gesammelte Macht, Zeit im Selbstspiel und Spielzeit, Sticker und die Zahl der Erfolge selbst.
+131 kleine Ziele, jedes eine Schwelle auf einem Zähler: zerstörte Würfel insgesamt und nach Material, Gebäude und Hochhäuser, Einstürze, zerdrückte Häuser, die längste Kettenreaktion, mehrere Gebäude in zehn Sekunden, zerstörte Welten (auch jede der 18 einzeln), erreichte Stufen (insgesamt, je Figur, mit allen Figuren), Explosionen, Brände, Hydranten, Lampen, erwischte fahrende Autos, umgeworfene Polizei- und Feuerwehrautos, abgeschossene Reporter-, Militär-Hubschrauber und Kampfflieger, die Alarmstufe, Sprünge, Saltos, Stampfbomben, Brüller, Rempler, zurückgelegte Strecke, durch die Luft gewirbelte Bewohner, Angriffe, gesammelte Macht, Zeit im Selbstspiel und Spielzeit, Sticker und die Zahl der Erfolge selbst.
 
 - **Einblendung:** Wird ein Erfolg erreicht, schiebt sich links unter dem Macht-Ring für gut vier Sekunden eine Karte herein: großes Symbol, Name, ein Satz dazu, ein Pokal an der Ecke, dazu ein kurzer heller Klang. Höchstens zwei Karten zugleich; warten mehr als drei, bleibt jede nur knapp zwei Sekunden.
 - **Lesen ist freiwillig.** Die Karten sind der einzige Text im Spielfeld. Wer nicht lesen kann, sieht Symbol und Pokal und hört den Klang; für das Spielen braucht man den Text nie.

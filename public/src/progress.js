@@ -30,7 +30,7 @@ const DEFAULTS = {
   stats: {}, // counters behind the achievements (buildings felled, jumps ...)
   achieved: [], // ids of achievements reached
   mixSeed: 0, // seed of the last randomly mixed world
-  settings: { volume: 0.8, detail: 0, shake: true, life: true, units: true, smoke: true, fireSpread: true, fightBack: false, unlockAll: false, cascade: true, autoIdle: false },
+  settings: { volume: 0.8, music: 0.6, detail: 0, shake: true, life: true, units: true, smoke: true, fireSpread: true, fightBack: false, unlockAll: false, cascade: true, autoIdle: false },
   mix: { ...DEFAULT_MIX },
 };
 
@@ -78,6 +78,7 @@ function sanitize(raw) {
   if (Array.isArray(s.log)) d.log = s.log.filter(isObject).slice(-60).map((e) => ({ c: cleanSpecies(e.c), s: cleanStage(e.s), t: Math.round(num(e.t, 0, 1e9, 0)), a: e.a === 1 ? 1 : 0 }));
   if (Array.isArray(s.achieved)) d.achieved = ACHIEVEMENTS.map((a) => a.id).filter((id) => s.achieved.includes(id));
   d.settings.volume = num(set.volume, 0, 1, d.settings.volume);
+  d.settings.music = num(set.music, 0, 1, d.settings.music);
   d.settings.detail = cleanDetail(Object.hasOwn(set, 'detail') ? set.detail : set.quality);
   for (const k of TOGGLES) if (typeof set[k] === 'boolean') d.settings[k] = set[k];
   for (const k of Object.keys(DEFAULT_MIX)) d.mix[k] = num(mix[k], 0, 1, DEFAULT_MIX[k]);

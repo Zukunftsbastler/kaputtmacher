@@ -53,7 +53,8 @@ export class Destruction {
   sphere(cx, cy, cz, r, power, o = NONE) {
     const g = this.g, w = g.world, rnd = g.rng;
     if (g.actors.units.length) g.actors.hit(cx, cy, cz, r); // police cars and fire engines in the way
-    if (g.traffic.cars.length) g.traffic.hit(cx, cy, cz, r);
+    if (g.traffic.cars.length || g.traffic.swimmers.length) g.traffic.hit(cx, cy, cz, r);
+    if (!o.quiet && (g.actors.helis.length || g.actors.jets.length)) g.actors.hitAir(cx, cy, cz, r); // blows and blasts reach what flies
     const x0 = Math.floor(cx - r), x1 = Math.ceil(cx + r), z0 = Math.floor(cz - r), z1 = Math.ceil(cz + r);
     const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(w.sy - 1, Math.ceil(cy + r));
     const r2 = r * r, imp = o.impulse ?? 16; // launch speed of the flying cubes
@@ -99,6 +100,7 @@ export class Destruction {
       for (let m = 1; m < mc.length; m++) if (mc[m] > mc[best]) best = m;
       g.onDamage(cx, cy, cz, r, removed, best);
     }
+    if (removed > 2) g.frail.note(cx, cy, cz, r); // is what remains still standing properly?
     return removed;
   }
 

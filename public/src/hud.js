@@ -451,6 +451,10 @@ export class Hud {
     vol.type = 'range'; vol.min = 0; vol.max = 1; vol.step = 0.05; vol.value = s.volume;
     vol.addEventListener('input', () => { s.volume = Number(vol.value); saveProgress(p); g.applySettings('volume'); });
     row('Lautstärke', vol);
+    const mus = document.createElement('input');
+    mus.type = 'range'; mus.min = 0; mus.max = 1; mus.step = 0.05; mus.value = s.music;
+    mus.addEventListener('input', () => { s.music = Number(mus.value); saveProgress(p); g.applySettings('music'); });
+    row('Musik (0 = aus)', mus);
     // One slider between speed and detail; nobody has to know what their device can do.
     el('p', 'note', sheet, 'Grafik: links läuft das Spiel flüssiger (kleinerer Ausschnitt, weniger Trümmer, Staub, Feuer und Fahrzeuge), rechts sieht es reicher aus. Ruckelt es, schiebe den Regler nach links. Die Welt wird dabei neu aufgebaut.');
     const auto = document.createElement('input'), q = document.createElement('input');

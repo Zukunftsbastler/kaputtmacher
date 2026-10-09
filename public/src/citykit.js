@@ -63,6 +63,17 @@ function storeys(g, x, y, z, w, d, f0, f1, plan, facade, skin, mechEvery = 0) {
       for (let r = 1; r < fh; r++) g.set(x + u, fy + r, z + v, mech ? (r & 1 ? T.CONCRETE_DARK : T.STEEL_DARK) : facade(u + v, r, fh, skin));
     }
     g.shell(cx, fy + 1, cz, cw, fh - 1, cw, T.CONCRETE_DARK); // lift core: what the tower stands on
+    // Offices: a few desks with glowing screens, filing cabinets and the odd pot plant on every other floor.
+    // They only show when the tower is opened up, which is exactly what happens to towers here.
+    if (!mech && (f & 1) === 0 && cells.length > 40) for (let k = 0; k < 5; k++) {
+      const c = g.int(0, (cells.length >> 1) - 1) * 2, u = cells[c], v = cells[c + 1];
+      if (!inside(u + 2, v) || !inside(u + 1, v + 1) || (x + u + 2 >= cx - 1 && x + u <= cx + cw && z + v + 1 >= cz - 1 && z + v <= cz + cw)) continue; // not across the edge, not in the lift
+      const kind = g.int(0, 5);
+      if (kind < 3) { g.box(x + u, fy + 1, z + v, 2, 1, 1, T.WOOD_LIGHT); g.set(x + u, fy + 2, z + v, kind ? T.NEON_BLUE : T.NEON_GREEN); g.set(x + u + 1, fy + 1, z + v + 1, T.FABRIC_BLUE); }
+      else if (kind === 3) g.box(x + u, fy + 1, z + v, 1, 2, 1, T.STEEL_DARK);
+      else if (kind === 4) { g.set(x + u, fy + 1, z + v, T.BRICK_RED); g.set(x + u, fy + 2, z + v, T.LEAF_LIGHT); }
+      else g.box(x + u, fy + 1, z + v, 2, 1, 1, T.FABRIC_RED); // a sofa in the corridor
+    }
   }
   return { edge, cells, inside, fh };
 }

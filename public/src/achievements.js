@@ -5,7 +5,7 @@
 
 // Counters kept in the save. Everything else an achievement looks at is derived from the progress.
 export const STATS = ['vox', 'glass', 'wood', 'stone', 'steel', 'leaf', 'buildings', 'towers', 'collapses', 'crushed', 'chain', 'multi',
-  'explosions', 'fires', 'hydrants', 'lamps', 'cars', 'news', 'police', 'trucks', 'army', 'fighters', 'wanted',
+  'explosions', 'fires', 'hydrants', 'lamps', 'eggs', 'cars', 'news', 'police', 'trucks', 'army', 'fighters', 'wanted',
   'jumps', 'flips', 'pounds', 'roars', 'shoves', 'dist', 'people', 'light', 'heavy', 'power', 'idle', 'time'];
 
 const fmt = (n) => (n >= 1e6 ? (n / 1e6).toLocaleString('de-DE') + ' Mio.' : n.toLocaleString('de-DE'));
@@ -45,6 +45,7 @@ tiers('explosions', '💥', (n) => `${n} Explosionen ausgelöst`, [[1, 'Bumm!'],
 tiers('fires', '🔥', (n) => `${n} Würfel in Brand gesetzt`, [[10, 'Zündler'], [1000, 'Lagerfeuer'], [3e4, 'Heiße Sache']]);
 tiers('hydrants', '🚰', (n) => `${n} Hydranten umgeworfen`, [[1, 'Wasser marsch!'], [40, 'Rasensprenger']], 'Einen Hydranten umgeworfen');
 tiers('lamps', '💡', (n) => `${n} Lampen und Leuchtreklamen zerschlagen`, [[10, 'Licht aus'], [1000, 'Wackelkontakt']]);
+tiers('eggs', '🔎', (n) => `${n} versteckte Fundstücke in Gebäuden entdeckt`, [[1, 'Entdecker'], [10, 'Schatzsucher'], [40, 'Spürnase']], 'Ein verstecktes Fundstück in einem Gebäude entdeckt');
 tiers('cars', '🚗', (n) => `${n} fahrende Autos und Busse erwischt`, [[1, 'Blechschaden'], [50, 'Stau'], [500, 'Verkehrsinfarkt']], 'Ein fahrendes Auto erwischt');
 tiers('police', '🚓', (n) => `${n} Polizeiautos umgeworfen`, [[1, 'Blaulicht aus'], [10, 'Verkehrssünder'], [50, 'Fahndungsfoto']], 'Ein Polizeiauto umgeworfen');
 tiers('trucks', '🚒', (n) => `${n} Feuerwehrautos umgeworfen`, [[1, 'Tatütata'], [10, 'Löschen verboten']], 'Ein Feuerwehrauto umgeworfen');

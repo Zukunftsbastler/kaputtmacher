@@ -256,7 +256,8 @@ export function locomotion(pose, species) {
   }
   if (pose.cling) { // hanging on a wall: arms stretched up and forward, legs drawn up against it
     const c = pose.cling;
-    j.armL[0] -= 2.5 * c; j.armR[0] -= 2.5 * c; j.torso[0] += 0.12 * c; j.legL[0] = -0.9 * c; j.legR[0] = -0.6 * c; j.head[0] -= 0.3 * c;
+    const reachUp = Math.sin(pose.walk) * 0.45 * c; // hand over hand
+    j.armL[0] -= (2.5 + reachUp) * c; j.armR[0] -= (2.5 - reachUp) * c; j.torso[0] += 0.12 * c; j.legL[0] = -0.9 * c; j.legR[0] = -0.6 * c; j.head[0] -= 0.3 * c;
   }
   if (pose.hold) { j.armL[0] -= 2.9 * pose.hold; j.armR[0] -= 2.9 * pose.hold; j.torso[0] -= 0.15 * pose.hold; }
 }
@@ -302,8 +303,11 @@ export class Monster {
     this.stun = 0; // seconds the creature cannot move after a ground pound
     this.cued = false;
     this.cling = null; // hanging on a wall: { dx, dz, t } (direction of the wall)
+    this.climbV = 0; this.climbH = 0; // climbing controls: up/down and sideways, -1..1
+    this.kick = null; // shove away from the wall after a wall jump: { vx, vz, t }
     this.clingCool = 0; // seconds until the next wall may be grabbed
     this.wallJump = false;
+    this.bounce = 0; this.bounceDir = 1; // aircraft: seconds it is still tumbling after a crash, and which way
     this.steer = 0; this.pitchIn = 0; // aircraft controls: turn and climb, -1..1
     this.homing = false; // aircraft has left an island and is turning back
   }
@@ -329,14 +333,22 @@ export class Monster {
   }
 
   // Big monsters fall faster, so a jump takes about as long at every size instead of floating.
-  gravity() { return GRAVITY * 2 * Math.max(1, this.h / 14); }
+  gravity() { return GRAVITY * 2 * Math.max(1, this.h / 14) * this.g.world.grav; }
 
   // First press: jump from the ground. Second press in the air: one more jump, with a forward somersault.
   jump() {
     const tank = this.g.progress.species === 'tank';
+    if (this.g.world.under && !this.onGround && !this.cling && !this.leaping && !tank) {
+      // Under water every press in mid-water is a swimming stroke: up again, as often as you like.
+      this.vy = Math.sqrt(2 * this.gravity() * this.h * 1.3);
+      this.jumps = Math.max(1, this.jumps); this.stomping = true; this.pound = null;
+      this.pose.squash = 0.7;
+      this.g.onSwim(this);
+      return true;
+    }
     if (this.cling) {
-      // Off the wall: a jump straight up that can be steered. Towards the wall it ends in the next grab further up
-      // (that is how to climb), over the edge it lands on the roof, away from the wall it carries across the street.
+      // Up, and a little away from the wall. Steering forwards again brings the creature back to it further up.
+      this.kick = { vx: -this.cling.dx * this.h * 1.8, vz: -this.cling.dz * this.h * 1.8, t: 0.28 };
       this.cling = null; this.clingCool = 0.15;
       this.wallJump = true; // until the top of this jump the wall is neither grabbed again nor broken through
       this.vy = Math.sqrt(2 * this.gravity() * this.h * JUMP2_HEIGHT);
@@ -394,20 +406,29 @@ export class Monster {
   // skims over whatever is below it and ploughs through whatever is in front of it.
   flyPlane(dt, aimX, aimZ) {
     const g = this.g, w = g.world, h = this.h, pose = this.pose;
-    const v = (42 + h * 1.3) * (this.sprint ? 1.7 : 1), fx = Math.sin(this.heading), fz = Math.cos(this.heading);
+    // After a crash the aircraft is thrown round and climbs away; for that moment it does not answer the controls.
+    this.bounce = Math.max(0, this.bounce - dt);
+    if (this.bounce > 0) { g.camYaw += this.bounceDir * dt * 4.2; this.pitchIn = 1; pose.bank += (this.bounceDir * -1.1 - pose.bank) * Math.min(1, dt * 8); }
+    const v = (42 + h * 1.3) * (this.sprint ? 1.7 : 1) * (this.bounce > 0 ? 0.55 : 1), fx = Math.sin(this.heading), fz = Math.cos(this.heading);
     this.speed = v; this.onGround = false;
     this.x += fx * v * dt; this.z += fz * v * dt;
-    this.y = clamp(this.y + this.pitchIn * (24 + h * 0.7) * dt, 3 + h * 0.3, w.sy + 70);
+    // Never below the ground: an aircraft is no mole.
+    this.y = clamp(this.y + this.pitchIn * (24 + h * 0.7) * dt, Math.max(3, w.spawn[1]) + h * 0.3 + 1, w.sy + 70);
     const floor = w.heightBelow(this.x, this.z, this.y) + h * 0.3 + 1;
     if (this.y < floor) this.y += (floor - this.y) * Math.min(1, dt * 8);
-    // Nose first into a building: straight through.
-    this.trampleT -= dt;
+    // Nose first into something solid: a big hole in it (it may well come down), and the aircraft bounces off.
+    // Flying on straight through a building is not possible.
     const nx = this.x + fx * h * 0.8, nz = this.z + fz * h * 0.8;
-    if (this.trampleT <= 0 && w.get(Math.floor(nx), Math.floor(this.y), Math.floor(nz))) {
-      this.trampleT = 0.06;
-      g.lastHit.dx = fx; g.lastHit.dz = fz;
-      g.destruction.sphere(nx, this.y, nz, h * 0.5 + 2, 6 + this.stage * 2, { dx: fx, dy: 0.1, dz: fz, impulse: launch(h * 1.5 + 8), debris: 50 });
-      g.shake(0.25);
+    if (w.get(Math.floor(nx), Math.floor(this.y), Math.floor(nz))) {
+      if (this.bounce <= 0) {
+        g.lastHit.dx = fx; g.lastHit.dz = fz;
+        g.destruction.sphere(nx + fx * h * 0.3, this.y, nz + fz * h * 0.3, h * 0.75 + 3, 9 + this.stage * 2.5, { dx: fx, dy: 0.1, dz: fz, impulse: launch(h * 1.5 + 8), debris: 80, spare: true });
+        g.onShove(this, nx + fx * 3, nz + fz * 3, fx, fz, 2.5);
+        g.onCrash(this);
+        this.bounce = 0.75;
+        this.bounceDir = g.rng() < 0.5 ? 1 : -1;
+      }
+      this.x -= fx * v * dt * 1.6; this.z -= fz * v * dt * 1.6; // out of the wall again
     }
     if (w.wrap) { this.x = ((this.x % w.sx) + w.sx) % w.sx; this.z = ((this.z % w.sz) + w.sz) % w.sz; }
     else this.homing = this.x < 20 || this.z < 20 || this.x > w.sx - 20 || this.z > w.sz - 20; // islands end: turn back
@@ -447,16 +468,65 @@ export class Monster {
     // In the air a ledge up to half the body height is still caught: a jump that almost reaches a roof lands on it.
     const stepH = Math.max(1.5, h * (this.onGround ? 0.3 : 0.5)), r = h * 0.22;
     this.clingCool -= dt;
+    if (this.kick) { // pushed off a wall: a short shove backwards
+      this.x += this.kick.vx * dt; this.z += this.kick.vz * dt;
+      if ((this.kick.t -= dt) <= 0) this.kick = null;
+    }
     if (this.cling) {
-      // Hanging on a wall. It holds as long as the wall does; steering away from it (or losing the wall) lets go.
-      const c = this.cling, push = Math.hypot(mx, mz);
-      const away = push > 0.05 && (mx * c.dx + mz * c.dz) / push < -0.3;
-      if (away || this.onGround || !this.blocked(this.x + c.dx * (r + 1.5 + h * 0.2), this.z + c.dz * (r + 1.5 + h * 0.2), stepH, c.dx, c.dz, r)) { this.cling = null; this.clingCool = 0.3; }
+      // Climbing. The creature hangs on the wall and moves along it: up, down and sideways, round corners too.
+      // It only leaves the wall when there is nothing left to hold on to, when its feet reach the ground,
+      // when it has pulled itself onto the roof, or with a jump.
+      const c = this.cling, reach = r + 1.5 + h * 0.2, sp = (4 + h * 1.1) * dt;
+      // Is there something to hold on to? Probed at three depths: a glass front is only one voxel thick, with an empty room behind it.
+      const wall = (x, y, z, dx = c.dx, dz = c.dz) => {
+        const y0 = this.y;
+        this.y = y;
+        let hit = false;
+        for (const d of [r + 1, r + 1.5 + h * 0.1, reach]) if (this.blocked(x + dx * d, z + dz * d, stepH, dx, dz, r)) { hit = true; break; }
+        this.y = y0;
+        return hit;
+      };
+      mx = 0; mz = 0;
+      if (!wall(this.x, this.y, this.z)) { this.cling = null; this.clingCool = 0.3; } // the wall is gone
       else {
-        mx = 0; mz = 0;
-        this.heading = Math.atan2(c.dx, c.dz);
-        // A heavy creature tears at the wall it hangs on: from stage 3 on the claws keep breaking pieces out.
-        if (this.stage >= 3 && (c.t += dt) > 0.7) { c.t = 0; g.onCling(this, c.dx, c.dz, false); }
+        if (this.climbV > 0.1) {
+          const ny = this.y + this.climbV * sp;
+          if (wall(this.x, ny, this.z)) this.y = ny;
+          else {
+            // The top: pull up onto the roof, if there is one within reach.
+            // A narrow ledge (the step of a tower that gets slimmer further up) counts as well.
+            for (const d of [r * 2 + 2, r + 1.5]) {
+              const fx = this.x + c.dx * d, fz = this.z + c.dz * d, top = w.heightBelow(fx, fz, ny + h * 0.8);
+              if (top <= this.y || top > ny + h * 0.8) continue;
+              this.x = fx; this.z = fz; this.y = top; this.onGround = true; this.jumps = 0; this.cling = null; this.clingCool = 0.4; pose.squash = 0.6;
+              break;
+            }
+          }
+        } else if (this.climbV < -0.1) {
+          const ny = this.y + this.climbV * sp, gy = w.heightBelow(this.x, this.z, this.y + 1);
+          if (ny <= gy) { this.y = gy; this.onGround = true; this.jumps = 0; this.cling = null; this.clingCool = 0.4; } // feet on the ground
+          else if (wall(this.x, ny, this.z)) this.y = ny;
+        }
+        if (this.cling && Math.abs(this.climbH) > 0.1) {
+          const s = Math.sign(this.climbH), tx = -c.dz * s, tz = c.dx * s; // along the wall, to the creature's right or left
+          if (this.blocked(this.x + tx * (r + 1 + sp), this.z + tz * (r + 1 + sp), stepH, tx, tz, r)) { c.dx = tx; c.dz = tz; } // inner corner: on to the next wall
+          else {
+            const nx = this.x + tx * sp, nz = this.z + tz * sp;
+            if (wall(nx, this.y, nz)) { this.x = nx; this.z = nz; }
+            else {
+              // Outer corner: swing round it onto the side of the building.
+              const ox = nx + c.dx * (r * 2 + 2) + tx * (r + 1), oz = nz + c.dz * (r * 2 + 2) + tz * (r + 1);
+              if (wall(ox, this.y, oz, -tx, -tz)) { this.x = ox; this.z = oz; c.dx = -tx; c.dz = -tz; }
+            }
+          }
+        }
+        if (this.cling) {
+          this.heading = Math.atan2(c.dx, c.dz);
+          const moving = Math.abs(this.climbV) > 0.1 || Math.abs(this.climbH) > 0.1;
+          if (moving) pose.walk += dt * 9;
+          // A heavy creature tears at the wall it climbs: from stage 3 on the claws keep breaking pieces out.
+          if (moving && this.stage >= 3 && (c.t += dt) > 1) { c.t = 0; g.onCling(this, c.dx, c.dz, false); }
+        }
       }
     }
     const input = Math.hypot(mx, mz);
@@ -467,7 +537,10 @@ export class Monster {
       // In a jump the creature keeps going where it is steered, and faster than on foot: that is what carries it
       // across a street from one roof to the next. The higher it starts, the longer it flies and the further it gets.
       const air = this.onGround || !this.jumps || species === 'tank' ? 1 : this.jumps >= 2 ? AIR_SPEED2 : AIR_SPEED;
-      const dx = mx / input, dz = mz / input, push = Math.min(1, input) * (this.sprint ? SPRINT : 1);
+      // Wading through open water (the harbour basin) is slow going while the water is above the knees.
+      const wet = this.onGround && w.water && this.y < w.water.level - h * 0.25 && w.water.rects.some((q) => this.x >= q[0] && this.x < q[2] && this.z >= q[1] && this.z < q[3]);
+      if (wet && g.rng() < 0.5) g.onWade(this, w.water.level);
+      const dx = mx / input, dz = mz / input, push = Math.min(1, input) * (this.sprint ? SPRINT : 1) * (wet ? 0.6 : 1);
       // Small creatures are slow on foot and short in the air, so their jumps have a minimum speed of their own
       // (in the world's scale): even the smallest gets across a street with a double jump.
       const v = Math.max((5 + h * 0.9) * air, air === 1 ? 0 : (air === AIR_SPEED2 ? AIR_FLOOR2 : AIR_FLOOR) * w.unit) * push;
@@ -483,9 +556,9 @@ export class Monster {
       const px = this.x + dx * (r + 1 + v * dt), pz = this.z + dz * (r + 1 + v * dt);
       let stopped = this.blocked(nx + dx * r, nz + dz * r, stepH, dx, dz, r);
       // A jump that ends at the wall of a building does not just punch through: the creature grabs hold.
-      // (Sprinting into a wall still smashes through it, and the game playing itself never clings.)
+      // (Sprinting into a wall still smashes through it.)
       const rising = this.wallJump && !this.onGround && this.vy > 0;
-      if (!this.onGround && this.jumps > 0 && !this.pound && this.clingCool <= 0 && !rising && !this.sprint && !g.idle && species !== 'tank'
+      if (!this.onGround && this.jumps > 0 && !this.pound && this.clingCool <= 0 && !rising && !this.sprint && species !== 'tank'
         && (stopped || this.blocked(px, pz, stepH, dx, dz, r)) && w.structureAt(px + dx * 2, pz + dz * 2)?.major) {
         this.cling = { dx, dz, t: 0 };
         this.wallJump = false;
@@ -536,7 +609,10 @@ export class Monster {
       } else if (pd) {
         this.vy -= this.gravity() * dt;
         if (g.rng() < 0.7) g.fx.add(this.x + (g.rng() - 0.5) * h * 0.5, this.y + h * (1 + g.rng()), this.z + (g.rng() - 0.5) * h * 0.5, 0, h * 2, 0, h * 0.05 + 0.4, 0, 0.25, 1, 1, 1, 0.6, 1);
-      } else this.vy -= this.gravity() * (this.vy > 0 ? (held ? 1 : JUMP_CUT) : FALL_GRAVITY) * dt;
+      } else {
+        this.vy -= this.gravity() * (this.vy > 0 ? (held ? 1 : JUMP_CUT) : FALL_GRAVITY) * dt;
+        if (w.under) this.vy = Math.max(this.vy, -h * 0.9 - 3); // sinking, not falling
+      }
       this.y += this.vy * dt;
       if (this.y <= gy && this.vy <= 0) {
         this.y = gy;

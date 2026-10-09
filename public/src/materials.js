@@ -102,6 +102,7 @@ export const T = {
   NEON_YELLOW: def(MAT.GLASS, 0xffe14d, 0, 230),
   WATER: def(MAT.GLASS, 0x4fb6e8, 0, 60),
   HYDRANT: def(MAT.SHEET, 0xe0301e), // breaks into a fountain, see reactions.js
+  SECRET: def(MAT.STEEL, 0xffd23f, 0, 220), // the golden heart of a hidden find (reactions.js)
 
   WOOD: def(MAT.WOOD, 0xa9744a),
   WOOD_DARK: def(MAT.WOOD, 0x6e4a2e),

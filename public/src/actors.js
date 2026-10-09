@@ -12,6 +12,7 @@ const v3 = [0, 0, 0];
 const ALARM_RISE = 8; // seconds of ongoing destruction per star
 const ALARM_HOLD = 12; // seconds of peace before the alarm starts to ebb
 const ALARM_FALL = 14; // seconds per star on the way down
+const FIRE_CALL = 9; // seconds something has to burn before the fire brigade sets out
 const BOLD = 9; // creature height (in the world's units) below which the police dare to block its way
 const SOLID = 5; // below this height a police car is an obstacle instead of something to step on
 
@@ -26,7 +27,7 @@ export class Actors {
     this.shots = []; // what the army fires: harmless
     this.want = { police: 0, fire: 0, news: 0, army: 0, water: 0 };
     this.heliT = 3; // seconds until the next helicopter may arrive
-    this.unitT = 0; this.jetT = 6; this.alarmT = 0; this.slot = 0; this.siren = 0;
+    this.unitT = 0; this.jetT = 6; this.alarmT = 0; this.slot = 0; this.siren = 0; this.burnT = 0;
     this.heliOn = true;
     this.cityOn = false; // a world with inhabitants: only there do police, fire brigade and army exist
   }
@@ -41,7 +42,7 @@ export class Actors {
     if (g.world.quiet) this.heliOn = false;
     for (let i = 0, tries = 0; i < count && tries < count * 8; tries++) {
       const x = rnd() * w.sx, z = rnd() * w.sz, y = w.heightBelow(x, z, w.sy - 1);
-      if (y > 16 || w.structures[w.footprint[Math.floor(x) + w.sx * Math.floor(z)]].id) continue; // not on roofs
+      if (y > 16 || (w.water && y < w.water.level) || w.structures[w.footprint[Math.floor(x) + w.sx * Math.floor(z)]].id) continue; // not on roofs, not in the harbour basin
       this.list.push({ x, y, z, vx: 0, vy: 0, vz: 0, dir: rnd() * 6.28, state: 'walk', t: rnd() * 5, phase: rnd() * 6, spin: 0,
         shirt: SHIRTS[(rnd() * SHIRTS.length) | 0], skin: SKINS[(rnd() * SKINS.length) | 0] });
       i++;
@@ -146,10 +147,12 @@ export class Actors {
     const bold = m.h < BOLD * u, fx = Math.sin(m.heading), fz = Math.cos(m.heading);
     const on = this.cityOn && g.progress.settings.units;
     this.want.police = this.scaled([0, 1, 3, 4, 5, 6][level]);
-    this.want.fire = on && burning > 0.01 ? this.scaled(1 + (level >= 3 ? 1 : 0) + (burning > 0.4 ? 1 : 0)) : 0;
+    // The fire brigade is not called for every spark: something has to burn for a while first.
+    this.burnT = burning > 0.01 ? this.burnT + dt : Math.max(0, this.burnT - dt * 2);
+    this.want.fire = on && this.burnT > FIRE_CALL ? this.scaled(1 + (level >= 3 ? 1 : 0) + (burning > 0.4 ? 1 : 0)) : 0;
     this.want.news = this.heliOn && g.progress.settings.units && g.heat > 0.02 ? (level >= 4 || !this.cityOn ? 2 : 1) : 0;
     this.want.army = level >= 4 ? this.scaled((level - 3) * 2) : 0;
-    this.want.water = on && level >= 3 && burning > 0.12 ? (level >= 5 ? 2 : 1) : 0;
+    this.want.water = on && level >= 3 && burning > 0.25 && this.burnT > FIRE_CALL * 2 ? (level >= 5 ? 2 : 1) : 0;
 
     // Arrivals: one vehicle at a time, a few seconds apart.
     this.unitT -= dt;
@@ -174,6 +177,8 @@ export class Actors {
     }
 
     let siren = 0;
+    // Whoever is no longer needed drives off: all of them at once, not one after the other.
+    const spare = { police: this.count(this.units, 'police') - this.want.police, fire: this.count(this.units, 'fire') - this.want.fire };
     for (let i = this.units.length - 1; i >= 0; i--) {
       const c = this.units[i];
       c.blink += dt; c.age += dt;
@@ -184,8 +189,8 @@ export class Actors {
         if (near && md < 2.6 * u && md > 0.01) { m.x -= (mdx / md) * (2.6 * u - md); m.z -= (mdz / md) * (2.6 * u - md); }
       } else if (near && md < m.h * 0.28 + 2 * u) { this.wreck(i); continue; } // under the creature's feet (or its belly, if it flies low): flat
       // Nobody rushes off: a vehicle stays at least half a minute before it is called back.
-      const leaving = c.age > 30 && this.count(this.units, c.kind) > this.want[c.kind] && this.units.findIndex((o) => o.kind === c.kind) === i;
-      if (leaving) c.state = 'leave';
+      const leaving = c.age > (level ? 30 : 8) && spare[c.kind]-- > 0;
+      if (leaving) c.state = 'leave'; else if (c.state === 'leave') c.state = 'drive'; // called back
       if (c.state === 'leave' && md > 260) { this.units.splice(i, 1); continue; }
       // Unhurried: quick on the way in, slow once the creature is in sight.
       let stop = 4 * u, speed = (md > 90 * u ? 17 : 10) * u, side = false;
@@ -324,8 +329,8 @@ export class Actors {
       g.fx.add(ox, oy, oz, (dx / tt) * e, ((dy + 0.5 * G * tt * tt) / tt) * e, (dz / tt) * e, 0.8 + rnd() * 0.7, 1.2, tt + 0.15, 0.6 + rnd() * 0.2, 0.85, 1, 0.9, 0, G, 0);
     }
     if ((c.work -= dt) <= 0) {
-      c.work = 0.35;
-      g.fire.douse(c.tx, c.ty, c.tz, 6 + 3 * u);
+      c.work = 0.5;
+      g.fire.douse(c.tx, c.ty, c.tz, 3 + 2 * u, 5); // a hose puts out a few voxels at a time, not a whole house
       if (rnd() < 0.5) g.fx.add(c.tx, c.ty + 1, c.tz, 0, 3, 0, 3, 3, 1, 0.9, 0.95, 1, 0.35, 0, -1, 1); // steam
     }
   }
@@ -361,6 +366,9 @@ export class Actors {
       this.heliT = 3.5;
       break;
     }
+    // Helicopters that are no longer wanted leave together and quickly (e.g. when the alarm has ebbed away).
+    const spare = {};
+    for (const k of ['news', 'army', 'water']) spare[k] = this.count(this.helis, k) - this.want[k];
     for (let i = this.helis.length - 1; i >= 0; i--) {
       const h = this.helis[i];
       h.rotor += dt * 34; h.blink += dt;
@@ -375,8 +383,9 @@ export class Actors {
         }
         continue;
       }
-      const leaving = this.count(this.helis, h.kind) > this.want[h.kind] && this.helis.findIndex((o) => o.kind === h.kind && o.state === 'fly') === i;
-      let tx, tz, alt, speed = 70;
+      const leaving = spare[h.kind]-- > 0;
+      h.gone = leaving ? (h.gone ?? 0) + dt : 0;
+      let tx, tz, alt, speed = leaving ? 130 : 70;
       if (h.kind === 'water' && !leaving) {
         // Fire-fighting helicopter: over the fire, drop the load, away to refill, back again.
         if ((h.t -= dt) <= 0) { h.t = 1.5; h.has = g.fire.target(v3); if (h.has) { h.tx = v3[0]; h.ty = v3[1]; h.tz = v3[2]; } }
@@ -387,7 +396,7 @@ export class Actors {
         if (!away && Math.hypot(wrapDelta(tx - h.x, size), wrapDelta(tz - h.z, size)) < 10 * u) {
           h.load -= dt / 2.5;
           for (let k = 0; k < 3; k++) g.fx.add(h.x + (rnd() - 0.5) * 6 * u, h.y - 2 * u, h.z + (rnd() - 0.5) * 6 * u, (rnd() - 0.5) * 4, -10, (rnd() - 0.5) * 4, 1.5 + rnd(), 2.5, 1.4, 0.6, 0.85, 1, 0.8, 0, GRAVITY * 0.6, 0.2);
-          if (rnd() < dt * 4) g.fire.douse(h.tx, h.ty, h.tz, 16 + 6 * u);
+          if (rnd() < dt * 4) g.fire.douse(h.tx, h.ty, h.tz, 9 + 4 * u, 30);
         }
       } else {
         // Circle at a respectful distance, a little above the creature's head. With nothing left to watch they leave.
@@ -410,7 +419,7 @@ export class Actors {
       h.x += dx * k * f; h.y += dy * Math.min(1, dt * 0.9); h.z += dz * k * f;
       if (Math.hypot(h.vx, h.vz) > 2) { let d = Math.atan2(h.vx, h.vz) - h.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); h.yaw += d * Math.min(1, dt * 3); }
       if (w.wrap) { h.x = ((h.x % w.sx) + w.sx) % w.sx; h.z = ((h.z % w.sz) + w.sz) % w.sz; }
-      if (leaving && Math.hypot(wrapDelta(h.x - m.x, size), wrapDelta(h.z - m.z, size)) > 420) this.helis.splice(i, 1);
+      if (leaving && (h.gone > 9 || Math.hypot(wrapDelta(h.x - m.x, size), wrapDelta(h.z - m.z, size)) > 330)) this.helis.splice(i, 1);
     }
   }
 

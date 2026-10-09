@@ -240,7 +240,7 @@ export const LOTS = {
     const top = G + Math.ceil(((L >> 1) - 1) / 2) * 3, m = x0 + (L >> 1), mz = z0 + (L >> 1);
     g.box(m - 1, top, mz - 1, 2, 3, 2, T.STEEL_YELLOW);
     g.box(m - 2, G, z0, 4, 6, 14, 0); g.box(m - 6, G, mz - 6, 12, 8, 12, 0); // passage and chamber
-    g.box(m - 2, G, mz - 2, 4, 2, 4, T.STEEL_YELLOW); // treasure
+    g.box(m - 2, G, mz - 2, 4, 2, 4, T.STEEL_YELLOW); g.set(m - 1, G + 1, mz - 1, T.SECRET); // treasure
     g.end();
   },
 

@@ -47,7 +47,7 @@ export class Fire {
     const g = this.g, w = g.world, t = w.get(x, y, z);
     if (!t || t >= 128) return false;
     const m = TYPE_MAT[t], flash = FLASH[m];
-    if (!flash) return false;
+    if (!flash || (w.under && m !== MAT.EXPLOSIVE)) return false; // under water nothing burns or scorches; explosives still go off
     if (amount < flash) {
       const k = w.index(x, y, z), h = (this.hot.get(k) ?? 0) + amount;
       if (h < flash) {
@@ -76,7 +76,7 @@ export class Fire {
   ignite(x, y, z) {
     const g = this.g, w = g.world, t = w.get(x, y, z);
     if (TYPE_MAT[t] === MAT.EXPLOSIVE && t < 128) { g.queueExplosion(x + 0.5, y + 0.5, z + 0.5); return false; }
-    if (!flammable(t) || this.n >= this.max) return false;
+    if (!flammable(t) || this.n >= this.max || w.under) return false;
     const b = BURN[TYPE_MAT[t]], i = this.n++;
     this.cx[i] = x; this.cy[i] = y; this.cz[i] = z;
     this.ct[i] = b[0] + g.rng() * b[1]; this.co[i] = b[2]; this.cc[i] = b[3]; this.cr[i] = b[4];
@@ -102,12 +102,13 @@ export class Fire {
   // pale = a cloud of light dust instead of dark smoke (collapsing masonry).
   spot(x, y, z, size, time, flames = true, pale = false) {
     if (!flames && !this.g.progress.settings.smoke) return;
+    if (flames && this.g.world.under) { flames = false; pale = true; time = Math.min(time, 3); } // a cloud of silt instead of a fire
     if (this.spots.length >= MAX_SPOTS) this.spots.shift();
     this.spots.push({ x, y, z, size, t: time, flames, pale, heatT: 0 });
   }
 
-  // Water: puts out everything that burns within the radius. Returns how much went out.
-  douse(x, y, z, r) {
+  // Water: puts out what burns within the radius, at most `max` voxels per call. Returns how much went out.
+  douse(x, y, z, r, max = 1e9) {
     const w = this.g.world, { cx, cy, cz } = this, r2 = r * r, size = w.wrap ? w.sx : 0, half = size / 2;
     let out = 0;
     for (let i = this.n - 1; i >= 0; i--) {
@@ -115,6 +116,7 @@ export class Fire {
       const dy = cy[i] - y;
       if (size) { if (dx > half) dx -= size; else if (dx < -half) dx += size; if (dz > half) dz -= size; else if (dz < -half) dz += size; }
       if (dx * dx + dy * dy * 0.25 + dz * dz > r2) continue;
+      if (out >= max) break;
       if (w.get(cx[i], cy[i], cz[i]) === EMBER) w.set(cx[i], cy[i], cz[i], CHAR);
       this.drop(i);
       out++;
@@ -144,6 +146,7 @@ export class Fire {
 
   flame(x, y, z, s) {
     const rnd = this.g.rng;
+    if (this.g.world.under) { this.g.fx.add(x, y, z, (rnd() - 0.5) * 2, 5 + rnd() * 5, (rnd() - 0.5) * 2, 0.4 + rnd() * 0.5, 0.1, 1.5, 0.85, 0.95, 1, 0.5, 0, 0, 0); return; } // bubbles
     this.g.fx.add(x + (rnd() - 0.5) * s, y + rnd() * s * 0.5, z + (rnd() - 0.5) * s, (rnd() - 0.5) * 3, 5 + rnd() * 7 + s, (rnd() - 0.5) * 3,
       s * (0.8 + rnd() * 0.8), -s * 1.2, 0.45 + rnd() * 0.5, 1, 0.45 + rnd() * 0.4, 0.08, 0.95, 1, -10, 1);
   }

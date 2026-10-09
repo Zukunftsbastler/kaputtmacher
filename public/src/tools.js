@@ -722,7 +722,7 @@ export class Tools {
     const d = Math.hypot(dx, dy, dz) || 1;
     dx /= d; dy /= d; dz /= d;
     if (arc) dy += 0.35; // salvo rockets climb first, then come down on the target
-    this.proj.push({ kind: 'rocket', x: o[0], y: o[1], z: o[2], vx: dx * speed, vy: dy * speed, vz: dz * speed, r: (0.8 + this.g.monster.stage * 0.15) * size, radius, power, life: 7, grav: 0, tx: aim.x, ty: aim.y, tz: aim.z, homing: arc });
+    this.proj.push({ kind: 'rocket', x: o[0], y: o[1], z: o[2], vx: dx * speed, vy: dy * speed, vz: dz * speed, r: (0.8 + this.g.monster.stage * 0.15) * size, radius, power, life: 7, grav: 0, lock: this.g.aim.lock ?? null, tx: aim.x, ty: aim.y, tz: aim.z, homing: arc });
     this.g.audio.rocket();
   }
 
@@ -761,17 +761,34 @@ export class Tools {
     this.g.audio.tick();
   }
 
-  // Tears a lump of the given radius out of the world and holds it.
+  // Picks something up to throw. In this order: an object close by that can be lifted whole (a car, a tree,
+  // a garden gnome; how big it may be depends on the creature), otherwise a lump torn out of whatever the
+  // hand reaches (a piece of a building), and if there is nothing at all, a lump of the ground underfoot.
+  // The creature never comes away empty-handed.
   grab(x, y, z, r) {
-    const g = this.g, w = g.world;
+    const g = this.g, w = g.world, m = g.monster;
     if (this.held) return;
-    const ax = Math.floor(x), ay = Math.floor(y), az = Math.floor(z), ri = Math.ceil(r);
-    const wx = w.wrap ? ax & w.mx : ax, wz = w.wrap ? az & w.mz : az;
-    const st = wx >= 0 && wz >= 0 && wx < w.sx && wz < w.sz ? w.structures[w.footprint[wx + w.sx * wz]] : null;
+    const fits = (st) => st && st.grabbable && st.remaining > 3 && Math.max(st.x1 - st.x0, st.z1 - st.z0, st.top - (st.y0 ?? 0)) < r * 5 + 6;
+    // Look around for an object: the nearest one within a good arm's length.
+    let obj = null, best = 1e9, ox = 0, oz = 0, last = 0;
+    const R = Math.ceil(m.h * 1.3 + 6), mx = Math.floor(m.x), mz = Math.floor(m.z);
+    for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) {
+      const d = dx * dx + dz * dz;
+      if (d >= best || d > R * R) continue;
+      const cx = w.wrap ? (mx + dx) & w.mx : mx + dx, cz = w.wrap ? (mz + dz) & w.mz : mz + dz;
+      if (cx < 0 || cz < 0 || cx >= w.sx || cz >= w.sz) continue;
+      const id = w.footprint[cx + w.sx * cz];
+      if (!id || id === last) continue;
+      last = id;
+      if (!fits(w.structures[id])) { last = id; continue; }
+      best = d; obj = w.structures[id]; ox = mx + dx; oz = mz + dz; last = 0;
+    }
     let n = 0, cells;
-    if (st && st.grabbable && st.remaining > 3 && Math.max(st.x1 - st.x0, st.z1 - st.z0, st.top) < r * 5 + 6) {
-      // Small things come up whole: a car, a tree, a garden gnome.
-      const span = Math.max(st.x1 - st.x0, st.z1 - st.z0) + 2;
+    if (obj) {
+      // Small things come up whole.
+      const st = obj, ax = ox, az = oz, span = Math.max(st.x1 - st.x0, st.z1 - st.z0) + 2;
+      x = ox + 0.5; z = oz + 0.5;
+      m.faceTo(x, z);
       cells = g.bodies.reserve((span * 2 + 1) ** 2 * (st.top + 1));
       for (let dz = -span; dz <= span; dz++) for (let dx = -span; dx <= span; dx++) {
         const cx = w.wrap ? (ax + dx) & w.mx : ax + dx, cz = w.wrap ? (az + dz) & w.mz : az + dz;
@@ -784,17 +801,33 @@ export class Tools {
           w.set(cx, yy, cz, 0);
         }
       }
-    } else {
+    }
+    // A lump out of a sphere. solidOnly: only if there is something built there (not just ground).
+    const lump = (px, py, pz, solidOnly) => {
+      const ax = Math.floor(px), ay = Math.floor(py), az = Math.floor(pz), ri = Math.ceil(r);
+      if (solidOnly) {
+        let built = 0;
+        for (let dy = -ri; dy <= ri && built < 3; dy += 2) for (let dz = -ri; dz <= ri && built < 3; dz += 2) for (let dx = -ri; dx <= ri; dx += 2) { const t = w.get(ax + dx, ay + dy, az + dz); if (t && !isTerrain(t)) built++; }
+        if (built < 3) return 0;
+      }
       cells = g.bodies.reserve((2 * ri + 1) ** 3);
+      let k = 0;
       for (let dy = -ri; dy <= ri; dy++) for (let dz = -ri; dz <= ri; dz++) for (let dx = -ri; dx <= ri; dx++) {
         if (dx * dx + dy * dy + dz * dz > r * r) continue;
         const t = w.get(ax + dx, ay + dy, az + dz);
         if (!t || TYPE_MAT[t] === MAT.BEDROCK || ay + dy < 1) continue;
-        cells[n * 4] = ax + dx; cells[n * 4 + 1] = ay + dy; cells[n * 4 + 2] = az + dz; cells[n * 4 + 3] = isTerrain(t) ? t | RUBBLE : t;
-        n++;
+        cells[k * 4] = ax + dx; cells[k * 4 + 1] = ay + dy; cells[k * 4 + 2] = az + dz; cells[k * 4 + 3] = isTerrain(t) ? t | RUBBLE : t;
+        k++;
         w.set(ax + dx, ay + dy, az + dz, 0);
         g.destruction.addSeeds(ax + dx, ay + dy, az + dz);
       }
+      return k;
+    };
+    if (n < 3) n = lump(x, y, z, true); // a piece of the building within reach
+    if (n < 3) { // nothing built: a lump of the ground in front of the feet
+      const o = this.at(this.hp, 0, 0.55);
+      x = o[0]; z = o[2]; y = w.heightBelow(x, z, m.y + m.h * 0.5) - r * 0.35;
+      n = lump(x, y, z, false);
     }
     if (n < 3) return;
     const b = g.bodies.fromCells(n);
@@ -915,6 +948,7 @@ export class Tools {
         if (p.kind === 'rocket') {
           const sp = Math.hypot(p.vx, p.vy, p.vz), k = 1 + dt * 2.2;
           if (sp < 170) { p.vx *= k; p.vy *= k; p.vz *= k; }
+          if (p.lock) { if (p.lock.state === 'fly') { p.tx = p.lock.x; p.ty = p.lock.y; p.tz = p.lock.z; p.homing = true; } else p.lock = null; } // locked on something that flies: follow it
           if (p.homing) { // salvo rockets bend towards their target
             const dx = p.tx - p.x, dy = p.ty - p.y, dz = p.tz - p.z, d = Math.hypot(dx, dy, dz) || 1, turn = Math.min(1, dt * 3.5);
             p.vx += ((dx / d) * sp - p.vx) * turn; p.vy += ((dy / d) * sp - p.vy) * turn; p.vz += ((dz / d) * sp - p.vz) * turn;
