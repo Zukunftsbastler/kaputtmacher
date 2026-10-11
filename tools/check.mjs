@@ -49,9 +49,9 @@ for (const [i, w] of WORLDS.entries()) {
     console.log(w.id.padEnd(9), String(major).padStart(4), 'buildings', String(world.total).padStart(9), 'voxels', (performance.now() - t0).toFixed(0).padStart(5), 'ms', world.roads ? 'streets' : '');
   } catch (e) { fail(w.id + ': ' + e.message); }
 }
-// 4. The music must schedule sensible notes at every intensity and in every world (run against a stand-in for Web Audio).
+// 4. The fallback music must schedule sensible notes at every intensity and in every world (run against a stand-in for Web Audio).
 {
-  const { Music } = await import('../public/src/music.js');
+  const { ClassicMusic: Music } = await import('../public/src/music-classic.js');
   let now = 0, notes = 0, bad = 0, lo = 1e9, hi = 0;
   const param = () => ({ value: 0, setValueAtTime(v) { if (!Number.isFinite(v) || v < 0) bad++; }, linearRampToValueAtTime() {}, exponentialRampToValueAtTime(v) { if (!(v > 0)) bad++; }, setTargetAtTime() {} });
   const node = () => ({ connect(n) { return n; }, start() {}, stop() {}, frequency: param(), gain: param(), Q: param(), type: '' });
@@ -64,6 +64,29 @@ for (const [i, w] of WORLDS.entries()) {
   }
   if (bad || notes < 5000 || lo < 20 || hi > 5000) fail(`music: ${notes} notes, ${bad} bad values, ${lo.toFixed(0)}..${hi.toFixed(0)} Hz`);
   console.log(`music: ${notes} notes scheduled, ${lo.toFixed(0)} to ${hi.toFixed(0)} Hz`);
+}
+// 5. The rendered music: its description must be valid and compose (the suite plans all states, bridges and
+//    files without rendering them), the alarm level must map to states without fluttering, and without a
+//    worker (as here in Node) the game must fall back to the hand-written music.
+{
+  const { SCORE, RENDER_RATE, stateFor } = await import('../public/src/music-score.js');
+  const { planStems } = await import('../public/src/vendor/musik-generator/stems/render-stems.js');
+  try {
+    const { manifest, jobs } = planStems(SCORE, { sampleRate: RENDER_RATE });
+    const states = Object.keys(manifest.states);
+    if (states.join() !== 'stroll,chase,mayhem' || jobs[0].state !== 'stroll') fail('music: unexpected states ' + states);
+    const tempo = states.map((s) => manifest.segments[manifest.states[s].segments[0]].bpm);
+    if (!(tempo[0] < tempo[1] && tempo[1] < tempo[2])) fail('music: the states must get faster: ' + tempo);
+    const mb = manifest.ram.totalBytes / 1048576;
+    if (mb > 90) fail(`music: ${mb.toFixed(0)} MB decoded is too much`);
+    console.log(`rendered music: ${states.length} states at ${tempo.join(', ')} BPM, ${Object.keys(manifest.segments).length} segments, about ${mb.toFixed(0)} MB decoded`);
+  } catch (e) { fail('music description: ' + e.message); }
+  let cur = 'stroll', changes = 0;
+  for (let i = 0; i < 400; i++) { const next = stateFor(0.95 + 0.1 * Math.sin(i), cur); if (next !== cur) changes++; cur = next; }
+  if (changes > 1 || stateFor(0, 'mayhem') !== 'stroll' || stateFor(3.2, 'stroll') !== 'mayhem' || stateFor(2.7, 'mayhem') !== 'mayhem') fail('music: alarm-to-state mapping');
+  const { Music } = await import('../public/src/music.js');
+  const music = new Music({ ctx: null });
+  if (music.mode !== 'classic') fail('music: no fallback without a worker');
 }
 console.log(`${ACHIEVEMENTS.length} achievements, ${WORLDS.length} worlds`);
 console.log(failed ? `${failed} check(s) FAILED` : 'all checks passed');

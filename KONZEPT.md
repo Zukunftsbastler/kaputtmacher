@@ -630,7 +630,7 @@ Lose Trümmer bleiben nicht ewig liegen. Jeder Würfel, der als Schutt zur Ruhe 
 ### 12.2 Netlify
 
 - Veröffentlicht wird der Ordner `public/` unverändert (`netlify.toml`). Konzept und Prompts liegen außerhalb.
-- `public/_headers` setzt eine Content-Security-Policy, die nur eigene Dateien erlaubt (mit Trusted Types), schaltet ungenutzte Gerätefunktionen ab und lässt den Browser jede Datei beim Server nachfragen, damit sich nach einem Update nie alte und neue Dateien mischen.
+- `public/_headers` setzt eine Content-Security-Policy, die nur eigene Dateien erlaubt (mit Trusted Types; einzige Ausnahme ist der Musik-Worker, siehe 13a), schaltet ungenutzte Gerätefunktionen ab und lässt den Browser jede Datei beim Server nachfragen, damit sich nach einem Update nie alte und neue Dateien mischen.
 - **Impressum und Datenschutzerklärung** stehen in `public/impressum.html`, im Spiel jederzeit erreichbar über einen kleinen Textlink unter dem Macht-Ring. Das ist neben den Einstellungen die einzige Textstelle; die Regel „sprachfrei“ tritt hier hinter die gesetzliche Pflicht zurück. **Spielstand löschen:** Auf der Seite „Impressum & Datenschutz“ steht dort, wo die Speicherung erklärt wird, ein Knopf, der alles entfernt, was das Spiel im Browser gespeichert hat. Er ist über den Link im Spiel jederzeit zu finden, liegt aber auf einer eigenen Textseite und verlangt zwei Schritte (erst „löschen …“, dann „Ja, endgültig löschen“ – „Abbrechen“ ist vorausgewählt). Denselben Zweck erfüllt „Von vorn beginnen“ in den Einstellungen.
 - Eingaben von außen – Adress-Parameter und der Spielstand im Browser – werden vor der Verwendung geprüft; Einzelheiten in der README, Abschnitt „Sicherheit“.
 
@@ -676,32 +676,42 @@ Daneben lassen sich die teuren Effekte einzeln abschalten: Staub- und Rauchwolke
 
 ### 13a Musik
 
-Musik, die der Handlung folgt, vollständig im Browser erzeugt (`music.js`, keine Dateien). Stil: **Electro Swing mit Club-Beat**. Das Schlagzeug trägt die Musik vom ersten Takt an: Bassdrum, Snare mit Handclap auf Zwei und Vier, geswingte und offene Hi-Hats. Der Bass ist ein fetter Sägezahn mit Subbass, der unter jeder Bassdrum wegtaucht (das „Pumpen“ der Tanzmusik); Bläser sitzen auf den Nachschlägen; bei Hochbetrieb knurrt ein Wobble-Bass. Die meisten Welten stehen in Moll, damit es nicht nach Kinderlied klingt.
+Musik, die der Handlung folgt, vollständig im Browser komponiert und gerendert; es gibt weiterhin keine Audiodateien und keine Netzwerkzugriffe. Seit dem Nachtrag 2 zu Entwurf 12 erzeugt sie die eigene **Musik-Generator-Suite** des Autors (`public/src/vendor/musik-generator/`, MIT, ohne fremden Code).
 
-**Komponiert, nicht gewürfelt.** Es gibt ein Thema von 16 Takten in der Form A A B A, ausgeschrieben als Tonleiterstufen über einer festen Akkordfolge:
+**Charakter:** beschwingt, zackig, aufgekratzt und augenzwinkernd – eine retro-futuristische Mischung aus Chiptune und Synth mit modernem Punch: flinkes Puls-Lead, trockener, präziser Synth-Bass, schnelle Chip-Arpeggios, kurze Akkord-Stabs, knackiges Schlagzeug, kaum Hall. Stil „Arcade“ der Suite, Dur.
 
-- **Motiv** (Takt 1): Quinte, Quinte, Sexte, Quinte, Terz, Grundton, Terz – der Dreiklang, umspielt, mit einem punktierten Auftakt.
-- **Antwort:** hinauf zum Grundton und zurück; dann das Motiv eine Stufe höher (Sequenz) und ein Halbschluss auf der Dominante.
-- **Zweite Hälfte:** das Motiv kehrt wieder, ein Lauf die Tonleiter hinab, Leitton und Ganzschluss auf dem Grundton.
-- **Mittelteil (B):** lange Töne, höher gelegen, über anderen Akkorden; die letzte Zeile führt zum Motiv zurück.
-- Betonte Zählzeiten liegen auf Akkordtönen; in Moll wird auf der Dominante die siebte Stufe erhöht.
-- Akkorde in Moll: i i iv V | i VI iv V–i, Mittelteil VI III iv V. In Dur: I vi IV V | I vi IV V–I, Mittelteil IV I ii V.
+**Der Ohrwurm** ist vorgegeben (`music-score.js`): ein schneller Lauf über den Dreiklang hinauf zur Oktave, ein synkopierter Schritt zurück, Landung auf der Quinte. Die Suite entwickelt daraus Frage und Antwort (das Motiv, eine Stufe höher wiederholt, Halbschluss, Rückkehr, Ganzschluss) und komponiert Akkorde, Bass, Arpeggio und Schlagzeug dazu.
+
+**Drei Zustände, jeder schneller als der vorige:**
+
+| Zustand | Wann | Musik |
+|---|---|---|
+| Bummeln | Alarmstufe unter 1 | 120 Schläge pro Minute, D-Dur, 8 Takte. Leise und leichtfüßig |
+| Verfolgung | ab dem ersten Stern (Polizei) | 138 Schläge, D-Dur, 16 Takte (A und B), die ganze Band |
+| Chaos | ab drei Sternen (Feuerwehr, Hubschrauber, Militär) | 152 Schläge, einen Ganzton höher in E-Dur, 16 Takte, dichter und wuchtiger |
 
 **Was sich im Spiel ändert:**
 
 | Auslöser | Wirkung |
 |---|---|
-| Intensität (aus dem, was gerade zerstört wird, und der Alarmstufe) steigt | Immer da: Beat (zwei Bassdrums pro Takt, Snare, Hi-Hat), laufender Bass, Fläche. Dann kommen dazu: Bassdrum auf allen Vieren und die Melodie → Bläser-Einwürfe, offene Hi-Hat, federnder Oktavbass → Sechzehntel, Geisternoten, Melodie in Terzen, Becken zum Abschnittsbeginn → Wobble-Bass. Alle vier Takte ein Trommelwirbel |
-| | Tempo von 108 auf 140 Schläge pro Minute; je schneller, desto gerader der Swing |
-| | lauter |
-| Etwas geht gerade kaputt | kurzes Anschwellen der Lautstärke |
-| Alarmstufe ebbt ab, Ruhe | die Musik beruhigt sich langsam (steigt in gut einer Sekunde, fällt über sieben) |
-| Neuer Abschnitt | das Thema wandert durch die Instrumente: Lead (zwei leicht verstimmte Stimmen mit Filter), Bläsersatz, kurzer heller Zupfklang |
-| Andere Welt | eigene Tonart, Dur oder Moll, eigener Lead-Klang – das Thema bleibt dasselbe. Nur Bauklotz-Zimmer, Spielzeugland, Garten und Vergnügungspark stehen in Dur, alles andere in Moll |
+| Erster Tastendruck oder Klick | Die Musik beginnt sanft: nur Akkorde, Arpeggio und Bass, über 2,5 Sekunden eingeblendet |
+| Etwas geht kaputt (Zustand Bummeln) | Das Schlagzeug blendet ein, bei anhaltender Zerstörung auch die Melodie; in der Ruhe verschwinden beide wieder |
+| Alarmstufe erreicht 1 bzw. 3 | Wechsel zum nächsten Zustand auf dem nächsten Takt, über eine eintaktige Überleitung mit anziehendem Tempo, Trommelwirbel und Riser |
+| Alarmstufe ebbt ab (unter 0,6 bzw. 2,5) | Wechsel zurück am Ende einer Viertakt-Phrase, mit Überblendung |
+| Schnelle Wechsel | Mindestens 8 Sekunden je Zustand; die letzte Anforderung gewinnt, es flattert nichts |
+| Mehr los, etwas bricht | etwas lauter, kurzes Anschwellen |
 | Unter Wasser | alles klingt dumpf |
-| Menü offen | leise Grundschicht |
+| Menü offen | die Musik tritt zurück |
 
-Eigener Lautstärkeregler in den Einstellungen (0 = aus). **Stand:** Die erste Fassung war eingängig, klang aber nach Kinderlied ohne Schlagzeug; die jetzige ist daraufhin umgebaut. Geprüft ist wieder nur der Ablauf rechnerisch (rund 20 000 Töne in allen Welten). Ob sie nun nach „Banger“ klingt und die Lautstärken stimmen, kann nur ein Mensch sagen.
+**Technik:**
+- Beim Laden komponiert ein Web Worker die Beschreibung aus `music-score.js` und rendert sie mit 32 kHz in Schleifen aus vier Schichten (Grundierung, Bass, Schlagzeug, Melodie). Der erste Zustand ist nach ein bis zwei Sekunden fertig, alles nach etwa sieben (gemessen auf einem MacBook M3).
+- Der Stem-Player der Suite spielt sie taktgenau auf der Uhr des Audiosystems. Dekodiert belegt die Musik etwa 62 MB.
+- Dafür ist die Content-Security-Policy an genau einer Stelle geöffnet: `worker-src 'self'` und eine Trusted-Types-Policy `kaputtmacher-music`, die ausschließlich die Adresse dieses einen Workers liefern kann (12.2).
+- **Rückfall:** Kann der Worker nicht starten, spielt die handgeschriebene Electro-Swing-Musik der früheren Fassungen (`music-classic.js`), wie bisher mit eigener Tonart je Welt.
+- Die Tonart je Welt entfällt in der neuen Musik: Jede Tonart wäre eine eigene Renderung.
+- `node tools/vendor-music.mjs` kopiert die benötigten Dateien aus der Suite neu ein.
+
+Eigener Lautstärkeregler in den Einstellungen (0 = aus). **Stand:** Gemessen im Browser unter der Policy von Netlify: Worker und Policy greifen, die Musik startet, beim Einstieg sind Schlagzeug und Melodie stumm, die Wechsel in die schnelleren Zustände laufen ohne Skriptfehler. **Nicht beurteilt:** wie sie klingt, ob der Ohrwurm trägt, ob die Lautstärke zu den Geräuschen passt, das Verhalten auf Handy und Tablet (Renderzeit, Speicher).
 
 **Oberfläche:** unten Werkzeugleiste, rechts unten Springen und Brüllen, oben Welt-Zähler mit den Sternen der Alarmstufe, links oben Macht-Ring mit Stufe und darunter die Einblendungen der Erfolge, rechts oben Weltauswahl, Selbstspiel und Einstellungen. Die Liste der Erfolge liegt nicht mehr im Spielfeld, sondern als Pokal in der Weltauswahl und als Knopf in den Einstellungen.
 

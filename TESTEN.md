@@ -74,7 +74,8 @@ Das Spielprotokoll in den Einstellungen zeigt, wie lange jede Stufe gedauert hat
 
 ## 7. Ton (mit Lautsprecher oder Kopfhörer)
 
-- [ ] **Musik:** Trägt das Schlagzeug jetzt? Klingt es nach „Banger“ statt nach Kinderlied – treibend, etwas erwachsener? Ist das Thema noch erkennbar? Wird sie mit der Zerstörung und den Sternen voller und schneller, und beruhigt sie sich wieder? Stimmt die Lautstärke im Verhältnis zu den Geräuschen? Nervt etwas (zu schrill, zu eintönig)?
+- [ ] **Musik (neu, Stil „Arcade“):** Beginnt sie nach dem ersten Tastendruck sanft (nur Akkorde und Bass)? Kommen Schlagzeug und Melodie dazu, sobald etwas kaputtgeht, und verschwinden sie in der Ruhe wieder? Wird es mit dem ersten Stern deutlich hektischer und schneller, ab drei Sternen noch einmal, und kommt der Wechsel im Takt? Ist der Ohrwurm eingängig oder nervt er nach einigen Minuten? Passt der Charakter (beschwingt, zackig, augenzwinkernd)? Stimmt die Lautstärke im Verhältnis zu den Geräuschen?
+- [ ] **Musik auf Handy und Tablet:** Wie lange dauert es, bis nach dem ersten Tippen Musik kommt? Ruckelt das Spiel, solange im Hintergrund gerendert wird? Bleibt der Speicher im Rahmen (etwa 62 MB für die Musik)?
 
 - [ ] Bruchgeräusche je Material unterscheidbar?
 - [ ] Einsturz: Knacken, Ächzen, Bröckeln – stimmig oder Lärm?

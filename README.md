@@ -70,8 +70,8 @@ Spielbar. Geprüft wurde bisher fast nur automatisiert (Durchläufe im Browser m
 
 ### Regeln des Projekts
 
-1. **Keine Abhängigkeiten, kein Build.** Kein npm, kein Framework, keine Engine, kein CDN. Der Inhalt von `public/` wird unverändert ausgeliefert (Netlify, `netlify.toml`). Grund: möglichst kleine Angriffsfläche.
-2. **Strenge Content-Security-Policy** (`public/_headers`): nur eigene Dateien, keine Inline-Skripte, keine Inline-Style-Attribute im Markup (Setzen über `element.style` ist erlaubt), keine Netzwerkzugriffe.
+1. **Keine Abhängigkeiten, kein Build.** Kein npm, kein Framework, keine Engine, kein CDN. Die Musik kommt aus der eigenen, ebenfalls abhängigkeitsfreien Musik-Generator-Suite des Autors; deren Dateien sind eingekopiert (`public/src/vendor/`). Der Inhalt von `public/` wird unverändert ausgeliefert (Netlify, `netlify.toml`). Grund: möglichst kleine Angriffsfläche.
+2. **Strenge Content-Security-Policy** (`public/_headers`): nur eigene Dateien, keine Inline-Skripte, keine Inline-Style-Attribute im Markup (Setzen über `element.style` ist erlaubt), keine Netzwerkzugriffe. Einzige Öffnung: ein Worker aus eigener Quelle für die Musik, dessen Adresse nur die Trusted-Types-Policy `kaputtmacher-music` nennen darf.
 3. **Quellcode englisch,** Spieloberfläche sprachfrei (Emoji als Symbole). Text gibt es nur an zwei Stellen, beide auf Deutsch: in den Einstellungen und als Link „Impressum & Datenschutz“ (rechtlich nötig, führt zu `public/impressum.html`).
    Wer ändert, was das Spiel speichert oder lädt, muss die Datenschutzerklärung in `public/impressum.html` anpassen – sie beschreibt den Ist-Zustand genau.
 4. **Jeder Prompt des Autors wird wörtlich abgelegt** als `PROMPTS/PROMPTnn.md` (nächste freie Nummer).
@@ -91,7 +91,7 @@ PROMPTS/            alle Prompts des Autors
 public/
   index.html, style.css, _headers
   impressum.html, legal.css, legal.js   Impressum, Datenschutzerklärung und der Knopf zum Löschen des Spielstands
-  src/              29 ES-Module, siehe unten
+  src/              31 ES-Module, siehe unten, und vendor/musik-generator/ (eingekopierte Musik-Suite)
 ```
 
 ### Module (`public/src`)
@@ -117,7 +117,10 @@ public/
 | `tools.js` | Angriffe: Tabelle `MOVES` je Figur (leicht/schwer, Pose, Wirkung) und die Bausteine dafür (`blow`, `shock`, `bolt`, `ray`, `rocket`, `bomb`, `grab` …) |
 | `actors.js` | Bewohner und Einsatzkräfte: Polizeiautos, Feuerwehr, Reporter-, Lösch- und Militär-Hubschrauber, Kampfflieger; Alarmstufe |
 | `frail.js` | Standfestigkeit schlanker Bauten: Was mit dem Schwerpunkt neben seiner Standfläche hängt, kippt |
-| `music.js` | Musik, die der Handlung folgt: ein auskomponiertes Thema, Schichten und Tempo nach Zerstörung und Alarmstufe, Tonart je Welt |
+| `music.js` | Musik, die der Handlung folgt: lässt die Musik beim Laden in einem Worker komponieren und rendern und steuert den Stem-Player (drei Zustände nach Alarmstufe, Schichten nach Zerstörung); fällt ohne Worker auf `music-classic.js` zurück |
+| `music-score.js` | Die Musik als Daten: Ohrwurm, Zustände (Bummeln, Verfolgung, Chaos), Schichten, Übergänge; Zuordnung Alarmstufe → Zustand |
+| `music-classic.js` | Die frühere handgeschriebene Electro-Swing-Musik (Rückfall) |
+| `vendor/musik-generator/` | Eingekopierte Teile der Musik-Generator-Suite des Autors (MIT): Stem-Player und Stem-Renderer. Nicht hier ändern; `tools/vendor-music.mjs` kopiert neu |
 | `achievements.js` | Liste der 131 Erfolge, Zähler (`STATS`), Prüfung |
 | `traffic.js` | Straßennetz (`Roads`: Kreuzungen, Rechtsverkehr, Ausweichen, Wenden) und fahrende Autos und Busse (`Traffic`) |
 | `landmarks.js`, `landmarks2.js` | Besondere Grundstücke für den Stadtgenerator: Fahrgeschäfte, Hafenanlagen, Riesenbauten; Flughafen, Burg, Raumhafen, Winterwelt, Unterwasserstadt |
@@ -164,8 +167,8 @@ Das Spiel ist rein statisch und spricht nach dem Laden mit keinem Server. Was es
 
 | Fläche | Maßnahme |
 |---|---|
-| Fremder Code | Es gibt keinen: keine Abhängigkeiten, kein CDN, kein Build. `public/_headers` erlaubt per Content-Security-Policy nur eigene Skripte und Styles, keine Inline-Skripte, keine Netzwerkzugriffe, keine Einbettung in fremde Seiten |
-| Text → HTML | Kommt nicht vor (`innerHTML`, `eval` und Verwandte werden nirgends benutzt; die Oberfläche entsteht über `createElement` und `textContent`). Die Policy erzwingt das zusätzlich über Trusted Types |
+| Fremder Code | Es gibt keinen: keine Abhängigkeiten, kein CDN, kein Build (die eingekopierte Musik-Suite stammt vom Autor selbst und hat ihrerseits keine Abhängigkeiten). `public/_headers` erlaubt per Content-Security-Policy nur eigene Skripte und Styles, keine Inline-Skripte, keine Netzwerkzugriffe, keine Einbettung in fremde Seiten |
+| Text → HTML | Kommt nicht vor (`innerHTML`, `eval` und Verwandte werden nirgends benutzt; die Oberfläche entsteht über `createElement` und `textContent`). Die Policy erzwingt das zusätzlich über Trusted Types. Die einzige zugelassene Policy (`kaputtmacher-music`) wandelt nichts um: Sie gibt unabhängig von der Eingabe die feste Adresse des Musik-Workers zurück |
 | Adresszeile | Die Test-Parameter (`?stage=` …) werden gegen Wertebereiche und feste Listen geprüft (`cleanStage`, `cleanSpecies`, `cleanQuality` in `progress.js`) und nie gespeichert. Ein präparierter Link kann das Spiel weder zum Absturz bringen noch Speicher fressen lassen |
 | Spielstand | `localStorage` gilt als nicht vertrauenswürdig: `sanitize()` in `progress.js` baut aus beliebigem Inhalt einen gültigen Spielstand; Unbekanntes wird verworfen. Ein beschädigter Spielstand kann das Spiel nicht dauerhaft lahmlegen |
 | Gerätefunktionen | Per Permissions-Policy abgeschaltet, bis auf Gamepad und Vollbild |

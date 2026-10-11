@@ -940,7 +940,7 @@ class Game {
     this.audio.hiss(this.reactions.level ?? 0);
     this.audio.siren(this.actors.siren * (this.idle ? 0.35 : 1));
     // The music follows the action: how much is breaking right now, and how alarmed the world is.
-    this.music.update(dt, this.paused ? 0.05 : clamp(0.1 + this.heat * 0.55 + (this.alarm / 5) * 0.45, 0, 1), clamp((this.time - this.lastGainT < 0.3 ? 0.5 : 0) + this.heat * 0.5, 0, 1));
+    this.music.update(dt, this.paused ? 0.05 : clamp(0.1 + this.heat * 0.55 + (this.alarm / 5) * 0.45, 0, 1), clamp((this.time - this.lastGainT < 0.3 ? 0.5 : 0) + this.heat * 0.5, 0, 1), this.heat, this.alarm, this.paused);
     if (!this.paused && (this.checkT += dt) >= 0.5) { this.checkStats(this.checkT); this.checkT = 0; }
     this.govern(dt);
     this.remesh();

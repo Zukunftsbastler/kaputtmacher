@@ -4,7 +4,8 @@ Dieser Ordner wird nicht veröffentlicht (Netlify liefert nur `public/` aus). Al
 
 | Befehl | Was es prüft |
 |---|---|
-| `node --experimental-default-type=module tools/check.mjs` | Ohne Browser: beschädigte und manipulierte Spielstände, Stimmigkeit der Erfolgsliste, Erzeugung aller Welten |
+| `node --experimental-default-type=module tools/check.mjs` | Ohne Browser: beschädigte und manipulierte Spielstände, Stimmigkeit der Erfolgsliste, Erzeugung aller Welten, die Musikbeschreibung (Zustände, Tempi, Speicher) und der Rückfall auf die alte Musik |
+| `node tools/vendor-music.mjs [Pfad]` | Kopiert die benötigten Dateien der Musik-Generator-Suite nach `public/src/vendor/musik-generator/` (Standardpfad `../../Musik-Generator`) |
 | `node tools/smoke.mjs` | Mit Browser: spielt in jeder Welt ein kurzes Szenario und einige längere (Selbstspiel, Verkehr, alle Angriffe, Handy-Format, niedrigste Detailstufe) und meldet Skriptfehler. Dauert rund sechs Minuten; `quick` nur die Welten |
 | `node tools/serve.mjs` | Startet das Spiel auf `http://127.0.0.1:8766` mit denselben Sicherheits-Headern wie auf Netlify |
 | `node tools/browser.mjs <name> "<adress-parameter>" <szenario> [ms] [breite] [höhe]` | Ein einzelnes Szenario; gibt den Zustand des Spiels als JSON aus und legt ein Bildschirmfoto in `tools/out/` ab. Braucht den laufenden Server |

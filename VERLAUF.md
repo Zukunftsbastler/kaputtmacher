@@ -2,6 +2,8 @@
 
 Was sich von Entwurf zu Entwurf des Spielkonzepts (KONZEPT.md) geändert hat, neueste zuerst. Die Zahlen in Klammern verweisen auf Abschnitte des Konzepts.
 
+**Nachtrag 2 zu Entwurf 12:** neue Musik aus der eigenen Musik-Generator-Suite: Stil „Arcade“ mit vorgegebenem Ohrwurm, drei Zustände mit steigendem Tempo nach Alarmstufe, sanfter Einstieg, Überleitungen im Takt; beim Laden in einem Worker gerendert, die frühere Musik bleibt als Rückfall (13a, 12.2).
+
 **Nachtrag zu Entwurf 12:** Zielen durch das, was das Sichtfenster ausblendet (4.3); schwächere Landungen, deutlich höhere Stufen-Schwellen, Mitgefallenes zählt nur noch 20 % (4.2, 5.1, 5.3); der Flieger zählt anteilig und rammt nur noch Dellen (9.2); fallende Gebäude sind im Weg und treffen Fahrzeuge und Passanten (11.6a); Musik mit Schlagzeug von Anfang an, pumpendem Bass und überwiegend in Moll (13a); die Erfolge liegen in den Menüs (13); weite Flächen in jeder Welt, darunter ein echtes Hafenmeer und ein riesiges Rollfeld (7.4a).
 
 **Entwurf 12:** Klettermodus an Wänden mit Steuerung in alle Richtungen (4.2); eigene Naturgesetze unter dem Meer mit Schwimmzügen, Meerestieren und U-Booten (11.1a, 8.2); Großgrundstücke mit Wahrzeichen in doppelter Größe, die verschlungene Achterbahn, das Hafenbecken mit Wasser zum Hindurchwaten, Stadtviertel, eingerichtete Häuser und Büros, versteckte Fundstücke (7.4a); Standfestigkeit schlanker Bauten und Nachgeben aufgefangener Gerippe (11.4a); Musik, die der Handlung folgt (13a); gezieltes Abschießen von Fliegendem, geordnetes Abziehen der Einsatzkräfte, geduldigere Feuerwehr (8.1); der Flieger prallt an Gebäuden ab (9.2); der Affe hebt immer etwas auf (9.2).
