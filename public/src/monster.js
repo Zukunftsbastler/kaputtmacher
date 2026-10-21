@@ -496,15 +496,23 @@ export class Monster {
       else {
         if (this.climbV > 0.1) {
           const ny = this.y + this.climbV * sp;
-          if (wall(this.x, ny, this.z)) this.y = ny;
+          if (wall(this.x, ny, this.z)) { this.y = ny; c.stuck = 0; }
           else {
             // The top: pull up onto the roof, if there is one within reach.
             // A narrow ledge (the step of a tower that gets slimmer further up) counts as well.
             for (const d of [r * 2 + 2, r + 1.5]) {
               const fx = this.x + c.dx * d, fz = this.z + c.dz * d, top = w.heightBelow(fx, fz, ny + h * 0.8);
-              if (top <= this.y || top > ny + h * 0.8) continue;
+              // The roof may lie a little below the feet as well: in the air the wall is felt from half a body height up only.
+              if (top < this.y - h * 0.5 || top > ny + h * 0.8) continue;
               this.x = fx; this.z = fz; this.y = top; this.onGround = true; this.jumps = 0; this.cling = null; this.clingCool = 0.4; pose.squash = 0.6;
               break;
+            }
+            // Nothing found to step onto (a parapet, an odd roof): after a moment the creature vaults over the edge
+            // instead of hanging there for ever.
+            if (this.cling && (c.stuck = (c.stuck ?? 0) + dt) > 0.4) {
+              this.cling = null; this.clingCool = 0.6; this.wallJump = false;
+              this.vy = Math.sqrt(2 * this.gravity() * h * 1.2); this.jumps = 1;
+              this.kick = { vx: c.dx * h * 2.5, vz: c.dz * h * 2.5, t: 0.4 };
             }
           }
         } else if (this.climbV < -0.1) {

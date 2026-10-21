@@ -1,0 +1,1 @@
+Mindestens beim Affen, eventuell auch bei weiteren Figuren, unterbricht dieser im automatischen Spiel beim Erklimmen von Gebäuden, wenn die Oberkante eines Gebäudes erreicht wird, seine Kletteranimation nicht mehr, sondern bleibt an der Oberkante hängen. Dann passiert nichts mehr - das macht den Modus leider sehr langweilig. Bitte korrigieren.
