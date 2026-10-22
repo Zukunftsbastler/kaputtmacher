@@ -14,6 +14,7 @@ const FOLK = {
   tribe: { shirts: [[0.55, 0.38, 0.22], [0.45, 0.3, 0.18], [0.7, 0.55, 0.35], [0.36, 0.26, 0.2]], legs: 'skin', heads: null },
   // The castle world: peasants in tunics and hose; now and then a lady of the castle in a long gown with a tall hat.
   medieval: { shirts: [[0.45, 0.36, 0.22], [0.36, 0.42, 0.25], [0.55, 0.45, 0.3], [0.62, 0.55, 0.42]], legs: [0.3, 0.24, 0.18], heads: [[0.5, 0.4, 0.25]], ladies: { share: 0.15, gowns: [[0.6, 0.12, 0.2], [0.2, 0.3, 0.65], [0.85, 0.75, 0.45], [0.3, 0.5, 0.3]], hat: [0.95, 0.92, 0.85] } },
+  workers: { shirts: [[1, 0.5, 0.1], [1, 0.85, 0.15], [0.95, 0.6, 0.15]], legs: [0.2, 0.25, 0.4], heads: [[1, 0.85, 0.1], [0.95, 0.95, 0.95]] }, // the construction site: hi-vis vests and hard hats
   soldiers: { shirts: [[0.36, 0.4, 0.24], [0.42, 0.44, 0.3], [0.55, 0.5, 0.35]], legs: [0.3, 0.32, 0.22], heads: [[0.3, 0.34, 0.2]] }, // fortress Titan: uniforms and helmets
   robes: { shirts: [[0.95, 0.93, 0.86], [0.85, 0.72, 0.45], [0.2, 0.32, 0.65], [0.62, 0.18, 0.15], [0.9, 0.82, 0.62]], legs: 'robe', heads: [[0.97, 0.96, 0.92], [0.85, 0.75, 0.5], [0.3, 0.3, 0.55]] },
 };

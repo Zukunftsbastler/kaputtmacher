@@ -7,7 +7,7 @@ const dir = decodeURIComponent(new URL('.', import.meta.url).pathname), PORT = '
 const server = spawn('node', [dir + 'serve.mjs'], { env: { ...process.env, PORT }, stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 700));
 
-const WORLDS = ['skyline', 'blocks', 'village', 'funfair', 'city', 'factory', 'harbour', 'giants', 'castle', 'winter', 'airport', 'reef', 'spaceport', 'primeval', 'babel', 'neon', 'fortress', 'skyyard', 'random'];
+const WORLDS = ['site', 'skyline', 'blocks', 'village', 'funfair', 'city', 'factory', 'harbour', 'giants', 'castle', 'winter', 'airport', 'reef', 'spaceport', 'primeval', 'babel', 'neon', 'fortress', 'skyyard', 'random'];
 // [name, query, scenario, milliseconds]
 const runs = WORLDS.map((w) => [w, `world=${w}&stage=4`, 'punch', 7000]);
 if (process.argv[2] !== 'quick') runs.push(
@@ -15,6 +15,8 @@ if (process.argv[2] !== 'quick') runs.push(
   ['idle-jet', 'world=skyline&stage=5&species=jet&idle=1&run=25000', 'units', 28000],
   ['traffic', 'world=city&stage=3&run=15000', 'traffic', 18000],
   ['all-moves', 'world=village&stage=9&unlock=1', 'allmoves', 28000],
+  ['digger-moves', 'world=site&stage=8&species=digger&unlock=1', 'allmoves', 28000],
+  ['idle-digger', 'world=site&stage=4&species=digger&idle=1&run=30000', 'units', 33000],
   ['phone', 'world=city&stage=4', 'mobile', 5000, '740', '360'],
   ['lowest-detail', 'world=skyline&stage=6&idle=1&quality=1&run=20000', 'units', 23000],
 );

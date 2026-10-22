@@ -6,7 +6,7 @@
 import { isTerrain, TYPE_MAT, MAT, RUBBLE } from './materials.js';
 import { clamp, wrapDelta } from './math.js';
 import { GRAVITY, launch } from './particles.js';
-import { stageScale } from './monster.js';
+import { stageScale, tracked } from './monster.js';
 
 const ease = (x) => x * x * (3 - 2 * x);
 const snap = (x) => 1 - (1 - x) ** 3; // fast start, soft landing: the feel of a blow
@@ -360,6 +360,72 @@ const MOVES = {
         hit(T) { const B = T.base(), o = T.muzzle(); T.rocket(o, T.g.aim, 12 + B.S * 2.2, 20 + B.S * 2, 26, false, 2.2); T.g.fx.explosion(o[0], o[1], o[2], B.H * 0.15 + 2); T.g.audio.boom(0.9); T.g.shake(0.9); },
       } },
   ],
+  // ---------------------------------------------------------------- Excavator: bucket, swing, breaker and blade
+  // Everything happens at the end of the arm: it reaches as far as boom and stick go (about one and a half body heights), never further. The upper
+  // carriage turns towards the target while the tracks keep their course; only the dozer push moves the whole machine.
+  digger: [
+    { id: 'scoop', icon: '🪣', stage: 1,
+      light: { // dig: the bucket opens far out, then the stick pulls it in and it curls up, tearing out what it meets
+        wind: 0.22, strike: 0.32, recover: 0.26,
+        pose(j, p, a, b, c) {
+          const out = a * (1 - snap(b)), pull = snap(b) * (1 - c);
+          j.boom[0] += -0.35 * out + 0.45 * pull; j.stick[0] += -0.7 * out + 0.8 * pull; j.bucket[0] += 0.8 * out - 1.1 * pull;
+        },
+        tick(T, act, dt, b0, b1) {
+          eachShot(b0, b1, 3, (k) => { const B = T.base(), q = T.reachHit(act, 0.3, 1.45 - k * 0.15); if (T.blow(q[0], q[1] - k * B.H * 0.05, q[2], B.R * 0.85, B.P * 1.1, false, -T.dx, -T.dz, false, 14)) T.g.audio.hit('stone', 0.3); });
+        },
+      },
+      heavy: { // bucket slam: the boom goes up as high as it can, and the bucket comes down on the target with the whole arm
+        wind: 0.55, strike: 0.14, recover: 0.45, hitAt: 0.7,
+        pose(j, p, a, b, c) {
+          const up = a * (1 - snap(b)), down = snap(b) * (1 - c);
+          j.boom[0] += -1.0 * up + 0.7 * down; j.stick[0] += -0.6 * up + 0.2 * down; j.bucket[0] += 0.6 * up - 0.2 * down;
+          j.torso[0] += 0.08 * down; p.squash = 0.25 * down;
+        },
+        hit(T, act) {
+          const B = T.base(), q = T.reachHit(act, 0.35, 1.4, true);
+          T.blow(q[0], q[1], q[2], B.R * 1.4, B.P * 1.6, true, T.dx, T.dz);
+          T.shock(q[0], q[1], q[2], B.H * 0.3, B.R * 0.55, B.P * 0.7, 6);
+        },
+      } },
+    { id: 'hammer', icon: '🔨', stage: 3,
+      light: { // hydraulic breaker: a quick series of blows with the chisel, each one deep
+        wind: 0.2, strike: 0.6, recover: 0.2,
+        pose(j, p, a, b, c) { const on = a * (1 - c), rattle = b > 0 && b < 1 ? Math.sin(b * 90) * 0.06 : 0; j.boom[0] += -0.1 * on; j.stick[0] += -0.35 * on; j.breaker[0] += -0.4 * on + rattle; p.hop += Math.abs(rattle) * 3; },
+        tick(T, act, dt, b0, b1) { eachShot(b0, b1, 10, (k) => T.chisel(act, 1.9, 2, 5, k % 3 === 2, 0.004)); },
+      },
+      heavy: { // break through: a long hammering that drives the chisel deep into the building, floor after floor
+        wind: 0.4, strike: 1.5, recover: 0.4,
+        pose(j, p, a, b, c) { const on = a * (1 - c), rattle = b > 0 && b < 1 ? Math.sin(b * 160) * 0.07 : 0; j.boom[0] += -0.3 * on + 0.4 * b * (1 - c); j.stick[0] += -0.2 * on; j.breaker[0] += -0.2 * on + rattle; p.hop += Math.abs(rattle) * 4; p.squash = 0.15 * on; },
+        tick(T, act, dt, b0, b1) { eachShot(b0, b1, 16, (k) => { T.chisel(act, 1.7, 2.3, 6 + k * 0.8, k % 2 === 1, 0.008); T.g.shake(0.1); }); },
+      } },
+    { id: 'swing', icon: '🔄', stage: 5,
+      light: { // slew swipe: the upper carriage swings across with the arm stretched out
+        wind: 0.22, strike: 0.3, recover: 0.3,
+        turn: (a, b, c) => -0.75 * a * (1 - b) + (1.5 * snap(b) - 0.75) * (b > 0 ? 1 : 0) * (1 - 0.9 * ease(c)),
+        pose(j, p, a, b, c, act) { const on = a * (1 - c); j.turret[1] += this.turn(a, b, c) * act.side; j.boom[0] += -0.15 * on; j.stick[0] += -0.55 * on; j.bucket[0] += 0.3 * on; },
+        tick(T, act, dt, b0, b1) { T.armSweep(act, this, b0, b1, [0.55, 0.85, 1.1], 0.75, 1, false); },
+      },
+      heavy: { // carousel: one full turn of the upper carriage with the arm at full stretch
+        wind: 0.45, strike: 0.85, recover: 0.4,
+        turn: (a, b) => -0.5 * a * (1 - b) + (Math.PI * 2 + 0.5) * snap(b) - 0.5 * (b > 0 ? 1 : 0),
+        pose(j, p, a, b, c, act) { const on = a * (1 - c); j.turret[1] += this.turn(a, b, c) * act.side; j.boom[0] += -0.1 * on; j.stick[0] += -0.75 * on; j.bucket[0] += 0.5 * on; p.squash = 0.15 * on; },
+        tick(T, act, dt, b0, b1) { T.armSweep(act, this, b0, b1, [0.55, 0.85, 1.15, 1.4], 1.05, 1.4, true); },
+        end(T) { const m = T.g.monster; T.g.debris.blast(m.x, m.y, m.z, m.h * 2, launch(m.h * 1.2)); },
+      } },
+    { id: 'load', icon: '🏗️', stage: 7,
+      light: { // load and dump: a full bucket from the ground in front, swung round and emptied on the target
+        wind: 0.35, strike: 0.5, recover: 0.35, hitAt: 0.8,
+        pose(j, p, a, b, c) {
+          const dig = a * (1 - Math.min(1, b * 3)), lift = Math.min(1, b * 3) * (1 - snap(clamp((b - 0.75) * 4, 0, 1))), dump = b > 0.75 ? 1 - c : 0;
+          j.boom[0] += 0.45 * dig - 0.9 * lift - 0.6 * dump; j.stick[0] += 0.3 * dig + 0.3 * lift - 0.5 * dump; j.bucket[0] += 0.7 * dig - 1.0 * lift + 1.4 * dump;
+        },
+        begin(T, act) { const B = T.base(), q = T.reachHit(act, 0.1, 0.9, true); T.grab(q[0], q[1], q[2], clamp(B.H * 0.3, 2.5, 15)); T.g.audio.crack(0.6); },
+        tick(T) { if (T.held) { const o = T.at(T.o, 0.85, 0.9, 0, T.turretYaw()); T.held.pos[0] = o[0]; T.held.pos[1] = o[1]; T.held.pos[2] = o[2]; } },
+        hit(T) { T.release(1.3, true); },
+      },
+      heavy: charge(6, 1.15, 1.6, 4, 0.5, 0.9), // dozer push: blade down, full throttle, through everything ahead
+    } ],
   // ---------------------------------------------------------------- Aircraft: guns ahead, bombs below
   jet: [
     { id: 'guns', icon: '🔫', stage: 1,
@@ -476,8 +542,8 @@ export class Tools {
     if (!m.onGround && !m.cling && g.progress.species !== 'jet') return; // no attacks in mid-jump (but while hanging on a wall); the aircraft is always in the air
     const list = movesFor(g.progress.species), move = list.find((x) => x.id === moveId) ?? list[0];
     const v = heavy ? move.heavy : move.light, aim = g.aim;
-    // Tank and aircraft keep their course: only the turret turns towards the target.
-    if ((g.progress.species !== 'tank' && g.progress.species !== 'jet') || v.root) m.faceTo(aim.x, aim.z);
+    // Tank, excavator and aircraft keep their course: only the upper part turns towards the target.
+    if ((!tracked(g.progress.species) && g.progress.species !== 'jet') || v.root) m.faceTo(aim.x, aim.z);
     this.side = -this.side;
     // Bigger creatures take a little longer to wind up: more weight to move.
     const slow = 1 + m.stage * 0.035;
@@ -508,7 +574,7 @@ export class Tools {
   updateAct(dt) {
     const g = this.g, m = g.monster, a = this.act, v = a.v, t0 = a.t;
     a.t += dt;
-    if (v.root) m.heading = a.heading; else if (g.progress.species !== 'tank' && g.progress.species !== 'jet') m.faceTo(g.aim.x, g.aim.z);
+    if (v.root) m.heading = a.heading; else if (!tracked(g.progress.species) && g.progress.species !== 'jet') m.faceTo(g.aim.x, g.aim.z);
     const A = ease(Math.min(1, a.t / a.W)), b = clamp((a.t - a.W) / a.S, 0, 1), c = clamp((a.t - a.W - a.S) / a.R, 0, 1);
     v.pose(m.pose.j, m.pose, A, b, c, a);
     if (a.t < a.W) { if (v.windTick && g.rng() < 0.6) v.windTick(this, a); return; }
@@ -601,6 +667,44 @@ export class Tools {
     }
     o.spare = false;
     if (n && g.time - (act.fxT ?? -1) > 0.09) { act.fxT = g.time; g.impactFx(hx, y, hz, B.R * rMul * 1.3, (heavy ? 0.6 : 0.3) + B.S * 0.07, heavy); }
+  }
+
+  // Excavator: the arm sweeps round with the upper carriage; everything along it in the arc is hit.
+  armSweep(act, v, b0, b1, reaches, rMul, pMul, heavy) {
+    const g = this.g, m = g.monster, B = this.base(), o = this.opt, size = g.world.wrap ? g.world.sx : 0;
+    const y = clamp(act.ay, m.y + B.H * 0.15, m.y + B.H * 0.9), aimYaw = Math.atan2(wrapDelta(act.ax - m.x, size), wrapDelta(act.az - m.z, size));
+    o.impulse = launch(B.H * (heavy ? 3 : 2) + 10); o.debris = heavy ? 120 : 60; o.spare = true; o.blast = 0;
+    let n = 0, hx = 0, hz = 0;
+    for (let k = 1; k <= 4; k++) {
+      const b = b0 + ((b1 - b0) * k) / 4, ang = aimYaw + v.turn(1, b, 0) * act.side, sx = Math.sin(ang), sz = Math.cos(ang);
+      o.dx = sz * act.side; o.dz = -sx * act.side; // debris flies along the swing
+      g.lastHit.dx = o.dx; g.lastHit.dz = o.dz; g.lastHit.pop = launch(B.H * (heavy ? 0.45 : 0.2));
+      for (const r of reaches) {
+        const x = m.x + sx * B.H * r, z = m.z + sz * B.H * r, c = g.destruction.sphere(x, y, z, B.R * rMul * 0.8, B.P * pMul, o);
+        g.actors.hitAir(x, y, z, B.R * rMul + 2);
+        if (c) { n += c; hx = x; hz = z; }
+      }
+    }
+    o.spare = false;
+    if (n && g.time - (act.fxT ?? -1) > 0.09) { act.fxT = g.time; g.impactFx(hx, y, hz, B.R * rMul * 1.2, (heavy ? 0.6 : 0.3) + B.S * 0.07, heavy); }
+  }
+
+  // Excavator: one blow of the hydraulic breaker. The face it hits crumbles, and the chisel drives a hole deep into
+  // the building in the direction of the target. rMul: width, pMul: force (a breaker gets through concrete early),
+  // depth: voxels beyond the contact point. crack: the blow also sends cracks through the wall around it.
+  // shaken: how much every blow weakens the whole building for good (stability.js): a breaker shakes a building to
+  // its foundations, so after a long hammering it may come down on its own.
+  chisel(act, rMul, pMul, depth, crack = false, shaken = 0) {
+    const g = this.g, B = this.base(), q = this.reachHit(act, 0.4, 1.25), o = this.opt;
+    o.dx = this.dx; o.dz = this.dz; o.impulse = launch(B.H + 6); o.debris = 14; o.spare = false; o.blast = 0;
+    g.lastHit.dx = this.dx; g.lastHit.dz = this.dz;
+    const d = depth + B.H * 0.3;
+    let n = g.destruction.sphere(q[0], q[1], q[2], B.R * 0.55 * rMul, B.P * pMul * 0.8, o);
+    n += g.destruction.capsule(q[0], q[1], q[2], q[0] + this.dx * d, q[1], q[2] + this.dz * d, 0.8 + B.R * 0.35 * rMul, B.P * pMul, o);
+    if (crack) this.shock(q[0] + this.dx * d * 0.5, q[1] - B.R * 0.3, q[2] + this.dz * d * 0.5, B.H * 0.18, B.R * 0.45, B.P * 0.9, 5, true);
+    const st = shaken && g.world.structureAt(q[0] + this.dx * 2, q[2] + this.dz * 2);
+    if (st && st.major && n) g.stability.weaken(st, shaken);
+    if (n) { g.fx.sparks(q[0], q[1], q[2], 10, 5, 1, 0.9, 0.6); g.fx.dust(q[0], q[1], q[2], 1.5 + B.R * 0.3, 0.78, 0.76, 0.71, 1); g.audio.hit('metal', 0.2); g.audio.hit('stone', 0.15); }
   }
 
   // Robot blade: cuts along the line from the body out to full reach, between two angles.

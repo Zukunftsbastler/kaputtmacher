@@ -519,6 +519,86 @@ function radar(g, x0, G, z0, L, kit, H) {
   void kit;
 }
 
+// Construction site (the excavator's home) -----------------------------------------------------
+
+// A high-rise under construction: bare concrete floors on columns, the top storeys only columns with rebar sticking
+// out, brick infill on the lower floors, scaffolding up one side and a hoist on another.
+function shell(g, x0, G, z0, L, kit, H) {
+  const fh = 6, floors = g.int(8, Math.max(9, Math.min(30, Math.floor((H - G - 40) / fh)))), w = L - 12, x = x0 + 6, z = z0 + 6, open = g.int(2, 4);
+  g.begin('shell', '🏗️', { major: true });
+  for (let f = 0; f <= floors; f++) {
+    const y = G + f * fh, bare = f > floors - open;
+    if (!bare || f === floors - open + 1) g.box(x, y, z, w, 1, w, T.CONCRETE); // the slab
+    for (let a = 0; a < w; a += 6) for (let b = 0; b < w; b += 6) { // columns, with rebar on the topmost
+      if (f === floors) { if ((a + b) % 12 === 0) g.box(x + a, y, z + b, 1, 3, 1, T.STEEL_RED); continue; }
+      g.box(x + a, y + 1, z + b, 1, fh - 1, 1, T.CONCRETE_LIGHT);
+    }
+    if (f < floors - open - 1 && f % 2 === 0) for (let a = 1; a < w - 1; a++) if ((a >> 2) % 3) g.box(x + a, y + 1, z, 1, fh - 2, 1, T.BRICK_RED); // brick infill, here and there
+  }
+  for (let y = G; y < G + (floors - 1) * fh; y++) { // scaffolding on the side facing +z
+    for (let a = 0; a <= w; a += 4) g.set(x + a, y, z + w + 2, T.STEEL);
+    if ((y - G) % fh === 0) { g.box(x, y, z + w + 1, w + 1, 1, 3, T.WOOD_LIGHT); g.box(x, y + 2, z + w + 3, w + 1, 1, 1, T.STEEL); }
+  }
+  for (let y = G; y < G + floors * fh; y++) { g.set(x - 3, y, z + 2, T.STEEL_YELLOW); g.set(x - 3, y, z + 6, T.STEEL_YELLOW); if ((y - G) % 4 === 0) g.box(x - 3, y, z + 2, 1, 1, 5, T.STEEL_YELLOW); } // hoist mast
+  const cy = G + Math.floor(floors * 0.6) * fh; g.box(x - 7, cy, z + 2, 4, 4, 5, T.STEEL_YELLOW); g.box(x - 6, cy + 1, z + 3, 2, 2, 3, T.GLASS_DARK); // and its cage
+  g.end();
+  void kit;
+}
+
+// Heaps of gravel and sand: loose material for the bucket.
+function heaps(g, x0, G, z0, L) {
+  for (let k = 0; k < 3; k++) {
+    const r = g.int(7, 13), cx = x0 + 10 + k * 16 + g.int(0, 4), cz = z0 + 12 + (k & 1) * 22 + g.int(0, 6), t = g.pick([[T.STONE, T.GRANITE], [T.SANDSTONE, T.CONCRETE_TAN], [T.MUDBRICK, T.SANDSTONE]]);
+    g.begin('heap', '⛰️', { major: true });
+    for (let y = 0; y < r; y++) { const rr = r - y * 1.1; if (rr < 1) break; for (let dz = -Math.ceil(rr); dz <= rr; dz++) for (let dx = -Math.ceil(rr); dx <= rr; dx++) if (dx * dx + dz * dz <= rr * rr) g.set(cx + dx, G + y, cz + dz, (dx * 7 + dz * 3 + y) % 5 ? t[0] : t[1]); }
+    g.end();
+  }
+}
+
+// The site camp: office containers stacked two high with an outside stair, toilet cabins, a cement silo on legs.
+function sitecamp(g, x0, G, z0, L) {
+  g.begin('office', '🏢', { major: true });
+  for (let f = 0; f < 2; f++) for (let k = 0; k < 3; k++) {
+    const x = x0 + 4 + k * 13, y = G + f * 6, z = z0 + 6, c = g.pick([T.SHEET_BLUE, T.SHEET_WHITE, T.SHEET_GREEN]);
+    g.box(x, y, z, 12, 6, 6, c); g.box(x + 1, y + 1, z + 1, 10, 4, 4, 0); g.box(x + 3, y + 2, z + 5, 3, 2, 1, T.GLASS); g.box(x + 8, y + 1, z + 5, 2, 4, 1, T.WOOD_DARK);
+  }
+  for (let i = 0; i < 6; i++) g.box(x0 + 42 + i, G + i, z0 + 13, 1, 1, 2, T.STEEL); // stairs
+  g.end();
+  g.begin('toilets', '🚽', { major: true });
+  for (let i = 0; i < 3; i++) { g.box(x0 + 6 + i * 4, G, z0 + 20, 3, 6, 3, T.SHEET_GREEN); g.box(x0 + 7 + i * 4, G + 1, z0 + 22, 1, 4, 1, T.SHEET_WHITE); }
+  g.end();
+  g.begin('silo', '🏭', { major: true });
+  for (const [a, b] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) g.box(x0 + 40 + a, G, z0 + 38 + b, 1, 9, 1, T.STEEL);
+  g.cyl(x0 + 40, z0 + 38, 4, G + 9, 16, T.SHEET_GREY); for (let k = 0; k < 4; k++) g.cyl(x0 + 40, z0 + 38, 4 - k, G + 25 + k, 1, T.SHEET_GREY);
+  for (let y = 5; y < 9; y++) g.cyl(x0 + 40, z0 + 38, Math.max(1, y - 5), G + y, 1, T.SHEET_GREY);
+  g.end();
+}
+
+// A quarry: a mass of rock cut into benches like a stepped pyramid, with a haul road spiralling up, boulders at its
+// foot and a crusher with a conveyor. Solid rock all through: it is there to be dug away.
+function quarry(g, x, G, z, W, D) {
+  const cx = x + (W >> 1), cz = z + (D >> 1), R = Math.min(W, D) / 2 - 10, bench = 9, steps = Math.min(6, Math.floor(R / 12));
+  g.begin('quarry', '⛏️', { major: true });
+  for (let k = 0; k < steps; k++) {
+    const r = Math.round(R - k * 12), y0 = G + k * bench;
+    for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) > r - (Math.abs(dx * dz) % 7 === 0 ? 1 : 0)) continue; // ragged edges
+      const ramp = dz > r - 5 && dx > -r + 6 && dx < r - 6 && k === 0; // the haul road cut into the lowest bench
+      g.box(cx + dx, y0, cz + dz, 1, ramp ? Math.round(bench * (dx + r) / (2 * r)) : bench, 1, (dx * 3 + dz * 5 + k) % 9 ? T.STONE : (k & 1 ? T.GRANITE : T.SANDSTONE));
+    }
+  }
+  g.end();
+  g.begin('rocks', '🪨', { major: true });
+  for (let k = 0; k < 6; k++) { const a = g.rnd() * 6.283; g.ball(Math.round(cx + Math.cos(a) * (R + 5)), G + 2, Math.round(cz + Math.sin(a) * (R + 5)), g.int(2, 4), [T.STONE, T.GRANITE]); }
+  g.end();
+  g.begin('crusher', '⚙️', { major: true });
+  const kx = x + 6, kz = z + 6;
+  for (const [a, b] of [[0, 0], [10, 0], [0, 10], [10, 10]]) g.box(kx + a, G, kz + b, 1, 14, 1, T.STEEL_YELLOW);
+  g.box(kx, G + 14, kz, 11, 6, 11, T.STEEL_YELLOW); g.box(kx + 2, G + 20, kz + 2, 7, 3, 7, T.STEEL_DARK);
+  for (let i = 0; i < 26; i++) g.box(kx + 11 + i, G + 14 - Math.round(i * 0.45), kz + 4, 1, 1, 3, T.CAR_BLACK); // conveyor down to a heap
+  g.end();
+}
+
 // Neon megacity --------------------------------------------------------------------------------
 
 // A tower with giant billboards and neon strips. The billboards hang on its facade wherever that turns out to be.
@@ -699,6 +779,9 @@ export const LOTS3 = {
   tourney,
   skihotel,
   gondola,
+  shell,
+  heaps,
+  sitecamp,
   lighthouse,
   radar,
   // A floating island at a random height, somewhere above its lot.
@@ -724,6 +807,7 @@ export const BIG3 = {
   babel: { w: 2, h: 2, ground: 'pave', build: babel },
   volcano: { w: 3, h: 3, ground: 'soil', build: volcano },
   peak: { w: 3, h: 3, ground: 'soil', build: peak },
+  quarry: { w: 3, h: 3, ground: 'soil', build: quarry },
   swamp: { w: 3, h: 2, ground: 'basin', rim: 'soil', bed: [T.MUD, T.MOSS], tint: [0.22, 0.3, 0.12, 0.7], build: swamp }, // murky green water
   highway: { w: (n) => (n >= 16 ? 6 : 4), h: 1, ground: 'asphalt', build: highway },
   arcology: { w: 2, h: 2, ground: 'pave', build: arcology },

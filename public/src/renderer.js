@@ -110,7 +110,9 @@ vec3 rot(vec3 v) {
 void main() {
   vec3 rel = i_pos - vec3(u_focus.x, 0.0, u_focus.y);
   if (u_wrap > 0.0) rel.xz = mod(rel.xz + 0.5 * u_wrap, u_wrap) - 0.5 * u_wrap;
-  rel = curve(rel) + rot(a_pos * i_scale);
+  // Every corner is bent on its own, not just the centre: a long box (the body of a bus or a fire engine) then follows
+  // the curve of the planet like the ground under it, instead of resting on one axle with the other in the air.
+  rel = curve(rel + rot(a_pos * i_scale));
   vec3 n = rot(a_nrm);
   v_light = 0.55 + 0.18 * n.y + 0.5 * max(dot(n, u_sun), 0.0);
   v_col = i_col.rgb; v_em = i_col.a;

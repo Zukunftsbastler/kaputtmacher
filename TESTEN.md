@@ -66,6 +66,10 @@ Zu jedem Punkt reicht ein Haken oder ein Stichwort, was stört.
 - [ ] Ritterburgen: Wirkt die Welt mittelalterlich? Sehen Ritter, Wasserkarren, Bauern und Burgfrauen gut aus? Fehlt etwas (z. B. Sirenengeräusch, das man jetzt vermisst)?
 - [ ] Winterwelt, Flughafen, Hafen: Ist genug Höhe da? Stürzen Hotels, Seilbahnmasten, Leuchttürme und Berg sehenswert ein?
 - [ ] Staub: Sieht man Einstürze jetzt gut? Ist es zu wenig Staub geworden?
+- [ ] Lange Fahrzeuge (Busse, Löschzüge) in einiger Entfernung und quer zum Blick: stehen sie mit allen Rädern auf der Straße?
+- [ ] Bagger: Ist der Hammer (jetzt zweiter Angriff) stark genug, aber nicht zu stark? Stürzt ein Haus nach langem Hämmern ein?
+- [ ] Bagger: Sieht er aus und bewegt er sich wie ein echter Bagger? Folgt der Arm dem Ziel, dreht der Oberwagen glaubwürdig, wirken Graben, Schaufelschlag, Schwenken, Hammer, Auskippen und Planierschild? Fehlt etwas Typisches?
+- [ ] Großbaustelle: Passt sie zum Bagger? Fallen die Rohbauten schön, lassen sich Haufen und Steinbruch abtragen?
 - [ ] Superstrukturen: Wirken Hochbahnen, Skybridges, Superhighways, Lianen, Hängebrücken, Achterbahnen usw. wie ein zusammenhängendes Netz über mehrere Ebenen? Sind es zu viele oder zu wenige? Stürzen sie mit, wenn man einen verbundenen Bau fällt? Stören sie beim Laufen oder Klettern?
 - [ ] Klettern: Halten Hände und Füße sichtbar fest, und greifen sie abwechselnd um? Passt das Tempo?
 - [ ] Minimap: Hilft sie beim Überblick? Ist die Zerstörung deutlich genug, stört sie im Bild, ist sie am Handy (oben rechts) gut zu sehen? Lässt sie sich mit 🗺️, Taste M und in den Einstellungen aus- und wieder einschalten, und bleibt die Wahl nach dem Neuladen?

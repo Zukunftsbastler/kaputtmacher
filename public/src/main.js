@@ -9,7 +9,7 @@ import { Destruction } from './destruction.js';
 import { Bodies } from './bodies.js';
 import { Debris, Fx, launch } from './particles.js';
 import { Actors } from './actors.js';
-import { Monster, buildModel, partMatrix, stageNeed, newPose, locomotion, MODEL_HEIGHT, JET_GEAR, SPECIES } from './monster.js';
+import { Monster, buildModel, partMatrix, stageNeed, newPose, locomotion, MODEL_HEIGHT, GEAR, SPECIES } from './monster.js';
 import { Stability } from './stability.js';
 import { Fire } from './fire.js';
 import { Sweeper } from './sweeper.js';
@@ -1059,10 +1059,10 @@ class Game {
 
   drawMonster(b, pose, alpha, tint) {
     if (this.world.night) this.renderer.setNight(0.45); // the creature stays easy to see in the dark
-    // The aircraft shows only the gear that belongs to the selected weapon.
-    const gear = this.model.species === 'jet' ? JET_GEAR[this.tool] ?? '' : null;
+    // Aircraft and excavator show only the gear that belongs to the selected move (GEAR in monster.js).
+    const set = GEAR[this.model.species], gear = set ? set[this.tool] ?? '' : null;
     for (let i = 0; i < this.model.parts.length; i++)
-      if (gear === null || this.model.parts[i].name === 'torso' || this.model.parts[i].chain.includes(gear)) this.renderer.drawMesh(this.modelMeshes[i], partMatrix(mat, b, this.model, this.model.parts[i], pose), alpha, tint);
+      if (gear === null || !this.model.parts[i].chain.some((n) => n !== gear && Object.values(set).includes(n))) this.renderer.drawMesh(this.modelMeshes[i], partMatrix(mat, b, this.model, this.model.parts[i], pose), alpha, tint);
     if (this.world.night) this.renderer.setNight(1);
   }
 

@@ -2,6 +2,12 @@
 
 Was sich von Entwurf zu Entwurf des Spielkonzepts (KONZEPT.md) geändert hat, neueste zuerst. Die Zahlen in Klammern verweisen auf Abschnitte des Konzepts.
 
+**Nachtrag 9 zu Entwurf 12:** Bagger: Hammer als zweiter, Schwenken als dritter Angriff; der Hammer schlägt breiter und tiefer, lässt Risse durch die Wand laufen und schwächt den Bau mit jedem Schlag (9.2).
+
+**Nachtrag 8 zu Entwurf 12:** Busse, Löschzüge und alles andere aus beweglichen Quadern werden an jeder Ecke gekrümmt und liegen damit auf dem gewölbten Boden auf, statt auf einer Achse zu schweben (7.2).
+
+**Nachtrag 7 zu Entwurf 12:** der Bagger als sechste Figur: Kettenfahrwerk, rundum drehender Oberwagen, Arm aus Ausleger, Stiel und Schaufel oder Hydraulikhammer; Graben, Schaufelschlag, Schwenkhieb, Karussell, Meißeln, Durchbruch, Auskippen und Planierschild; kein Klettern, kein Schießen, nur ein Abstemmen mit dem Arm statt eines Sprungs. Dazu die Großbaustelle als seine Heimatwelt (9.2, 7.4b).
+
 **Nachtrag 6 zu Entwurf 12:** Superstrukturen: Netze aus Verbindungen zwischen den Bauten auf verschiedenen Höhen – Hochbahnen und Skybridges in den Städten, Skybridges und Superhighways in der Neon-Megacity, Lianen und Hängebrücken in der Urzeit, Riesenachterbahnen im Vergnügungspark, Steinbrücken in Babel, Wehrgänge bei den Ritterburgen, Glasröhren unter dem Meer, Rohrleitungen, Förderbrücken, Skywalks, Seilbahnen und Laufstege (7.4c).
 
 **Nachtrag 5 zu Entwurf 12:** vier Welten gestrichen (Garten, Wohnstraße, Spielzeugland, Parklandschaft); Heimatwelten vorn in der Weltauswahl, jede Figur beginnt in ihrer Heimatwelt, bis der Spieler für sie eine andere wählt (7.4); Ritterburgen ohne Straßen und Verkehr, mit Fachwerkhäusern, Turnierplatz, Markt, Bauern, Burgfrauen, Rittern zu Pferd und Wasserkarren (7.4); Winterwelt mit Berg, Grandhotels, Seilbahnen und großer Schanze, Flughafen mit großem Tower, Radarmasten und Hotels, Hafen mit großem Portalkran, großen Silos, Leuchttürmen und Bürotürmen (7.4); weniger und kürzerer Staub (11.7); Festung Titan neu: Wüste, Vorposten, Graben, zwei Mauerringe mit Türmen, Hof voller Militärbauten, Riesenpanzer, Riesenjet, Riesenroboter, Kommandoturm, rund 60 Geschütze, die auf die Figur feuern, und ein Munitionsdepot, das als Ganzes explodiert (7.4b); der Macht-Vorrat fasst eine ganze Stufe (5.1).

@@ -1,0 +1,1 @@
+Längere Fahrzeuge (z.B. Busse oder Löschzüge), die sich über die Karte bewegen, werden nicht an dieser gewölbt. Es sieht daher so aus, als würden sie, wenn sie nicht genau in der Flucht mit dem Betrachtungswinkel sind, nur auf den Vorder- oder Hinterrädern fahren, während die anderen Räder in der Luft schweben.

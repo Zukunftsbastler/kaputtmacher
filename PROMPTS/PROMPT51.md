@@ -1,0 +1,1 @@
+Ich möchte einen weiteren Kaputtmacher haben: Einen Bagger. Gestalte ihn so, wie du es für richtig hältst. Er soll sich wie ein authentischer Bagger verhalten (z.B. kein Klettern, kein Schießen, dafür soll er eine bewegliche Schaufel haben, etc.).

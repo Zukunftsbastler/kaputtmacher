@@ -4,6 +4,12 @@ Status: in Umsetzung. Dieser Entwurf nennt überall konkrete Zahlen; sie entspre
 
 **Nachtrag 3 zu Entwurf 12:** Heimatwelten für alle fünf Figuren (7.4b); Klettern mit festen Griffen für Hände und Füße, doppelt so schnell (4.2).
 
+**Nachtrag 9 zu Entwurf 12:** Beim Bagger tauschen Hammer (jetzt Stufe 3) und Schwenken (jetzt Stufe 5) die Plätze; der Hammer ist deutlich stärker und erschüttert Gebäude (9.2).
+
+**Nachtrag 8 zu Entwurf 12:** Lange Fahrzeuge folgen der Krümmung des Planeten (7.2).
+
+**Nachtrag 7 zu Entwurf 12:** eine sechste Figur, der Bagger, mit beweglichem Arm, vier Angriffen am Ende des Arms und der Großbaustelle als Heimatwelt (9.2, 7.4b).
+
 **Nachtrag 6 zu Entwurf 12:** Superstrukturen verbinden die Bauten der Welten zu Netzen über mehrere Höhenebenen: Hochbahnen, Skybridges, Superhighways, Lianen, Hängebrücken, Riesenachterbahnen und mehr (7.4c).
 
 **Nachtrag 5 zu Entwurf 12:** Garten, Wohnstraße, Spielzeugland und Parklandschaft gestrichen; die Heimatwelten stehen vorn, und jede Figur beginnt in ihrer (7.4); Ritterburgen als echtes Mittelalter mit Rittern, Bauern und Burgfrauen (7.4); Winterwelt, Flughafen und Hafen mit viel mehr Höhe (7.4); weniger Staub (11.7); Festung Titan als Wüstenfestung mit Mauerringen, Vorposten, feuernden Geschützen und einem Munitionsdepot, das in die Luft fliegt (7.4b); der Macht-Vorrat fasst eine ganze Stufe (5.1).
@@ -50,7 +56,7 @@ Zielspieler ist ein 5-jähriges Kind, das baut, um zu zerstören.
 
 ## 4. Der Spieler: das Monster
 
-- Dritte-Person-Ansicht von schräg hinten. Fünf Figuren: Dino, Gorilla, Roboter, Panzer, Flieger. Sie sehen nicht nur anders aus, sie zerstören grundverschieden (Abschnitt 9).
+- Dritte-Person-Ansicht von schräg hinten. Sechs Figuren: Dino, Gorilla, Roboter, Panzer, Bagger, Flieger. Sie sehen nicht nur anders aus, sie zerstören grundverschieden (Abschnitt 9).
 - Unverwundbar. Trümmer prallen ab.
 - Laufen zerstört bereits: Was schwächer ist als das Monster, bricht beim Durchlaufen.
 - **Flugkamera** als zweiter Modus: frei fliegen und direkt feuern. Selten gebraucht, deshalb nicht auf dem Bildschirm, sondern in den Einstellungen (oder Taste Tab). Solange sie an ist, zeigt ein Knopf mit dem Bild der Figur den Weg zurück.
@@ -162,7 +168,7 @@ Größe · detailreicheres Modell je Stufe (Rückenstacheln ab 2, Hörner ab 4, 
 
 ### 5.4 Jede Figur wächst für sich
 
-Dino, Gorilla, Roboter, Panzer und Flieger haben jeweils eine eigene Stufe und eigene Macht. Wer mit dem Dino Stufe 7 erreicht hat, beginnt mit dem Roboter trotzdem bei Stufe 1 und schaltet dessen Angriffe einzeln frei. Alle fünf Figuren sind von Anfang an wählbar; in der Weltauswahl zeigt jede ihre Stufe. Beim Wechsel wird die Figur sofort mit ihrer eigenen Größe weitergespielt. Ein Spielstand aus der Zeit davor wird der zuletzt gespielten Figur gutgeschrieben.
+Dino, Gorilla, Roboter, Panzer, Bagger und Flieger haben jeweils eine eigene Stufe und eigene Macht. Wer mit dem Dino Stufe 7 erreicht hat, beginnt mit dem Roboter trotzdem bei Stufe 1 und schaltet dessen Angriffe einzeln frei. Alle sechs Figuren sind von Anfang an wählbar; in der Weltauswahl zeigt jede ihre Stufe. Beim Wechsel wird die Figur sofort mit ihrer eigenen Größe weitergespielt. Ein Spielstand aus der Zeit davor wird der zuletzt gespielten Figur gutgeschrieben.
 
 ## 6. Zähler
 
@@ -182,7 +188,7 @@ Die Würfelgröße ist pro Welt fest: 20 cm im Bauklotz-Zimmer, 25 cm in Garten 
 
 **Insel** – flach und begrenzt, für kleine, sehr detaillierte Schauplätze.
 
-**Planet** – eine Welt ohne Rand. Intern ein flaches Gitter, dessen Ränder nahtlos ineinander übergehen; erst beim Zeichnen wird es um das Monster herum nach unten gekrümmt. Die Physik rechnet weiter im geraden Gitter.
+**Planet** – eine Welt ohne Rand. Intern ein flaches Gitter, dessen Ränder nahtlos ineinander übergehen; erst beim Zeichnen wird es um das Monster herum nach unten gekrümmt. Die Physik rechnet weiter im geraden Gitter. Gekrümmt wird jede Ecke einzeln, auch bei allem, was aus beweglichen Quadern besteht (Fahrzeuge, Bewohner, Trümmer): Früher wurde nur der Mittelpunkt jedes Quaders verschoben, und ein langer Wagenkasten (Bus, Löschzug) lag starr waagerecht, während der Boden unter ihm abfiel – er schien auf einer Achse zu fahren, die andere in der Luft (Nachtrag 8).
 
 - Sichtbar ist immer eine runde Kappe von 360 Würfeln Radius (180 m) rund um das Monster. Dahinter liegt der Horizont; die äußeren 20 % lösen sich im Dunst auf.
 - Die Größe der sichtbaren Kappe hängt nicht von der Größe der Welt ab. Die Welt kann deshalb viel größer sein als das, was der Rechner gleichzeitig zeichnen muss (12.3).
@@ -215,6 +221,7 @@ Ein Treffer hat eine Stärke, die zum Rand hin abnimmt. Ist sie größer als die
 | 🌃 **Neon-Megacity** (Heimat des Roboters) | Planet, 176 m hoch | 512 m | 50 cm | rund 8 600 000 | rund 230 | 8 |
 | 🏰 **Festung Titan** (Heimat des Panzers) | Planet, 128 m hoch | 512 m | 50 cm | rund 1 600 000 | rund 80 | 7 |
 | ☁️ **Wolkenwerft** (Heimat des Fliegers) | Planet, 128 m hoch | 512 m | 50 cm | rund 2 300 000 | rund 700 | 6 |
+| 🚧 **Großbaustelle** (Heimat des Baggers) | Planet, 128 m hoch | 512 m | 50 cm | rund 6 200 000 | rund 400 | 3 |
 | 🌆 **Wolkenkratzer-Stadt** | Planet, 256 m hoch | 512 m | 50 cm | 9 100 000 | 249 | 1 |
 | 🧱 Bauklotz-Zimmer | Insel | 64 m | 20 cm | 122 000 | 25 | 1 |
 | 🏘️ Dorf | Planet | 512 m | 50 cm | 1 290 000 | 548 | 5 |
@@ -256,7 +263,7 @@ Alle Welten entstehen aus Bauplänen im Code mit festem Startwert: Wer eine Welt
 
 ### 7.4b Heimatwelten
 
-Jede der fünf Figuren hat eine Welt, die auf das zugeschnitten ist, was sie am besten kann (`landmarks3.js`). In der Weltauswahl trägt ihre Kachel das Symbol der Figur. Alle sind hoch – 180 bis 250 Würfel – und voller Schwachstellen, von denen aus ein Einsturz um sich greift.
+Jede der sechs Figuren hat eine Welt, die auf das zugeschnitten ist, was sie am besten kann (`landmarks3.js`). In der Weltauswahl trägt ihre Kachel das Symbol der Figur. Alle sind hoch – 180 bis 250 Würfel – und voller Schwachstellen, von denen aus ein Einsturz um sich greift.
 
 | Welt | Was dort steht | Wie es fällt |
 |---|---|---|
@@ -265,6 +272,7 @@ Jede der fünf Figuren hat eine Welt, die auf das zugeschnitten ist, was sie am 
 | 🌃 Neon-Megacity (Roboter) | **Bei Nacht**: Alles ist dunkel und violett, beleuchtet nur vom Schein der Stadt – rosa und türkis in breiten Wellen über die Karte, am stärksten unten auf der Straße. Leuchtreklamen, Lampen und Scheinwerfer leuchten voll; Fahrbahnmarkierungen glimmen; von den Fenstern ist etwa jedes achte Feld erleuchtet (warm, kalt oder rosa), der Rest ist dunkles Glas. Rauch und Staub sind dunkle Schatten. Die Figur selbst bleibt heller, damit man sie sieht. Gestartet wird nicht im Park, sondern **mitten auf einer Kreuzung zweier Prachtstraßen**, an deren vier Ecken Leuchtreklame-Türme stehen; der Blick geht die Straßenschlucht hinunter. Türme bis rund 300 Würfel mit **riesigen Leuchtreklamen** an der Fassade, **Lichtlinien**, die vom Bürgersteig bis zum Dach an der Fassade hinauflaufen und Rücksprünge mitgehen, **Hochstraßen** in zwei Ebenen auf Stelzen mit Autos und Laternen, eine **Arkologie** (eine Stadt in einem Gebäude, bis 230 Würfel), Zwillingstürme mit Brücken | Ein Laserschnitt quer durch einen Turm lässt den oberen Teil abrutschen; Hochstraßen hängen an wenigen Pfeilern |
 | 🏰 Festung Titan (Panzer) | Eine **Festung in der Wüste** (`fortress.js`), in die man eindringen muss. Start auf der leeren Sandebene vor dem Tor, Dünen, Kakteen. Auf der Ebene **Vorposten** – Bunker mit Sandsäcken, hölzerne Wachtürme, Zeltlager mit Treibstofffässern und Funkmast –, die für Stufe 2 reichen. Dann ein **trockener Graben** mit einem Damm zum Tor und die **äußere Mauer** (40 Würfel hoch, sechs dick, Zinnen, Strebepfeiler) mit Rundtürmen an den Ecken und in den Seitenmitten und einem Torhaus mit Stahltor. Im Hof zwischen den Mauern stehen Reihen von **Kasernen**, **Flaktürmen**, **Bunkern**, **Radarmasten**, Lagerhallen, Hangars und **Tanklagern**, in den Ecken ein **Riesenpanzer** und ein **Riesenjet**. Dahinter die **innere Mauer** (54 Würfel), und in der Zitadelle der dreistufige **Kommandoturm** (rund 140 Würfel), ein **Riesenroboter** (rund 120 Würfel) und das **Munitionsdepot**: ein Bunker voller Granaten und Fässer hinter Panzertüren. **Jedes Geschütz** auf Türmen, Torhäusern, Flaktürmen, Vorposten und dem Kommandoturm (rund 60) ist ein Schütze: Kommt die Figur näher als 150 Würfel plus drei Körperhöhen, feuert es Leuchtspur (Maschinengewehre, drei Schuss) oder Raketen (schwere Geschütze). Wie beim Militär richtet das keinen Schaden an (außer „Militär stößt zurück“ ist an). Ein zerstörtes Geschütz schweigt. Keine Polizei, keine Feuerwehr, kein Verkehr; es laufen Soldaten mit Helm herum | Geht im Depot das erste Fass hoch, explodiert das ganze Depot: sieben Explosionen rollen durch den Bunker, dann eine riesige (bis Radius 48) mit Zeitlupe. Die Mauern sind dick und müssen Stück für Stück aufgebrochen werden |
 | ☁️ Wolkenwerft (Flieger) | Ein offenes Meer ohne Straßen, darüber **schwebende Inseln** in 50 bis 190 Würfeln Höhe mit Häuschen, Funkmast und Baum, **Felsnadeln** mit einer Insel obenauf, **Luftschiffe** an Ankermasten, und auf einem Großgrundstück ein **Luftschiffhafen**: eine große Insel mit Hangar und angedocktem Luftschiff, verbunden durch eine **Seilbahn** mit zwei Gondeln mit einer kleineren Insel | Die Inseln schweben nicht von selbst: Sie hängen an zwei leuchtenden **Schwebestrahlen** aus Triebwerken unter der Insel und an zwei **Stahlseilen** zu Ankerblöcken im Meer. Sind alle gekappt, stürzt die Insel ab. Ein Luftschiff hängt nur mit der Nase am Mast |
+| 🚧 Großbaustelle (Bagger) | Rohbau-Hochhäuser bis rund 190 Würfel: nackte Betondecken auf Stützen, oben nur noch Stützen mit herausstehendem Bewehrungsstahl, unten stellenweise ausgemauert, ein Gerüst an einer Seite und ein gelber Bauaufzug an einer anderen; Turmdrehkräne und Baustellen; **Kies- und Sandhaufen**; Baucontainer zu zweit gestapelt mit Treppe, Toilettenhäuschen, ein Zementsilo; auf einem Großgrundstück ein **Steinbruch**: ein Felsmassiv in Bermen wie eine Stufenpyramide mit Fahrweg, Findlingen und einem Brecher mit Förderband. Laufstege verbinden die Rohbauten (7.4c). Sandboden, Straßen mit Verkehr, Bauarbeiter in Warnwesten mit Helm | Die Rohbauten haben kaum Wände: Wer die Stützen eines Stockwerks wegschlägt, lässt die Decken darüber fallen. Haufen und Steinbruch sind zum Abtragen da |
 
 **Grenzen:** Das Licht der Nacht ist ein Schein, keine echte Beleuchtung: Leuchtreklamen werfen kein Licht auf ihre Umgebung, und Schatten gibt es nicht. Ein zerbrochenes Fenster wird zu dunklem Schutt. Die Hochstraßen enden an den Rändern ihres Grundstücks. In der Festung gibt es entlang der Klippen keine Laternen und geparkten Autos; Polizei und Feuerwehr fahren dort noch Autos von heute. In Urzeit und Babel gibt es ohne Einsatzkräfte auch keine Alarmsterne. Ein Zusammenhang zwischen Figur und Heimatwelt besteht außer dem Symbol nicht (kein Bonus).
 
@@ -489,6 +497,21 @@ Der Roboter beginnt mit der Klinge, die nur so weit reicht wie sein Arm; was aus
 | 🧨 Schwer (7) | Flammenwerfer | Bunkerbrecher: eine langsame, riesige Rakete mit dem größten Explosionsradius im Spiel (12 + 2,2 S) |
 
 Der Panzer zielt mit dem Turm unabhängig von der Fahrtrichtung.
+
+**🚜 Bagger**
+
+Ein Hydraulikbagger: Kettenfahrwerk mit Planierschild, ein Oberwagen mit Kabine, Gegengewicht, Motorhaube, Auspuff, Scheinwerfern und Rundumleuchte, der sich auf seinem Drehkranz **rundum** dreht, und ein Arm aus **Ausleger, Stiel und Schaufel** mit drei Gelenken und Hydraulikzylindern. Gelb, mit den Stufen dunkler; ab Stufe 3 Geländer, ab 5 ein Schutzgitter über der Kabine, ab 7 eine gepanzerte Schaufel und Warnstreifen.
+
+| Angriff | Schnell | Stark |
+|---|---|---|
+| 🪣 Schaufel (1) | Graben: Die Schaufel öffnet sich weit draußen, der Stiel zieht sie heran, sie rollt sich ein und reißt dabei dreimal heraus, was sie trifft | Schaufelschlag: Der Ausleger fährt ganz hoch, dann kommt die Schaufel mit dem ganzen Arm auf das Ziel herunter, mit Druckwelle |
+| 🔨 Hammer (3) | Hydraulikhammer statt Schaufel: zehn schnelle Meißelschläge; jeder lässt die getroffene Wand abbröckeln und treibt ein Loch tief hinein, jeder dritte schickt Risse durch die Wand. Kommt früh durch Beton (Kraft rund 2 × Stufe) | Durchbruch: 1,5 Sekunden Dauerhämmern mit 16 breiteren Schlägen, die den Meißel Schlag für Schlag tiefer treiben, jeder zweite mit Rissen |
+| 🔄 Schwenken (5) | Schwenkhieb: Der Oberwagen schwenkt mit ausgestrecktem Arm quer durch das Ziel | Karussell: eine volle Umdrehung des Oberwagens mit dem Arm auf voller Länge |
+
+**Der Hammer erschüttert das Gebäude.** Jeder Schlag schwächt den getroffenen Bau dauerhaft ein wenig (0,4 % beim schnellen, 0,8 % beim starken Angriff, wie bei Kettenreaktionen, 11.6): Nach langem Hämmern kann ein Haus von selbst einstürzen. Hammer und Schwenken haben die Plätze getauscht (Nachtrag 9): Vorher war der Hammer als dritter Angriff der mit Abstand schwächste. Gemessen auf Stufe 4, erster Einsatz gegen ein Gebäude: schneller Hammer 18 Würfel, starker 91, starkes Schwenken über 1 000. Jetzt auf Stufe 3: schneller Hammer 107 bis 128 Würfel (Graben 28 bis 36), starker Hammer 180 Würfel an einem Gebäude der Stadt, an einem Hochhaus der Wolkenkratzer-Stadt brachte er es zum Einsturz (rund 44 000). Einnahmen im Selbstspiel: 105 Macht pro Sekunde auf Stufe 3, 104 auf Stufe 4.
+| 🏗️ Laden (7) | Auskippen: eine volle Schaufel vom Boden vor ihm, hochgeschwenkt und auf das Ziel gekippt (ein Brocken bis zu einem Drittel seiner Größe) | Planierschild: Schild runter, Vollgas, sechs Körperhöhen weit durch alles hindurch |
+
+**Wie ein echter Bagger:** Er fährt auf Ketten und behält seine Fahrtrichtung; nur der Oberwagen dreht sich zum Ziel, langsamer als ein Panzerturm. Der Arm folgt der Höhe des Zielpunkts (hoch zu Dachkanten, tief zum Boden) und ist beim Fahren eingeklappt. Alles geschieht am Ende des Arms: Er reicht rund anderthalb Körperhöhen weit, nie weiter, und **schießt nicht**. Er **klettert nicht**, schwimmt nicht und springt nicht: Die Sprungtaste lässt ihn sich mit dem Arm vom Boden abstemmen, ein kurzer Hüpfer wie beim Panzer, genug, um aus einer Grube zu kommen. Je nach Angriff sitzt am Stiel die Schaufel oder der Hydraulikhammer; gezeichnet wird nur das gewählte Werkzeug. Die Planierfahrt nutzt dieselbe Bewegung wie Ansturm und Rammen. Gemessen im Selbstspiel in der Wolkenkratzer-Stadt: 5, 12 und 3 742 Macht pro Sekunde auf den Stufen 1, 2 und 5, also im Bereich der anderen Figuren (nach einer Verstärkung der Schaufel; vorher 1 auf Stufe 1).
 
 **✈️ Flieger**
 
@@ -901,7 +924,7 @@ Macht und Stufen wachsen dabei ganz normal und werden gespeichert. Figur und Stu
 
 ## 18. Erfolge
 
-131 kleine Ziele, jedes eine Schwelle auf einem Zähler: zerstörte Würfel insgesamt und nach Material, Gebäude und Hochhäuser, Einstürze, zerdrückte Häuser, die längste Kettenreaktion, mehrere Gebäude in zehn Sekunden, zerstörte Welten (auch jede der 18 einzeln), erreichte Stufen (insgesamt, je Figur, mit allen Figuren), Explosionen, Brände, Hydranten, Lampen, erwischte fahrende Autos, umgeworfene Polizei- und Feuerwehrautos, abgeschossene Reporter-, Militär-Hubschrauber und Kampfflieger, die Alarmstufe, Sprünge, Saltos, Stampfbomben, Brüller, Rempler, zurückgelegte Strecke, durch die Luft gewirbelte Bewohner, Angriffe, gesammelte Macht, Zeit im Selbstspiel und Spielzeit, Sticker und die Zahl der Erfolge selbst.
+135 kleine Ziele, jedes eine Schwelle auf einem Zähler: zerstörte Würfel insgesamt und nach Material, Gebäude und Hochhäuser, Einstürze, zerdrückte Häuser, die längste Kettenreaktion, mehrere Gebäude in zehn Sekunden, zerstörte Welten (auch jede der 19 einzeln), erreichte Stufen (insgesamt, je Figur, mit allen Figuren), Explosionen, Brände, Hydranten, Lampen, erwischte fahrende Autos, umgeworfene Polizei- und Feuerwehrautos, abgeschossene Reporter-, Militär-Hubschrauber und Kampfflieger, die Alarmstufe, Sprünge, Saltos, Stampfbomben, Brüller, Rempler, zurückgelegte Strecke, durch die Luft gewirbelte Bewohner, Angriffe, gesammelte Macht, Zeit im Selbstspiel und Spielzeit, Sticker und die Zahl der Erfolge selbst.
 
 - **Einblendung:** Wird ein Erfolg erreicht, schiebt sich links unter dem Macht-Ring für gut vier Sekunden eine Karte herein: großes Symbol, Name, ein Satz dazu, ein Pokal an der Ecke, dazu ein kurzer heller Klang. Höchstens zwei Karten zugleich; warten mehr als drei, bleibt jede nur knapp zwei Sekunden.
 - **Lesen ist freiwillig.** Die Karten sind der einzige Text im Spielfeld. Wer nicht lesen kann, sieht Symbol und Pokal und hört den Klang; für das Spielen braucht man den Text nie.

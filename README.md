@@ -39,14 +39,15 @@ Dann `http://localhost:8000` öffnen. Es wird nichts installiert und nichts geba
 | Gamepad | wird automatisch erkannt (Trigger rechts/links) |
 | Handy, Tablet | Steuerknüppel links; rechts Knöpfe für Springen, schnellen und starken Angriff und Angriffswechsel; alles Übrige im Menü ☰ oben rechts. Ins Bild tippen zielt (kurz = schnell, halten = stark) |
 
-**Fünf Figuren, fünf Arten zu zerstören.** Jede hat vier Angriffe (ab Stufe 1, 3, 5, 7), jeden in einer schnellen und einer starken Fassung:
+**Sechs Figuren, sechs Arten zu zerstören.** Jede hat vier Angriffe (ab Stufe 1, 3, 5, 7), jeden in einer schnellen und einer starken Fassung:
 
 | Figur | Angriffe |
 |---|---|
 | 🦖 Dino | Schwanzschlag, Biss, Ansturm, Feuer und Atomstrahl |
 | 🦍 Gorilla | Fäuste, Würfe, Stampfen und Sprungschlag, Raserei |
-| 🤖 Roboter | Laser, Raketen, Laserklinge, Orbitalschlag |
+| 🤖 Roboter | Laserklinge, Orbitalschlag, Raketen, Laser |
 | 🪖 Panzer | Kanone, Mörser, Rammen, Flammenwerfer und Bunkerbrecher |
+| 🚜 Bagger | Schaufel (Graben, Schaufelschlag), Hydraulikhammer (Meißeln, Durchbruch), Schwenken (Schwenkhieb, Karussell), Auskippen und Planierschild – alles am Ende seines Arms; er schießt und klettert nicht |
 | ✈️ Flieger | Bordkanone und Bomben, Raketen, Bombenteppich, Brandbomben und Riesenbombe |
 
 Der Flieger ist immer in Bewegung: A/D lenkt, W/S steigt und sinkt, Umschalt ist der Nachbrenner. Er fliegt durch Häuserschluchten und durch Gebäude hindurch.
@@ -57,7 +58,7 @@ Der Flieger ist immer in Bewegung: A/D lenkt, W/S steigt und sinkt, Umschalt ist
 
 **Die Welt reagiert:** Beim ersten Schaden kommt ein Polizeiauto, dann mehr, dazu Reporter im Hubschrauber, die Feuerwehr, sobald es brennt, und schließlich das Militär mit Hubschraubern und Kampffliegern. Niemand kann dem Kaputtmacher etwas anhaben; alle lassen sich umwerfen oder vom Himmel holen. Die Alarmstufe (Sterne) steigt mit der Zeit und ebbt wieder ab, wenn man nichts zerstört.
 
-**Erfolge:** 131 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der fünf Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
+**Erfolge:** 135 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der sechs Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
 
 Das vollständige Konzept mit allen Zahlen steht in [KONZEPT.md](KONZEPT.md).
 
@@ -114,7 +115,7 @@ public/
 | `fire.js` | Hitze und Flammpunkte je Material (`heat`, `heatSphere`), brennende Voxel, langsame Ausbreitung, Ruß, Brandherde, Staubwolken, Löschen (`douse`) |
 | `reactions.js` | Reaktionen zerstörter Dinge: Hydranten-Fontänen, Wasserschwall, Funken an Lampen; Wasser löscht Feuer |
 | `sweeper.js` | Entfernt lose Trümmer nach 30 s, lässt Haufen ab 14 Würfeln stehen |
-| `monster.js` | Gelenkmodelle der fünf Figuren je Stufe, Körpersprache (`locomotion`), Steuerung am Boden und in der Luft (`Monster`) |
+| `monster.js` | Gelenkmodelle der sechs Figuren je Stufe, Körpersprache (`locomotion`), Steuerung am Boden und in der Luft (`Monster`) |
 | `tools.js` | Angriffe: Tabelle `MOVES` je Figur (leicht/schwer, Pose, Wirkung) und die Bausteine dafür (`blow`, `shock`, `bolt`, `ray`, `rocket`, `bomb`, `grab` …) |
 | `actors.js` | Bewohner und Einsatzkräfte: Polizeiautos, Feuerwehr, Reporter-, Lösch- und Militär-Hubschrauber, Kampfflieger; Alarmstufe |
 | `frail.js` | Standfestigkeit schlanker Bauten: Was mit dem Schwerpunkt neben seiner Standfläche hängt, kippt |
@@ -124,7 +125,7 @@ public/
 | `vendor/musik-generator/` | Eingekopierte Teile der Musik-Generator-Suite des Autors (MIT): Stem-Player und Stem-Renderer. Nicht hier ändern; `tools/vendor-music.mjs` kopiert neu |
 | `achievements.js` | Liste der 131 Erfolge, Zähler (`STATS`), Prüfung |
 | `traffic.js` | Straßennetz (`Roads`: Kreuzungen, Rechtsverkehr, Ausweichen, Wenden) und fahrende Autos und Busse (`Traffic`) |
-| `landmarks3.js` | Heimatwelten der fünf Figuren: Mammutbäume, Urwaldpflanzen, Nester, Steinkreise, Vulkan und Sumpf; Zikkurats, Turm zu Babel, Lehmhäuser, Basar, Obelisken, Ischtar-Tor, Palmen und Feuerschalen; Neon-Türme mit Lichtlinien und Hochstraßen; Flaktürme und Bunker; schwebende Inseln und Luftschiffe; Fachwerkhäuser und Turnierplatz der Ritterburgen; Berg, Grandhotel, Seilbahn, Leuchtturm und Radarmast für Winterwelt, Hafen und Flughafen |
+| `landmarks3.js` | Heimatwelten der Figuren (Rohbauten, Haufen, Baucontainer und Steinbruch der Großbaustelle); Mammutbäume, Urwaldpflanzen, Nester, Steinkreise, Vulkan und Sumpf; Zikkurats, Turm zu Babel, Lehmhäuser, Basar, Obelisken, Ischtar-Tor, Palmen und Feuerschalen; Neon-Türme mit Lichtlinien und Hochstraßen; Flaktürme und Bunker; schwebende Inseln und Luftschiffe; Fachwerkhäuser und Turnierplatz der Ritterburgen; Berg, Grandhotel, Seilbahn, Leuchtturm und Radarmast für Winterwelt, Hafen und Flughafen |
 | `links.js` | Superstrukturen: verbindet die Bauten einer Welt zu Netzen über mehrere Höhen (Hochbahn, Skybridge, Superhighway, Lianen, Hängebrücke, Achterbahn, Steinbrücke, Wehrgang, Glasröhre, Rohrleitung, Förderbrücke, Skywalk, Laufsteg, Seilbahn) |
 | `fortress.js` | Festung Titan: Wüste, Graben, zwei Mauerringe mit Türmen und Geschützen, Vorposten, Hof mit Militärbauten, Riesenmaschinen, Kommandoturm und Munitionsdepot |
 | `landmarks.js`, `landmarks2.js` | Besondere Grundstücke für den Stadtgenerator: Fahrgeschäfte, Hafenanlagen, Riesenbauten; Flughafen, Burg, Raumhafen, Winterwelt, Unterwasserstadt |
@@ -186,7 +187,7 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 
 ### Testen ohne Testframework
 
-- **Adress-Parameter** (speichern keinen Fortschritt): `?world=primeval|babel|neon|fortress|skyyard|skyline|blocks|village|funfair|city|factory|castle|winter|airport|harbour|giants|reef|spaceport|random` (ohne Angabe: die Heimatwelt der Figur oder die für sie gewählte Welt), `?stage=7`, `?species=dino|gorilla|robot|tank|jet`, `?tool=<Angriffs-Id>`, `?unlock=1`, `?quality=1…5` (Detailstufe; `low` und `high` gehen weiter), `?fly=1`, `?idle=1`.
+- **Adress-Parameter** (speichern keinen Fortschritt): `?world=primeval|babel|neon|fortress|skyyard|site|skyline|blocks|village|funfair|city|factory|castle|winter|airport|harbour|giants|reef|spaceport|random` (ohne Angabe: die Heimatwelt der Figur oder die für sie gewählte Welt), `?stage=7`, `?species=dino|gorilla|robot|tank|digger|jet`, `?tool=<Angriffs-Id>`, `?unlock=1`, `?quality=1…5` (Detailstufe; `low` und `high` gehen weiter), `?fly=1`, `?idle=1`.
 - **`window.game`** gibt in der Browser-Konsole Zugriff auf alles, z. B. `game.tools.use(game.tool, true)` oder `game.gain += 1e6`.
 - **`tools/`** (siehe `tools/README.md`): `node --experimental-default-type=module tools/check.mjs` prüft ohne Browser Spielstand-Laden, Erfolgsliste und die Erzeugung aller Welten; `node tools/smoke.mjs` spielt in einem eigenen Headless-Browser jede Welt und einige längere Szenarien durch und meldet Skriptfehler. Nach jeder größeren Änderung beide laufen lassen.
 - **Messen statt schätzen:** `node tools/browser.mjs name "world=skyline&stage=6&idle=1&run=55000" income 58000` liefert die Macht pro Sekunde im Selbstspiel; daraus sind die Stufen-Schwellen (`NEED` in `monster.js`) abgeleitet.

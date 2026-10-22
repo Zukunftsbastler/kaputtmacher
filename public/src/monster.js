@@ -10,12 +10,17 @@ export const SPECIES = [
   { id: 'dino', icon: '🦖', skin: [0x4caf50, 0x2a9d4a], belly: 0xdce775, dark: 0xf57c00 },
   { id: 'gorilla', icon: '🦍', skin: [0x5d5d66, 0x26262c], belly: 0xb8956a, dark: 0x1a1a1e },
   { id: 'robot', icon: '🤖', skin: [0x6f9fd8, 0x3d4f7a], belly: 0xcfd8dc, dark: 0x263238 },
-  { id: 'tank', icon: '🪖', skin: [0x7c8f45, 0x55662e], belly: 0x9aa860, dark: 0x2b2f25 },
+  { id: 'tank', icon: '🪖', skin: [0x7c8f45, 0x55662e], belly: 0x9aa860, dark: 0x2b2f25, tracked: true },
   // gain: what the aircraft destroys counts for less, most of all while it is small. It is fast, never has to walk
   // anywhere and bombs from above: measured with full value it earned seven to forty times as much as the dino on
   // stages 1 to 3 and raced through them. With this curve it stays ahead on the early stages (about three times) and level later.
+  // The excavator: tracks, an upper carriage that turns all the way round, and a boom with stick and bucket.
+  // It neither climbs nor shoots: it digs, swings, breaks and pushes.
+  { id: 'digger', icon: '🚜', skin: [0xf2b632, 0xd8921c], belly: 0x9fd3ea, dark: 0x2b2b2b, tracked: true },
   { id: 'jet', icon: '✈️', skin: [0xdfe4e8, 0xa9b4bd], belly: 0x3f7fc0, dark: 0x2d3436, gain: (stage) => Math.min(0.9, 0.054 * 1.75 ** (stage - 1)) },
 ];
+// Creatures on tracks (tank, excavator): no jumping but a hop, no climbing, no swimming, an upper part that turns all round.
+export const tracked = (species) => species === 'tank' || species === 'digger';
 
 // Height factor per stage, relative to a stage-1 monster. Grows without limit.
 const SCALE = [1, 1.6, 2.6, 3.8, 6, 9, 14, 20, 30];
@@ -55,10 +60,14 @@ const POUND_CHAIN = 8; // how many floors in a row it may smash through
 
 const C = { SKIN: 1, BELLY: 2, DARK: 3, WHITE: 4, EYE: 5, TEETH: 6, ARMOR: 7, GLOW: 8 };
 // Every joint has three rotations (x, y, z) and an offset (x, y, z) in model units.
-export const JOINTS = ['torso', 'head', 'jaw', 'armL', 'armR', 'legL', 'legR', 'tail', 'tail2', 'turret', 'barrel', 'pods', 'bay', 'rack'];
-// The aircraft carries one piece of gear under its belly, depending on the selected weapon. Turret and
-// rocket launcher turn towards the aim point; the aircraft itself always flies nose first.
-export const JET_GEAR = { guns: 'turret', rockets: 'pods', carpet: 'bay', heavy: 'rack' };
+export const JOINTS = ['torso', 'head', 'jaw', 'armL', 'armR', 'legL', 'legR', 'tail', 'tail2', 'turret', 'barrel', 'pods', 'bay', 'rack', 'boom', 'stick', 'bucket', 'breaker'];
+// Gear that depends on the selected move: only the matching part is drawn (main.js). The aircraft carries one
+// piece under its belly (turret and rocket launcher turn towards the aim point; the aircraft always flies nose
+// first); the excavator has a bucket on its stick, or a hydraulic breaker for the hammer.
+export const GEAR = {
+  jet: { guns: 'turret', rockets: 'pods', carpet: 'bay', heavy: 'rack' },
+  digger: { scoop: 'bucket', hammer: 'breaker', swing: 'bucket', load: 'bucket' },
+};
 
 function palette(sp, stage) {
   const p = new Uint8Array(1024), t = clamp((stage - 1) / 8, 0, 1);
@@ -72,6 +81,7 @@ function palette(sp, stage) {
   put(C.WHITE, [250, 250, 250]);
   put(C.EYE, stage >= 5 ? [255, 60, 30] : [20, 20, 20], stage >= 5 ? 255 : 0);
   if (sp.id === 'robot') put(C.EYE, stage >= 5 ? [255, 60, 30] : [80, 230, 255], 230);
+  if (sp.id === 'digger') { put(C.EYE, [255, 238, 190], 210); put(C.ARMOR, [62, 64, 70]); put(C.WHITE, [205, 210, 215]); } // headlights, steel, chrome
   put(C.TEETH, [255, 255, 240]);
   put(C.ARMOR, [70, 74, 86]);
   put(C.GLOW, stage >= 8 ? [255, 140, 30] : [255, 210, 60], 230);
@@ -100,7 +110,7 @@ export function buildModel(speciesId, stage) {
     if (stage >= 5) { b('torso', -13, 2, -9, -10, 5, 1, C.ARMOR); b('torso', 10, 2, -9, 13, 5, 1, C.ARMOR); b('torso', -13, 2, -10, -10, 5, -9, C.GLOW); b('torso', 10, 2, -10, 13, 5, -9, C.GLOW); }
     if (stage >= 7) { b('torso', -19, 6, -5, -18, 9, 4, C.BELLY); b('torso', 18, 6, -5, 19, 9, 4, C.BELLY); b('torso', -3, 3, -16, 3, 4, 10, C.ARMOR); }
     if (stage >= 8) { b('torso', -19, 6, 3, 19, 7, 4, C.GLOW); }
-    // Gear under the belly, one piece per weapon (see JET_GEAR); only the selected one is drawn.
+    // Gear under the belly, one piece per weapon (see GEAR); only the selected one is drawn.
     part('turret', [0, 3, 4], 'torso'); part('barrel', [0, 2.5, 5], 'turret'); part('pods', [0, 3, 0], 'torso'); part('bay', [0, 3, 0], 'torso'); part('rack', [0, 3, 0], 'torso');
     b('turret', -2, 1, 2, 2, 4, 6, C.ARMOR); b('turret', -1, 0, 3, 1, 1, 5, C.DARK);
     b('barrel', -2, 2, 6, -1, 3, 12, C.DARK); b('barrel', 1, 2, 6, 2, 3, 12, C.DARK); b('barrel', -2, 2, 12, -1, 3, 13, C.EYE); b('barrel', 1, 2, 12, 2, 3, 13, C.EYE);
@@ -124,6 +134,33 @@ export function buildModel(speciesId, stage) {
     if (stage >= 3) { b('turret', -9, 11, -6, -6, 15, 2, C.ARMOR); b('turret', 6, 11, -6, 9, 15, 2, C.ARMOR); b('turret', -9, 12, 2, -6, 14, 3, C.EYE); b('turret', 6, 12, 2, 9, 14, 3, C.EYE); }
     if (stage >= 4) b('torso', -9, 7, 12, 9, 10, 15, C.ARMOR);
     if (stage >= 8) { b('torso', -8, 10, -12, -7, 11, 12, C.GLOW); b('torso', 7, 10, -12, 8, 11, 12, C.GLOW); }
+  } else if (sp.id === 'digger') {
+    // Undercarriage with tracks and a dozer blade; the upper carriage turns on its slewing ring; the boom is hinged
+    // at the front of it, the stick at the end of the boom, the bucket (or the breaker) at the end of the stick.
+    part('torso', [0, 4, 0]); part('turret', [0, 8, 0], 'torso'); part('boom', [3, 12, 5], 'turret');
+    part('stick', [3, 13, 25], 'boom'); part('bucket', [3, 1, 25], 'stick'); part('breaker', [3, 1, 25], 'stick');
+    for (const s of [-1, 1]) { // tracks with rollers
+      b('torso', s < 0 ? -11 : 7, 0, -12, s < 0 ? -7 : 11, 5, 12, C.DARK);
+      for (let z = -10; z < 11; z += 4) b('torso', s < 0 ? -12 : 11, 1, z, s < 0 ? -11 : 12, 3, z + 2, C.ARMOR);
+      b('torso', s < 0 ? -11 : 7, 5, -12, s < 0 ? -7 : 11, 6, 12, C.ARMOR);
+    }
+    b('torso', -7, 2, -8, 7, 6, 8, C.ARMOR); b('torso', -5, 6, -5, 5, 8, 5, C.DARK); // carbody, slewing ring
+    b('torso', -10, 0, 13, 10, 4, 14, C.SKIN); b('torso', -6, 2, 9, -4, 3, 13, C.ARMOR); b('torso', 4, 2, 9, 6, 3, 13, C.ARMOR); // dozer blade on its arms
+    b('turret', -8, 8, -11, 8, 15, 5, C.SKIN); b('turret', -8, 8, -15, 8, 14, -11, C.ARMOR); // house and counterweight
+    b('turret', -8, 8, 0, -1, 19, 8, C.SKIN); b('turret', -7, 11, 7, -2, 18, 8, C.BELLY); b('turret', -8, 11, 1, -7, 18, 7, C.BELLY); // cab with windows
+    b('turret', -8, 19, -1, -1, 20, 8, C.SKIN); b('turret', -7, 18, 8, -6, 19, 9, C.EYE); b('turret', -3, 18, 8, -2, 19, 9, C.EYE); // roof, lights
+    b('turret', -5, 20, 3, -4, 21, 4, C.GLOW); // beacon
+    b('turret', 1, 15, -10, 8, 16, 0, C.DARK); b('turret', 5, 15, -7, 6, 22, -6, C.DARK); // engine grille, exhaust
+    b('turret', 1, 9, 2, 5, 14, 7, C.SKIN); // boom foot
+    b('boom', 1, 11, 4, 5, 15, 26, C.SKIN); b('boom', 2, 8, 6, 4, 11, 16, C.ARMOR); b('boom', 2, 9, 16, 4, 10, 20, C.WHITE); // boom, lift cylinder
+    b('boom', 2, 15, 12, 4, 17, 24, C.ARMOR); // stick cylinder on top
+    b('stick', 1, 0, 24, 5, 14, 26, C.SKIN); b('stick', 2, 6, 26, 4, 14, 27, C.ARMOR); // stick, bucket cylinder
+    b('bucket', -1, -3, 24, 7, 2, 26, C.SKIN); b('bucket', -1, -3, 26, 7, -1, 30, C.SKIN); b('bucket', -1, -1, 29, 7, 1, 30, C.DARK); // the bucket: back, floor, lip
+    for (let x = -1; x < 7; x += 2) b('bucket', x, -3, 30, x + 1, -2, 32, C.TEETH);
+    b('breaker', 1, -6, 24, 5, 2, 27, C.ARMOR); b('breaker', 2, -11, 25, 4, -6, 26, C.WHITE); // breaker housing and chisel
+    if (stage >= 3) { b('turret', -9, 15, -14, -8, 18, 4, C.ARMOR); b('turret', 8, 15, -14, 9, 18, 4, C.ARMOR); } // railings
+    if (stage >= 5) { b('turret', -8, 20, 0, -1, 21, 7, C.ARMOR); b('turret', -8, 8, 8, -1, 9, 9, C.ARMOR); } // a guard over the cab
+    if (stage >= 7) { b('bucket', -2, -3, 24, -1, 2, 32, C.ARMOR); b('bucket', 7, -3, 24, 8, 2, 32, C.ARMOR); b('torso', -12, 6, -12, 12, 7, 12, C.GLOW); } // armoured bucket, warning stripes
   } else if (sp.id === 'gorilla') {
     part('torso', [0, 10, 0]); part('head', [0, 21, 1], 'torso'); part('jaw', [0, 23, 5], 'head');
     part('armL', [-10, 20, 0], 'torso'); part('armR', [10, 20, 0], 'torso'); part('legL', [-4.5, 10, 0]); part('legR', [4.5, 10, 0]);
@@ -166,7 +203,7 @@ export function buildModel(speciesId, stage) {
     for (let i = -4; i < 4; i += 2) b('jaw', i, 21, 11, i + 1, 22, 12, C.TEETH);
     for (let i = 0; i < Math.min(3, spikes); i++) b('tail', -1, 15 - i * 2, -8 - i * 3, 1, 15 - i * 2 + spikeH - 1, -6 - i * 3, C.DARK);
   }
-  if (sp.id !== 'tank' && sp.id !== 'jet') {
+  if (!sp.tracked && sp.id !== 'jet') {
     for (let i = 0; i < spikes; i++) { // back spikes
       const y = 21 - i * 2;
       if (y < 10) break;
@@ -228,6 +265,19 @@ export function locomotion(pose, species) {
     pose.hop = Math.abs(w2) * 0.25;
     j.torso[0] = w2 * 0.02 - pose.air * 0.15;
     j.turret[1] = pose.look;
+    return;
+  }
+  if (species === 'digger') {
+    // The upper carriage turns towards the aim point; the arm reaches up or down towards it, folded in while driving.
+    // In a hop it pushes itself off with the arm (the bucket goes down to the ground).
+    const fold = Math.min(1, amp * 1.5), up = clamp(pose.aimPitch, -0.6, 1.2);
+    pose.hop = Math.abs(w2) * 0.2;
+    j.torso[0] = w2 * 0.02 - pose.air * 0.1;
+    j.turret[1] = pose.look;
+    j.boom[0] = -0.35 - 0.55 * up * (1 - fold) - 0.25 * fold + 0.9 * pose.air + Math.sin(t * 0.9) * 0.02;
+    j.stick[0] = 0.55 + 0.35 * fold - 0.3 * up * (1 - fold) - 0.6 * pose.air;
+    j.bucket[0] = -0.5 - 0.6 * fold + 0.4 * pose.air;
+    j.breaker[0] = j.bucket[0] + 0.5;
     return;
   }
   pose.hop = Math.abs(Math.sin(pose.walk)) * amp * 1.1 + breathe * 0.12;
@@ -440,7 +490,7 @@ export class Monster {
 
   // First press: jump from the ground. Second press in the air: one more jump, with a forward somersault.
   jump() {
-    const tank = this.g.progress.species === 'tank';
+    const tank = tracked(this.g.progress.species); // tank and excavator only hop (the excavator pushes itself up with its arm)
     if (this.g.world.under && !this.onGround && !this.cling && !this.leaping && !tank) {
       // Under water every press in mid-water is a swimming stroke: up again, as often as you like.
       this.vy = Math.sqrt(2 * this.gravity() * this.h * 1.3);
@@ -653,7 +703,7 @@ export class Monster {
     } else if (input > 0.05) {
       // In a jump the creature keeps going where it is steered, and faster than on foot: that is what carries it
       // across a street from one roof to the next. The higher it starts, the longer it flies and the further it gets.
-      const air = this.onGround || !this.jumps || species === 'tank' ? 1 : this.jumps >= 2 ? AIR_SPEED2 : AIR_SPEED;
+      const air = this.onGround || !this.jumps || tracked(species) ? 1 : this.jumps >= 2 ? AIR_SPEED2 : AIR_SPEED;
       // Wading through open water (the harbour basin) is slow going while the water is above the knees.
       const wet = this.onGround && w.water && this.y < w.water.level - h * 0.25 && w.water.rects.some((q) => this.x >= q[0] && this.x < q[2] && this.z >= q[1] && this.z < q[3]);
       if (wet && g.rng() < 0.5) g.onWade(this, w.water.level);
@@ -675,7 +725,7 @@ export class Monster {
       // A jump that ends at the wall of a building does not just punch through: the creature grabs hold.
       // (Sprinting into a wall still smashes through it.)
       const rising = this.wallJump && !this.onGround && this.vy > 0;
-      if (!this.onGround && this.jumps > 0 && !this.pound && this.clingCool <= 0 && !rising && !this.sprint && species !== 'tank'
+      if (!this.onGround && this.jumps > 0 && !this.pound && this.clingCool <= 0 && !rising && !this.sprint && !tracked(species)
         && (stopped || this.blocked(px, pz, stepH, dx, dz, r)) && w.structureAt(px + dx * 2, pz + dz * 2)?.major) {
         this.cling = { dx, dz, t: 0 };
         this.climber.reset();
@@ -765,10 +815,14 @@ export class Monster {
     const size = w.wrap ? w.sx : 0;
     let look = Math.atan2(wrapDelta(aimX - this.x, size), wrapDelta(aimZ - this.z, size)) - this.heading;
     look = Math.atan2(Math.sin(look), Math.cos(look));
-    if (species !== 'tank') look = clamp(look, -1, 1);
+    if (!tracked(species)) look = clamp(look, -1, 1);
     let dl = look - pose.look;
-    if (species === 'tank') dl = Math.atan2(Math.sin(dl), Math.cos(dl));
-    pose.look += dl * Math.min(1, dt * 8);
+    if (tracked(species)) dl = Math.atan2(Math.sin(dl), Math.cos(dl));
+    pose.look += dl * Math.min(1, dt * (species === 'digger' ? 4 : 8)); // the excavator's upper carriage swings round more slowly
+    if (species === 'digger') { // and its arm follows the height of the aim point
+      const d = Math.hypot(wrapDelta(aimX - this.x, size), wrapDelta(aimZ - this.z, size));
+      pose.aimPitch += (Math.atan2(g.aim.y - (this.y + h * 0.45), Math.max(d, h * 0.5)) - pose.aimPitch) * Math.min(1, dt * 5);
+    }
     locomotion(pose, species);
     this.poundPose(species);
   }
@@ -782,12 +836,12 @@ export class Monster {
       const t = pd.t / POUND_HANG;
       pose.flip = Math.PI * 2 * t * t * (3 - 2 * t);
       pose.squash = 0.8 * t; // tucked in tight
-      if (species !== 'tank') { j.legL[0] = j.legR[0] = -1.5 * t; j.armL[0] = j.armR[0] = -1.2 * t; j.torso[0] += 0.5 * t; j.head[0] += 0.4 * t; j.tail[0] += 0.9 * t; j.tail2[0] += 0.7 * t; }
+      if (!tracked(species)) { j.legL[0] = j.legR[0] = -1.5 * t; j.armL[0] = j.armR[0] = -1.2 * t; j.torso[0] += 0.5 * t; j.head[0] += 0.4 * t; j.tail[0] += 0.9 * t; j.tail2[0] += 0.7 * t; }
       return;
     }
     pose.flip = 0;
     pose.squash = -1.1; // stretched by the speed
-    if (species === 'tank') { j.torso[0] = 0; j.barrel[0] -= 0.5; return; }
+    if (tracked(species)) { j.torso[0] = 0; j.barrel[0] -= 0.5; return; }
     j.legL[0] = j.legR[0] = -1.45; // sitting position: the seat hits first
     j.armL[0] = j.armR[0] = 0; j.armL[2] = -2.5; j.armR[2] = 2.5;
     j.torso[0] = -0.12; j.head[0] = 0.35; j.jaw[0] += 0.7;
