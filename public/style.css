@@ -73,6 +73,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 .spark.go { transition: left 0.4s cubic-bezier(0.5, 0, 0.8, 0.4), top 0.4s cubic-bezier(0.2, 0.6, 0.6, 1); }
 
 /* Achievements: a card that slides in at the left edge, and the list of all of them. */
+/* Minimap (minimap.js): round, bottom left; on small screens small and at the top right, under the menu button. */
+#minimap { left: 14px; bottom: 14px; width: 184px; height: 184px; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.92); box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18); overflow: hidden; background: rgba(20, 22, 30, 0.55); }
+#minimap canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
 #toasts { left: 14px; top: 150px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .toast { position: relative; display: flex; align-items: center; gap: 12px; background: var(--panel); border: 3px solid var(--accent); border-radius: 18px; padding: 8px 16px 8px 10px; max-width: min(78vw, 360px); box-shadow: 0 5px 0 rgba(0, 0, 0, 0.18); animation: toast 4.2s ease-in-out forwards; }
 .toast .ico { font-size: 38px; line-height: 1; }
@@ -122,6 +125,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 .tile .key.ok { background: var(--good); }
 .tile.complete::after { content: "✔"; position: absolute; right: -8px; top: -10px; width: 34px; height: 34px; border-radius: 50%; background: var(--good); color: #fff; font-size: 22px; font-weight: 900; display: grid; place-items: center; border: 3px solid #fff; }
 .touch .tile .key { display: grid; }
+.tile .home { position: absolute; right: -8px; bottom: -8px; font-size: 30px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)); }
 .small { --btn: 56px; }
 .stickers { font-size: 26px; max-width: 640px; text-align: center; line-height: 1.3; }
 .mixer { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 12px; align-items: center; font-size: 28px; width: min(80vw, 420px); }
@@ -173,6 +177,8 @@ body.compact { --btn: 46px; --sl: calc(8px + env(safe-area-inset-left)); --sr: c
 .compact #hint { bottom: auto; top: calc(var(--st) + 30px); padding: 6px 12px; gap: 8px; font-size: 26px; border-width: 2px; border-radius: 16px; transform: translateX(-50%) scale(0.8); transform-origin: top center; }
 
 .compact #menuBtn { display: grid; right: var(--sr); top: var(--st); }
+.compact #minimap { left: auto; bottom: auto; right: var(--sr); top: calc(var(--st) + var(--btn) + 10px); width: 96px; height: 96px; border-width: 3px; }
+.compact #topright.open { z-index: 2; }
 .compact #topright { display: none; }
 .compact #topright.open { display: grid; grid-template-columns: repeat(3, var(--btn)); gap: 10px; right: var(--sr); top: calc(var(--st) + var(--btn) + 10px); padding: 12px; background: var(--panel); border: 3px solid #fff; border-radius: 20px; box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18); pointer-events: auto; --btn: 52px; }
 .compact #topright.open #legal2 { display: block; grid-column: 1 / -1; text-align: center; font-size: 13px; color: var(--ink); padding: 8px 4px 2px; }

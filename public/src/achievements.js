@@ -10,9 +10,8 @@ export const STATS = ['vox', 'glass', 'wood', 'stone', 'steel', 'leaf', 'buildin
 
 const fmt = (n) => (n >= 1e6 ? (n / 1e6).toLocaleString('de-DE') + ' Mio.' : n.toLocaleString('de-DE'));
 const CREATURES = { dino: ['🦖', 'Dino'], gorilla: ['🦍', 'Gorilla'], robot: ['🤖', 'Roboter'], tank: ['🪖', 'Panzer'], jet: ['✈️', 'Flieger'] };
-const WORLD_NAMES = { skyline: ['🌆', 'Wolkenkratzer-Stadt', 'Skyline-Schreck'], blocks: ['🧱', 'Bauklotz-Zimmer', 'Aufräumen? Nö!'], garden: ['🌷', 'Garten', 'Maulwurf XXL'],
-  house: ['🏠', 'Haus', 'Hausbesuch'], toyland: ['🧸', 'Spielzeugland', 'Spielverderber'], village: ['🏘️', 'Dorf', 'Dorfschreck'], park: ['🌳', 'Park', 'Parkverbot'],
-  city: ['🏙️', 'Stadt', 'Stadtbummel'], funfair: ['🎡', 'Vergnügungspark', 'Kirmesschreck'], harbour: ['⚓', 'Hafen', 'Leinen los'], giants: ['🗿', 'Welt der Riesenbauten', 'Riesentöter'], castle: ['🏰', 'Burg und Dorf', 'Raubritter'], winter: ['⛄', 'Winterwelt', 'Tauwetter'], airport: ['🛫', 'Flughafen', 'Flug gestrichen'], reef: ['🐠', 'Stadt unter dem Meer', 'Seeungeheuer'], spaceport: ['🚀', 'Raumhafen', 'Fehlstart'], factory: ['🏭', 'Fabrik', 'Feierabend'], random: ['🎲', 'Würfelwelt', 'Glückswurf'] };
+const WORLD_NAMES = { skyline: ['🌆', 'Wolkenkratzer-Stadt', 'Skyline-Schreck'], blocks: ['🧱', 'Bauklotz-Zimmer', 'Aufräumen? Nö!'],
+  village: ['🏘️', 'Dorf', 'Dorfschreck'], city: ['🏙️', 'Stadt', 'Stadtbummel'], funfair: ['🎡', 'Vergnügungspark', 'Kirmesschreck'], harbour: ['⚓', 'Hafen', 'Leinen los'], giants: ['🗿', 'Welt der Riesenbauten', 'Riesentöter'], primeval: ['🦕', 'Urzeit-Nekropole', 'Holzfäller der Urzeit'], babel: ['🏛️', 'Babel', 'Sprachverwirrung'], neon: ['🌃', 'Neon-Megacity', 'Kurzschluss'], fortress: ['🏰', 'Festung Titan', 'Festungsknacker'], skyyard: ['☁️', 'Wolkenwerft', 'Luftschlösser'], castle: ['🏰', 'Burg und Dorf', 'Raubritter'], winter: ['⛄', 'Winterwelt', 'Tauwetter'], airport: ['🛫', 'Flughafen', 'Flug gestrichen'], reef: ['🐠', 'Stadt unter dem Meer', 'Seeungeheuer'], spaceport: ['🚀', 'Raumhafen', 'Fehlstart'], factory: ['🏭', 'Fabrik', 'Feierabend'], random: ['🎲', 'Würfelwelt', 'Glückswurf'] };
 
 export const ACHIEVEMENTS = [];
 // One stat, several thresholds: [n, name] pairs. text(n) describes the goal.

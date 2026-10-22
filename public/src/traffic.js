@@ -143,10 +143,10 @@ export class Traffic {
     const w = this.g.world;
     this.cars.length = 0; this.swimmers.length = 0;
     // Boats on open water: tugs and ferries that cross the harbour basin to and fro.
-    if (on) for (const r of w.water?.rects ?? []) for (let k = 0, nb = Math.min(9, 3 + Math.floor(((r[2] - r[0]) * (r[3] - r[1])) / 25000)); k < nb; k++)
+    if (on && !w.quiet && !w.era) for (const r of w.water?.rects ?? []) for (let k = 0, nb = Math.min(9, 3 + Math.floor(((r[2] - r[0]) * (r[3] - r[1])) / 25000)); k < nb; k++)
       this.swimmers.push({ kind: 'boat', state: 'fly', big: k % 3 === 0, rect: r, x: r[0] + 20 + this.g.rng() * (r[2] - r[0] - 40), z: r[1] + 14 + k * ((r[3] - r[1] - 28) / Math.max(1, nb - 1)), y: w.water.level, yaw: Math.PI / 2, dir: k & 1 ? 1 : -1, phase: 0, flee: 0, c: PAINT[(this.g.rng() * PAINT.length) | 0] });
     this.roads = new Roads(w, this.g);
-    this.want = on && this.roads.ok && !w.quiet ? Math.round(26 * (w.roads.cars ?? 0.5) * this.g.quality.units) : 0;
+    this.want = on && this.roads.ok && !w.quiet && !w.era ? Math.round(26 * (w.roads.cars ?? 0.5) * this.g.quality.units) : 0;
     // The streets are busy from the first moment.
     for (let i = 0; i < this.want; i++) this.add(40 + this.g.rng() * 200);
   }

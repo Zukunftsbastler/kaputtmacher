@@ -20,15 +20,19 @@ export const SPECIES = [
 // Height factor per stage, relative to a stage-1 monster. Grows without limit.
 const SCALE = [1, 1.6, 2.6, 3.8, 6, 9, 14, 20, 30];
 export const stageScale = (s) => (s <= 9 ? SCALE[s - 1] : 30 * 1.25 ** (s - 9));
-// Power needed to leave a stage. The first growth comes quickly; after that the steps follow the size of the worlds.
-// Growing is meant to be earned: every stage takes several minutes of steady destruction (aim: three to four
-// minutes at the pace of the game playing itself; a player who knows what to do is quicker on the early stages).
-// Measured income of the dino in the skyscraper city while the game plays itself, in power per second:
-// stage 1: 11, stage 3: 86, stage 5: 7 100, stage 7: 10 000, stage 8: 54 000. The leap comes with the first skyscraper that
-// can be felled; on stage 4 that is a matter of luck (measured between 58 and 3 900), so its threshold is set low.
-// Measure again with: node tools/browser.mjs x "world=skyline&stage=N&idle=1&run=50000" income 53000
-const NEED = [1500, 8000, 25000, 300000, 1600000, 2600000, 4000000, 12000000];
-export const stageNeed = (s) => (s <= 8 ? NEED[s - 1] : 12000000 * 1.7 ** (s - 8));
+// Power needed to leave a stage. Stage N is meant to take N minutes: one minute for the first, two for the second,
+// and so on. The game never lets it go faster (PACE in main.js: the bar fills from a reserve at most that quickly),
+// and these thresholds are set so that steady destruction reaches that pace on most creatures.
+// Measured income while the game plays itself in the skyscraper city, in power per second (dino / gorilla / robot / tank / jet):
+// stage 1: 6 / - / 6 / 56 / 13, stage 2: 28 / 12 / 25 / 38 / 107, stage 3: 52 / 46 / 225 / 644 / 254,
+// stage 4: 136 / 95 / 1 100 / 5 300 / 320, stage 5: 5 700 / 2 900 / 4 100 / 6 800 / 5 800, stage 6: 11 000 / 8 700 / - / 14 000 / 9 300,
+// stage 7: 14 600 / 6 200 / - / 8 800 / 7 700, stage 8: 37 000 / 11 600 / 21 000 / 15 000 / 21 500.
+// The slowest creature on a stage takes up to about half as long again. Checked over seven minutes of self-play from stage 1
+// (seconds for stages 1, 2, 3): dino 62, 120, 184; tank 74, 120, 180; gorilla 123, 215; robot 71, 288 (with 330 and 2 200 then;
+// both lowered since, for the gorilla and the robot).
+// Measure again with: node tools/browser.mjs x "world=skyline&species=dino&stage=N&idle=1&run=50000" income 53000
+const NEED = [280, 1600, 8500, 25000, 850000, 2800000, 3200000, 5600000];
+export const stageNeed = (s) => (s <= 8 ? NEED[s - 1] : 5600000 * 1.6 ** (s - 8));
 
 export const MODEL_HEIGHT = 28;
 // Jumping works like in a classic platformer: hold the button for the full height, tap for a hop,
@@ -204,7 +208,7 @@ export function newPose() {
   for (const n of JOINTS) j[n] = new Float32Array(6);
   // spin/pitch: whole-body yaw and pitch. hop/fwd: whole-body offset in model units. look: where the head turns.
   // bank/climb: how the aircraft leans into a turn and points its nose. flip: somersault angle of the double jump.
-  return { flip: 0, walk: 0, walkAmp: 0, time: 0, squash: 0, spin: 0, pitch: 0, hop: 0, fwd: 0, roar: 0, hold: 0, look: 0, aimPitch: 0, air: 0, cling: 0, bank: 0, climb: 0, j };
+  return { flip: 0, walk: 0, walkAmp: 0, time: 0, squash: 0, spin: 0, pitch: 0, hop: 0, fwd: 0, roar: 0, hold: 0, look: 0, aimPitch: 0, air: 0, cling: 0, climbAmt: 0, climbV: 0, climbH: 0, bank: 0, climb: 0, j };
 }
 
 // Body language that is always on: walking, breathing, tail sway, looking at the aim point, tucking in a jump.
@@ -259,12 +263,105 @@ export function locomotion(pose, species) {
     j.torso[0] -= 0.25 * r; j.head[0] -= 0.6 * r; j.jaw[0] += 0.8 * r;
     j.armL[2] -= 1.0 * r; j.armR[2] += 1.0 * r; j.armL[0] -= 0.4 * r; j.armR[0] -= 0.4 * r;
   }
-  if (pose.cling) { // hanging on a wall: arms stretched up and forward, legs drawn up against it
-    const c = pose.cling;
-    const reachUp = Math.sin(pose.walk) * 0.45 * c; // hand over hand
-    j.armL[0] -= (2.5 + reachUp) * c; j.armR[0] -= (2.5 - reachUp) * c; j.torso[0] += 0.12 * c; j.legL[0] = -0.9 * c; j.legR[0] = -0.6 * c; j.head[0] -= 0.3 * c;
-  }
+  if (pose.cling > 0.01) climbPose(pose, species); // only while (still) on a wall: the walk must keep its legs
   if (pose.hold) { j.armL[0] -= 2.9 * pose.hold; j.armR[0] -= 2.9 * pose.hold; j.torso[0] -= 0.15 * pose.hold; }
+}
+
+// Climbing a wall: the body, head and tail. The limbs are not animated by a cycle but placed by Climber (below):
+// every hand and foot holds on to a fixed spot on the wall until it has to let go and reach for the next one.
+// Everything is blended with pose.cling, so that the walk takes over again smoothly when the creature lets go.
+function climbPose(pose, species) {
+  const j = pose.j, c = pose.cling, m = pose.climbAmt * c, a = pose.climbAng;
+  const mix = (q, i, v) => { q[i] = q[i] * (1 - c) + v * c; };
+  mix(j.torso, 0, 0.3);
+  mix(j.torso, 2, (pose.climbLean ?? 0) * 0.18);
+  pose.fwd = 1.8 * c; // chest to the wall
+  pose.hop *= 1 - c;
+  if (a) for (const n of ['armL', 'armR', 'legL', 'legR']) { mix(j[n], 0, a[n][0]); mix(j[n], 2, a[n][1]); j[n][1] *= 1 - c; }
+  // Head: up the wall when climbing up, down when climbing down, sideways towards where it goes.
+  mix(j.head, 0, pose.climbV > 0.1 ? -0.45 : pose.climbV < -0.1 ? 0.35 : -0.2);
+  mix(j.head, 1, -Math.sign(pose.climbH || 0) * 0.6 * pose.climbAmt);
+  if (species === 'dino') { mix(j.tail, 0, -0.5); mix(j.tail, 1, (pose.climbLean ?? 0) * -0.5); mix(j.tail2, 0, -0.3); } // the tail hangs down as a counterweight
+  mix(j.jaw, 0, 0.1 + 0.1 * m * (pose.climbEffort ?? 0)); // effort
+}
+
+// Where the limbs of each creature sit and how long they are, in model units (see buildModel), and how it climbs:
+// swing: seconds to move one hand or foot to a new hold. pull: how fast the body still moves while a hand is
+// off the wall (1 = full speed). pairs: hand and opposite foot move together (otherwise one limb at a time).
+// reach: how far ahead of the shoulder or hip a new hold is taken, as a share of the limb's length.
+const CLIMB = {
+  dino: { shoulder: [7.5, 17], hip: [4, 9], arm: 8, leg: 9, swing: 0.14, pull: 0.5, pairs: false, reach: 0.75, order: ['legR', 'armL', 'legL', 'armR'] }, // short arms: big steps with the legs, the arms only hold on
+  gorilla: { shoulder: [10, 20], hip: [4.5, 10], arm: 17, leg: 10, swing: 0.16, pull: 0.25, pairs: false, reach: 0.85, order: ['armL', 'legR', 'armR', 'legL'] }, // long arms: reach far, haul the body up after each grip
+  robot: { shoulder: [8, 19], hip: [4, 9], arm: 14, leg: 9, swing: 0.09, pull: 0, pairs: true, reach: 0.7, order: ['armL', 'armR'] }, // mechanical: diagonal pairs, the body only moves while all four hold
+};
+const LIMBS = ['armL', 'armR', 'legL', 'legR'], OPPOSITE = { armL: 'legR', armR: 'legL' };
+
+// Hands and feet on the wall. Holds are kept in wall coordinates (model units): a = sideways (model +x),
+// u = height. Each frame the joints of the moving body are compared with their holds; a limb lets go only
+// when its hold falls too far behind (or out of reach), and only one hand at a time is ever free.
+export class Climber {
+  constructor() { this.holds = null; }
+
+  reset() { this.holds = null; }
+
+  // Returns the share of the climbing speed the body may use this frame.
+  update(m, dt, species, moving, dirA, dirU) {
+    const C = CLIMB[species] ?? CLIMB.dino, k = MODEL_HEIGHT / m.h, c = m.cling;
+    const tx = -c.dz, tz = c.dx, bodyA = -(m.x * tx + m.z * tz) * k, bodyU = m.y * k;
+    const joint = (n) => (n[0] === 'a' ? [bodyA + (n === 'armL' ? -C.shoulder[0] : C.shoulder[0]), bodyU + C.shoulder[1]] : [bodyA + (n === 'legL' ? -C.hip[0] : C.hip[0]), bodyU + C.hip[1]]);
+    const len = (n) => (n[0] === 'a' ? C.arm : C.leg);
+    // Where a limb would like to hold: ahead in the direction of travel, hands above the shoulders, feet below the hips.
+    const want = (n) => {
+      const J = joint(n), L = len(n), out = n.endsWith('L') ? -1 : 1, hand = n[0] === 'a';
+      const rest = hand ? [out * 0.3 * L, 0.55 * L] : [out * 0.3 * L, -0.7 * L];
+      let da = rest[0] + dirA * C.reach * L * (moving ? 1 : 0), du = rest[1] + dirU * C.reach * L * (moving ? 1 : 0) * (hand ? 1 : 0.8);
+      const d = Math.hypot(da, du), most = 0.92 * L; // within reach, or it would have to let go again at once
+      if (d > most) { da *= most / d; du *= most / d; }
+      return [J[0] + da, J[1] + du];
+    };
+    // A new wall, a corner or the seam of the planet: take fresh holds.
+    if (!this.holds || this.dir !== c.dx * 3 + c.dz || Math.abs(bodyA - this.lastA) > 40) {
+      this.holds = {};
+      for (const n of LIMBS) { const p = want(n); this.holds[n] = { a: p[0], u: p[1], fa: p[0], fu: p[1], swing: 0 }; }
+      this.gait = 0;
+    }
+    this.dir = c.dx * 3 + c.dz; this.lastA = bodyA;
+    const H = this.holds;
+    // Swinging limbs travel to their new hold.
+    let swinging = 0, handFree = false;
+    for (const n of LIMBS) {
+      const h = H[n];
+      if (h.swing > 0) { h.swing = Math.max(0, h.swing - dt / C.swing); swinging++; if (n[0] === 'a') handFree = true; }
+    }
+    // Who lets go next: the next limb in this creature's order whose hold has fallen behind or out of reach.
+    if (!swinging) for (let i = 0; i < C.order.length; i++) {
+      const n = C.order[(this.gait + i) % C.order.length], h = H[n], J = joint(n), L = len(n);
+      const ra = h.a - J[0], ru = h.u - J[1], d = Math.hypot(ra, ru), behind = moving && ra * dirA + ru * dirU < -0.05 * L;
+      if (!behind && d < L * 1.05) continue;
+      const grip = (q) => { const t = want(q); H[q].fa = H[q].a; H[q].fu = H[q].u; H[q].a = t[0]; H[q].u = t[1]; H[q].swing = 1; };
+      grip(n);
+      if (C.pairs && OPPOSITE[n]) grip(OPPOSITE[n]); // the robot: diagonal pairs
+      this.gait = (this.gait + i + 1) % C.order.length;
+      if (n[0] === 'a') handFree = true;
+      swinging = 1;
+      break;
+    }
+    // Angles that point each limb at its hold (or, while it swings, at a point on the way, lifted off the wall).
+    const ang = (this.ang ??= { armL: [0, 0], armR: [0, 0], legL: [0, 0], legR: [0, 0] });
+    let lean = 0, effort = 0;
+    for (const n of LIMBS) {
+      const h = H[n], J = joint(n), L = len(n), e = 1 - h.swing, s = e * e * (3 - 2 * e);
+      const pa = h.fa + (h.a - h.fa) * s, pu = h.fu + (h.u - h.fu) * s + Math.sin(Math.PI * e) * (h.swing > 0 ? 0.15 * L : 0);
+      const ra = pa - J[0], ru = pu - J[1];
+      // Straight down = 0, out from the wall-facing body horizontally = -pi/2, straight up = -pi.
+      ang[n][0] = -(Math.PI / 2 + Math.asin(Math.max(-1, Math.min(1, ru / L)))) + (h.swing > 0 ? 0.25 * Math.sin(Math.PI * e) : 0);
+      ang[n][1] = Math.asin(Math.max(-1, Math.min(1, ra / L)));
+      if (n[0] === 'a') { lean += ra / L; effort += Math.max(0, ru / L); }
+    }
+    m.pose.climbAng = ang; m.pose.climbLean = Math.max(-1, Math.min(1, lean * 0.5)); m.pose.climbEffort = effort * 0.5;
+    // The body moves while the hands hold; with a hand off the wall it slows down (the robot stops altogether).
+    return handFree ? C.pull : 1;
+  }
 }
 
 function joint(out, pivot, q) {
@@ -309,6 +406,7 @@ export class Monster {
     this.cued = false;
     this.cling = null; // hanging on a wall: { dx, dz, t } (direction of the wall)
     this.climbV = 0; this.climbH = 0; // climbing controls: up/down and sideways, -1..1
+    this.climber = new Climber(); // where hands and feet hold on to the wall
     this.kick = null; // shove away from the wall after a wall jump: { vx, vz, t }
     this.clingCool = 0; // seconds until the next wall may be grabbed
     this.wallJump = false;
@@ -460,6 +558,7 @@ export class Monster {
     pose.squash = Math.max(0, pose.squash - dt * 4);
     pose.air += ((this.onGround ? 0 : 1) - pose.air) * Math.min(1, dt * 12);
     pose.cling += ((this.cling ? 1 : 0) - pose.cling) * Math.min(1, dt * 14);
+    if (!this.cling && pose.cling < 0.01) pose.cling = 0;
     if (this.flipT >= 0) { // somersault: one full forward turn, quick in the middle
       this.flipT += dt;
       const t = Math.min(1, this.flipT / FLIP_TIME);
@@ -481,7 +580,8 @@ export class Monster {
       // Climbing. The creature hangs on the wall and moves along it: up, down and sideways, round corners too.
       // It only leaves the wall when there is nothing left to hold on to, when its feet reach the ground,
       // when it has pulled itself onto the roof, or with a jump.
-      const c = this.cling, reach = r + 1.5 + h * 0.2, sp = (4 + h * 1.1) * dt;
+      // The climbing speed pulses with the grips: the body moves while the hands hold (Climber.update, last frame).
+      const c = this.cling, reach = r + 1.5 + h * 0.2, sp = (8 + h * 2.2) * dt * (this.climbPace ?? 1);
       // Is there something to hold on to? Probed at three depths: a glass front is only one voxel thick, with an empty room behind it.
       const wall = (x, y, z, dx = c.dx, dz = c.dz) => {
         const y0 = this.y;
@@ -536,7 +636,11 @@ export class Monster {
         if (this.cling) {
           this.heading = Math.atan2(c.dx, c.dz);
           const moving = Math.abs(this.climbV) > 0.1 || Math.abs(this.climbH) > 0.1;
-          if (moving) pose.walk += dt * 9;
+          // Hands and feet take hold of the wall one after the other (Climber).
+          const len = Math.hypot(this.climbH, this.climbV) || 1;
+          this.climbPace = this.climber.update(this, dt, species, moving, moving ? -this.climbH / len : 0, moving ? this.climbV / len : 0);
+          pose.climbAmt += ((moving ? 1 : 0) - pose.climbAmt) * Math.min(1, dt * 8);
+          pose.climbV = this.climbV; pose.climbH = this.climbH;
           // A heavy creature tears at the wall it climbs: from stage 3 on the claws keep breaking pieces out.
           if (moving && this.stage >= 3 && (c.t += dt) > 1) { c.t = 0; g.onCling(this, c.dx, c.dz, false); }
         }
@@ -574,6 +678,7 @@ export class Monster {
       if (!this.onGround && this.jumps > 0 && !this.pound && this.clingCool <= 0 && !rising && !this.sprint && species !== 'tank'
         && (stopped || this.blocked(px, pz, stepH, dx, dz, r)) && w.structureAt(px + dx * 2, pz + dz * 2)?.major) {
         this.cling = { dx, dz, t: 0 };
+        this.climber.reset();
         this.wallJump = false;
         this.vy = 0; this.trampleT = 0.3; this.flipT = -1; pose.flip = 0; this.stomping = false;
         stopped = true;

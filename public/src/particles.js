@@ -130,14 +130,15 @@ export class Fx {
     d[o + 14] = additive; d[o + 15] = gravity; d[o + 16] = drag; d[o + 17] = home;
   }
 
+  // Dust is kept thin and short-lived: it marks a blow or a fall, but must never hide the destruction itself.
   dust(x, y, z, radius, r, g, b, count) {
     const rnd = this.g.rng;
-    count = Math.ceil(count * this.thin);
+    count = Math.ceil(count * this.thin * 0.6);
     for (let i = 0; i < count; i++) {
       const a = rnd() * 6.28, s = radius * (0.5 + rnd());
       this.add(x + Math.cos(a) * radius * rnd(), y + (rnd() - 0.3) * radius, z + Math.sin(a) * radius * rnd(),
         Math.cos(a) * s, 1 + rnd() * radius * 0.6, Math.sin(a) * s,
-        radius * (0.6 + rnd() * 0.6), radius * 1.2, 0.8 + rnd() * 0.9, r, g, b, 0.5, 0, -1, 1.8);
+        radius * (0.6 + rnd() * 0.5), radius * 0.9, 0.5 + rnd() * 0.6, r, g, b, 0.4, 0, -1, 2.2);
     }
   }
 

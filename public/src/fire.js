@@ -141,7 +141,7 @@ export class Fire {
   dustCloud(x, y, z, s) {
     const rnd = this.g.rng, c = 0.7 + rnd() * 0.12;
     this.g.fx.add(x + (rnd() - 0.5) * s * 2, y + rnd() * s, z + (rnd() - 0.5) * s * 2, (rnd() - 0.5) * 6, 2 + rnd() * 4, (rnd() - 0.5) * 6,
-      s * (1 + rnd() * 0.8), s * 0.7 + 1, 2.6 + rnd() * 2.4, c, c * 0.97, c * 0.92, 0.42, 0, -1.5, 0.9);
+      s * (1 + rnd() * 0.6), s * 0.6 + 1, 1.3 + rnd() * 1.2, c, c * 0.97, c * 0.92, 0.3, 0, -1.5, 1.2); // settles within two or three seconds
   }
 
   flame(x, y, z, s) {
@@ -190,7 +190,7 @@ export class Fire {
       if (s.y > 1 && !w.get(Math.floor(s.x), Math.floor(s.y - 1), Math.floor(s.z))) s.y -= 30 * dt;
       const fade = Math.min(1, s.t / 2);
       if (s.flames && rnd() < dt * 14 * fade * thin) this.flame(s.x, s.y, s.z, s.size * (0.5 + 0.5 * fade));
-      if (rnd() < dt * 5 * thin) { if (s.pale) this.dustCloud(s.x, s.y, s.z, s.size * 0.8 + 0.6); else this.smoke(s.x, s.y + s.size * 0.5, s.z, s.size * 0.8 + 0.6); }
+      if (rnd() < dt * (s.pale ? 2.5 : 5) * thin) { if (s.pale) this.dustCloud(s.x, s.y, s.z, s.size * 0.8 + 0.6); else this.smoke(s.x, s.y + s.size * 0.5, s.z, s.size * 0.8 + 0.6); }
       // Flames blacken what they stand on and light what can burn next to them.
       if (s.flames && (s.heatT -= dt) <= 0) { s.heatT = 0.4; this.heatSphere(s.x, s.y, s.z, s.size + 1.5, 1.6, 3); }
     }

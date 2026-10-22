@@ -1,7 +1,7 @@
 // Kaputtmacher: game object, fixed-step simulation loop, camera and frame rendering.
 
 import { m4, makeRng, clamp, wrapDelta } from './math.js';
-import { MATS, TYPE_MAT, MAT, T } from './materials.js';
+import { MATS, TYPE_MAT, TYPE_RGBA, MAT, T } from './materials.js';
 import { CS } from './world.js';
 import { meshChunk, meshVolume } from './mesher.js';
 import { Renderer } from './renderer.js';
@@ -23,12 +23,18 @@ import { WORLDS } from './worldgen.js';
 import { Audio } from './audio.js';
 import { Input } from './input.js';
 import { Hud } from './hud.js';
-import { loadProgress, saveProgress, switchCreature, cleanStage, cleanSpecies, cleanDetail } from './progress.js';
+import { Minimap } from './minimap.js';
+import { loadProgress, saveProgress, switchCreature, startWorld, cleanStage, cleanSpecies, cleanDetail } from './progress.js';
 import { checkAchievements } from './achievements.js';
 
 const STEP = 1 / 60; // the simulation always advances in equal steps (needed later for slow motion and rewind)
 const FOV = (55 * Math.PI) / 180;
 const GRAVITY_FX = 60; // gravity of spray particles
+// Growing takes time: whatever is destroyed goes into a reserve first, and the power bar fills from it at most so fast
+// that stage N takes N minutes (PACE seconds per stage number). A big collapse keeps the bar filling for a while
+// instead of throwing the creature up several stages at once. The reserve holds at most RESERVE of a stage: a whole one,
+// because destruction comes in bursts (an outpost, then a long walk to the next) and nothing earned should be lost.
+const PACE = 60, RESERVE = 1;
 const CHAIN_FADE = 0.62; // share of a chain reaction's strength that reaches the next generation: a chain dies out after three to five buildings in a row
 // Detail levels 1 (fastest) to 5 (richest), chosen with one slider in the settings.
 // planet: edge length of planet worlds in voxels (tall: of the skyscraper world). cap: radius of the part of a planet
@@ -117,6 +123,7 @@ class Game {
     this.doneQueue = [];
     this.activeSt = null; this.activeT = 0;
     this.growCool = 0;
+    this.reserve = 0; // power earned but not yet on the bar (see PACE)
     this.worldDone = false; this.fireworks = 0;
     this.walked = 0; this.quietT = 0; // quietT: seconds without input, for the reminder demonstration
     this.frameMs = 16; this.governT = 0;
@@ -129,7 +136,8 @@ class Game {
     this.input.onActivity = () => { if (this.idle) this.setIdle(false); };
 
     this.hud = new Hud(this);
-    this.loadWorld(params.get('world') ?? this.progress.world);
+    this.minimap = new Minimap(this, this.hud.root);
+    this.loadWorld(params.get('world') ?? startWorld(this.progress)); // the creature's home world, unless the player picked another
     if (params.has('tool') && this.unlockedTools().includes(params.get('tool'))) this.tool = params.get('tool');
     if (params.has('fly')) this.fly = true;
     if (params.has('idle')) this.setIdle(true);
@@ -173,7 +181,7 @@ class Game {
     if (reroll || !p.mixSeed) p.mixSeed = (Math.random() * 1e9) | 0;
     p.world = WORLDS[index].id;
     saveProgress(p);
-    const seed = p.world === 'random' ? p.mixSeed : 1000 + index * 77;
+    const seed = p.world === 'random' ? p.mixSeed : 1000 + (WORLDS[index].seed ?? index) * 77;
     const world = WORLDS[index].make(seed, this.quality, p.mix);
     world.finalize();
     world.onDestroyed = (type, x, y, z, st) => this.onDestroyed(type, x, y, z, st);
@@ -181,6 +189,10 @@ class Game {
     this.music.setWorld(p.world);
     this.world = world;
     this.rng = makeRng(seed + 5);
+    this.minimap.reset(world);
+    // In a night world glass carries a marker that the shader turns into lit and dark windows (renderer.js, NIGHT).
+    for (const t of [T.GLASS, T.GLASS_DARK, T.GLASS_GREEN, T.GLASS_BRONZE, T.GLASS_BLACK, T.GLASS_MIRROR]) TYPE_RGBA[t * 4 + 3] = world.night ? 1 : 0;
+    TYPE_RGBA[T.ROADLINE * 4 + 3] = world.night ? 80 : 0; // road markings glow at night
 
     for (const m of this.chunkMeshes.values()) this.renderer.deleteMesh(m);
     this.chunkMeshes.clear();
@@ -249,6 +261,7 @@ class Game {
     const p = this.progress, m = this.monster;
     switchCreature(p, id);
     saveProgress(p);
+    this.reserve = 0; // what one creature earned does not flow into another
     m.stage = p.playStage;
     m.h = m.targetHeight();
     this.hud.setPower(p.power / stageNeed(p.stage), p.stage);
@@ -257,6 +270,9 @@ class Game {
     this.buildMonster();
     this.hud.refreshTools();
     this.hud.refreshButtons();
+    if (startWorld(p) === p.world) return false;
+    this.travel(startWorld(p)); // to its home world, or to the world picked for it
+    return true;
   }
 
   setPlayStage(s) {
@@ -277,11 +293,18 @@ class Game {
     else if (key === 'detail') { this.setQuality(); this.loadWorld(this.progress.world); }
     else if (key === 'life') { this.actors.populate(s.life ? Math.round((this.world.people ?? 0) * this.quality.people) : 0); this.traffic.reset(s.life); }
     else if (key === 'unlockAll') this.hud.refreshTools();
-    else if (key === 'cascade') this.hud.refreshButtons();
+    else if (key === 'cascade' || key === 'minimap') this.hud.refreshButtons();
     else if (key === 'smoke' && !s.smoke) this.fire.spots = this.fire.spots.filter((x) => x.flames);
   }
 
   // Tools and actions --------------------------------------------------------------
+
+  toggleMap() {
+    const s = this.progress.settings;
+    s.minimap = !s.minimap;
+    saveProgress(this.progress);
+    this.hud.refreshButtons();
+  }
 
   get allUnlocked() { return this.progress.settings.unlockAll; }
 
@@ -316,6 +339,7 @@ class Game {
     if (a === 'stomp') this.tools.stomp();
     else if (a === 'idle') { if (performance.now() - this.idleOff > 300) this.setIdle(!this.idle); } // the key press itself has just stopped it
     else if (a === 'roar') this.tools.roar();
+    else if (a === 'map') this.toggleMap();
     else if (a === 'camera') {
       this.fly = !this.fly;
       if (this.fly) this.flyPos = [this.monster.x - Math.sin(this.camYaw) * 30, this.monster.y + this.monster.h * 1.5 + 25, this.monster.z - Math.cos(this.camYaw) * 30];
@@ -364,6 +388,7 @@ class Game {
     this.reactions.onVoxel(type, x, y, z);
     this.gainPos[0] = x; this.gainPos[1] = y; this.gainPos[2] = z;
     if (!st || !st.id) return;
+    this.minimap.hit(x, z);
     this.matCount[TYPE_MAT[type]]++;
     if (st.major) { this.activeSt = st; this.activeT = this.time; }
     if (!st.done && st.remaining <= st.total * 0.1) { st.done = true; this.doneQueue.push(st); }
@@ -385,11 +410,11 @@ class Game {
     if (t[MAT.GLASS] > 40) this.audio.glassfall(Math.min(1, t[MAT.GLASS] / 3000));
     if (t[MAT.STEEL] + t[MAT.SHEET] > 30) this.audio.hit('metal', size + 0.2);
     if (t[MAT.WOOD] > body.count * 0.3) this.audio.hit('wood', size + 0.3);
-    // Heavy wreckage throws up dust: a burst at once and a pale cloud that hangs for a few seconds.
+    // Heavy wreckage throws up dust: a burst at once and a pale cloud that hangs for a moment (kept short: the collapse must stay visible).
     if (body.count > 600) {
       const r = clamp(Math.cbrt(body.mass) * 0.4, 3, 16);
       this.fx.dust(x, y + 1, z, r, 0.78, 0.76, 0.71, Math.min(14, 4 + (body.count >> 10)));
-      if (speed > 10 && this.rng() < 0.6) this.fire.spot(x, y, z, r * 0.6, 3 + this.rng() * 3, false, true);
+      if (speed > 10 && this.rng() < 0.6) this.fire.spot(x, y, z, r * 0.6, 1.5 + this.rng() * 1.5, false, true);
     }
   }
 
@@ -399,8 +424,8 @@ class Game {
     st.dustT = this.time;
     if (!st.crushed) { st.crushed = true; this.stat('crushed'); }
     const w = st.x1 - st.x0, d = st.z1 - st.z0, r = clamp(Math.max(w, d) * 0.3, 3, 14);
-    for (let i = 0; i < 7; i++) this.fx.dust(st.x0 + this.rng() * w, st.y0 + this.rng() * Math.min(st.top - st.y0, 20), st.z0 + this.rng() * d, r, 0.78, 0.76, 0.71, 3);
-    for (let i = 0; i < 2; i++) this.fire.spot(st.x0 + this.rng() * w, st.y0 + 2, st.z0 + this.rng() * d, r * 0.7, 4 + this.rng() * 3, false, true);
+    for (let i = 0; i < 4; i++) this.fx.dust(st.x0 + this.rng() * w, st.y0 + this.rng() * Math.min(st.top - st.y0, 20), st.z0 + this.rng() * d, r, 0.78, 0.76, 0.71, 3);
+    for (let i = 0; i < 2; i++) this.fire.spot(st.x0 + this.rng() * w, st.y0 + 2, st.z0 + this.rng() * d, r * 0.7, 2 + this.rng() * 1.5, false, true);
     this.audio.crumble(Math.min(1, st.remaining / 8000 + 0.3));
     this.shake(0.3);
     void body;
@@ -508,7 +533,7 @@ class Game {
       if (this.idle && st.remaining > 8000 && this.time - this.cineT > 9) { this.cineT = this.time; this.slowT = 0.9; }
     }
     this.fx.dust(cx, y, cz, size * 0.45, 0.76, 0.74, 0.7, 14);
-    for (let i = 0; i < 3; i++) this.fire.spot(st.x0 + this.rng() * (st.x1 - st.x0), y, st.z0 + this.rng() * (st.z1 - st.z0), clamp(size * 0.2, 3, 12), 4 + this.rng() * 4, false, true);
+    for (let i = 0; i < 3; i++) this.fire.spot(st.x0 + this.rng() * (st.x1 - st.x0), y, st.z0 + this.rng() * (st.z1 - st.z0), clamp(size * 0.2, 3, 12), 2 + this.rng() * 2, false, true);
     this.cascade(st, cx, cz, size);
   }
 
@@ -575,6 +600,13 @@ class Game {
     this.hud.busy(() => this.loadWorld(which, reroll));
   }
 
+  // The player picks a world in the world sheet: from now on this creature starts there.
+  pickWorld(which, reroll = false) {
+    this.progress.pick = which;
+    saveProgress(this.progress);
+    this.travel(which, reroll);
+  }
+
   onStompLand(m) {
     if (m.stage >= 2 || this.allUnlocked) { this.tools.stompLand(m); this.hud.doneHint('stomp'); return; }
     this.onSoftLand(m); // stage 1 lands softly: a puff of dust, no crater yet
@@ -603,12 +635,22 @@ class Game {
 
   addPower(v) {
     const p = this.progress;
-    p.power += v;
     this.earned += v;
     if (!this.idle) p.stats.power += v;
-    const need = stageNeed(p.stage);
+    this.reserve = Math.min(this.reserve + v, stageNeed(p.stage) * RESERVE);
+  }
+
+  // Every step: power flows from the reserve onto the bar, at most at the stage's pace.
+  flowPower(dt) {
+    const p = this.progress, need = stageNeed(p.stage);
+    if (this.reserve > 0) {
+      const v = Math.min(this.reserve, (need / (PACE * p.stage)) * dt);
+      this.reserve -= v;
+      p.power += v;
+      this.hud.setPower(p.power / need, p.stage);
+    }
     if (p.power < need || this.growCool > 0) return;
-    p.power = Math.min(p.power - need, stageNeed(p.stage + 1) * 0.8);
+    p.power -= need;
     const follow = p.playStage === p.stage;
     // Play log: how long this stage took. It is what the stage thresholds are tuned with.
     p.log.push({ c: p.species, s: p.stage, t: Math.round(p.t), a: this.idle ? 1 : 0 });
@@ -688,6 +730,7 @@ class Game {
     const inp = this.input, m = this.monster;
     this.time += dt;
     this.growCool -= dt;
+    this.flowPower(dt);
 
     let mx = 0, mz = 0;
     if (this.fly) {
@@ -781,7 +824,6 @@ class Game {
       this.heat = Math.min(1, this.heat + this.gain / (this.world.total * 0.012 + 400)); // how busy it is: brings the reporters
       this.addPower(this.gain);
       this.gain = 0;
-      this.hud.setPower(p.power / stageNeed(p.stage), p.stage);
       const frac = this.worldDone ? 1 : (1 - this.world.remaining / this.world.total) / 0.9;
       this.hud.setWorld(frac);
       // Big worlds take a while: every quarter is celebrated.
@@ -832,7 +874,8 @@ class Game {
     this.camPitch = clamp((this.world.wrap ? 0.2 + 0.5 * tallness : 0.52) + this.pitchOffset + (this.idle ? 0.14 * Math.sin(this.time * 0.053) : 0), 0.02, 1.25);
 
     let tx = 0, ty, tz = 0, dist = 0;
-    const yaw = this.camYaw, pitch = this.fly ? this.flyPitch : -this.camPitch, cp = Math.cos(pitch);
+    // camOffset: an extra turn of the view only (used by the test pages to look at the creature from the side).
+    const yaw = this.camYaw + (this.camOffset ?? 0), pitch = this.fly ? this.flyPitch : -this.camPitch, cp = Math.cos(pitch);
     c.fwd[0] = Math.sin(yaw) * cp; c.fwd[1] = Math.sin(pitch); c.fwd[2] = Math.cos(yaw) * cp;
     if (this.fly) { c.focusX = this.flyPos[0]; c.focusZ = this.flyPos[2]; ty = this.flyPos[1]; }
     // On an upright phone the picture is narrow, so the camera steps back to keep the surroundings in view.
@@ -946,6 +989,7 @@ class Game {
     this.remesh();
     this.render();
     this.hud.update();
+    this.minimap.update(dt);
     requestAnimationFrame(this.tick);
   }
 
@@ -1014,16 +1058,19 @@ class Game {
   }
 
   drawMonster(b, pose, alpha, tint) {
+    if (this.world.night) this.renderer.setNight(0.45); // the creature stays easy to see in the dark
     // The aircraft shows only the gear that belongs to the selected weapon.
     const gear = this.model.species === 'jet' ? JET_GEAR[this.tool] ?? '' : null;
     for (let i = 0; i < this.model.parts.length; i++)
       if (gear === null || this.model.parts[i].name === 'torso' || this.model.parts[i].chain.includes(gear)) this.renderer.drawMesh(this.modelMeshes[i], partMatrix(mat, b, this.model, this.model.parts[i], pose), alpha, tint);
+    if (this.world.night) this.renderer.setNight(1);
   }
 
   render() {
     const r = this.renderer, c = this.cam, m = this.monster;
     r.resize();
     r.begin(c);
+    r.setNight(this.world.night ? 1 : 0);
 
     // Keep the monster and a good stretch of its surroundings visible behind tall buildings:
     // the window is more than two body lengths wide in every direction.
@@ -1085,7 +1132,7 @@ class Game {
     // Water last of the solid things, so that whatever stands in it shows through.
     for (let i = 0; i < this.waterTiles.length; i += 2) {
       const dx = wrapDelta(this.waterTiles[i] + 8 - c.focusX, c.wrap), dz = wrapDelta(this.waterTiles[i + 1] + 8 - c.focusZ, c.wrap);
-      if (dx * dx + dz * dz < lim * lim) r.drawMesh(this.waterMesh, m4.translation(mat, dx - 8, this.world.water.level - 1, dz - 8), 0.6, null, this.waterTiles[i], this.world.water.level - 1, this.waterTiles[i + 1]);
+      if (dx * dx + dz * dz < lim * lim) r.drawMesh(this.waterMesh, m4.translation(mat, dx - 8, this.world.water.level - 1, dz - 8), 0.6, this.world.water.tint ?? null, this.waterTiles[i], this.world.water.level - 1, this.waterTiles[i + 1]);
     }
 
     let n = this.fx.write(this.billBuf);

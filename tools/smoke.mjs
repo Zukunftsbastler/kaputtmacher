@@ -7,7 +7,7 @@ const dir = decodeURIComponent(new URL('.', import.meta.url).pathname), PORT = '
 const server = spawn('node', [dir + 'serve.mjs'], { env: { ...process.env, PORT }, stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 700));
 
-const WORLDS = ['skyline', 'blocks', 'garden', 'house', 'toyland', 'village', 'park', 'funfair', 'city', 'factory', 'harbour', 'giants', 'castle', 'winter', 'airport', 'reef', 'spaceport', 'random'];
+const WORLDS = ['skyline', 'blocks', 'village', 'funfair', 'city', 'factory', 'harbour', 'giants', 'castle', 'winter', 'airport', 'reef', 'spaceport', 'primeval', 'babel', 'neon', 'fortress', 'skyyard', 'random'];
 // [name, query, scenario, milliseconds]
 const runs = WORLDS.map((w) => [w, `world=${w}&stage=4`, 'punch', 7000]);
 if (process.argv[2] !== 'quick') runs.push(

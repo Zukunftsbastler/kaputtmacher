@@ -35,6 +35,7 @@ Dann `http://localhost:8000` öffnen. Es wird nichts installiert und nichts geba
 | Kamera | Mittlere Maustaste ziehen. Die freie Flugkamera steht in den Einstellungen (oder Tab) |
 | Von vorn beginnen | Einstellungen (Zahnrad) → „Von vorn beginnen“: löscht den Spielstand auf diesem Gerät |
 | Zusehen | Popcorn-Knopf oder Taste I: das Spiel spielt sich selbst |
+| Karte | Knopf 🗺️ oder Taste M: Minimap ein- und ausblenden |
 | Gamepad | wird automatisch erkannt (Trigger rechts/links) |
 | Handy, Tablet | Steuerknüppel links; rechts Knöpfe für Springen, schnellen und starken Angriff und Angriffswechsel; alles Übrige im Menü ☰ oben rechts. Ins Bild tippen zielt (kurz = schnell, halten = stark) |
 
@@ -123,11 +124,15 @@ public/
 | `vendor/musik-generator/` | Eingekopierte Teile der Musik-Generator-Suite des Autors (MIT): Stem-Player und Stem-Renderer. Nicht hier ändern; `tools/vendor-music.mjs` kopiert neu |
 | `achievements.js` | Liste der 131 Erfolge, Zähler (`STATS`), Prüfung |
 | `traffic.js` | Straßennetz (`Roads`: Kreuzungen, Rechtsverkehr, Ausweichen, Wenden) und fahrende Autos und Busse (`Traffic`) |
+| `landmarks3.js` | Heimatwelten der fünf Figuren: Mammutbäume, Urwaldpflanzen, Nester, Steinkreise, Vulkan und Sumpf; Zikkurats, Turm zu Babel, Lehmhäuser, Basar, Obelisken, Ischtar-Tor, Palmen und Feuerschalen; Neon-Türme mit Lichtlinien und Hochstraßen; Flaktürme und Bunker; schwebende Inseln und Luftschiffe; Fachwerkhäuser und Turnierplatz der Ritterburgen; Berg, Grandhotel, Seilbahn, Leuchtturm und Radarmast für Winterwelt, Hafen und Flughafen |
+| `links.js` | Superstrukturen: verbindet die Bauten einer Welt zu Netzen über mehrere Höhen (Hochbahn, Skybridge, Superhighway, Lianen, Hängebrücke, Achterbahn, Steinbrücke, Wehrgang, Glasröhre, Rohrleitung, Förderbrücke, Skywalk, Laufsteg, Seilbahn) |
+| `fortress.js` | Festung Titan: Wüste, Graben, zwei Mauerringe mit Türmen und Geschützen, Vorposten, Hof mit Militärbauten, Riesenmaschinen, Kommandoturm und Munitionsdepot |
 | `landmarks.js`, `landmarks2.js` | Besondere Grundstücke für den Stadtgenerator: Fahrgeschäfte, Hafenanlagen, Riesenbauten; Flughafen, Burg, Raumhafen, Winterwelt, Unterwasserstadt |
 | `autopilot.js` | Idle-Modus: füllt den Eingabezustand, wählt Ziele, Angriffe und Welten |
 | `audio.js` | Erzeugter Ton (Web Audio), keine Dateien |
 | `input.js` | Maus/Tastatur, Gamepad, Touch → ein gemeinsamer Zustand |
 | `hud.js` | Oberfläche aus DOM-Elementen, Vorführ-Hinweise, Weltauswahl, Einstellungen |
+| `minimap.js` | Die Minimap: runder Kartenausschnitt um die Figur, dreht mit der Kamera, markiert Zerstörung rot; ein- und ausblendbar (🗺️, Taste M) |
 | `progress.js` | Spielstand und Einstellungen in `localStorage`: Stufe und Macht je Figur, Zähler, Erfolge, Detailstufe |
 
 ### Datenmodell
@@ -181,7 +186,7 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 
 ### Testen ohne Testframework
 
-- **Adress-Parameter** (speichern keinen Fortschritt): `?world=skyline|blocks|garden|house|toyland|village|park|funfair|castle|winter|city|airport|factory|harbour|reef|spaceport|giants|random`, `?stage=7`, `?species=dino|gorilla|robot|tank|jet`, `?tool=<Angriffs-Id>`, `?unlock=1`, `?quality=1…5` (Detailstufe; `low` und `high` gehen weiter), `?fly=1`, `?idle=1`.
+- **Adress-Parameter** (speichern keinen Fortschritt): `?world=primeval|babel|neon|fortress|skyyard|skyline|blocks|village|funfair|city|factory|castle|winter|airport|harbour|giants|reef|spaceport|random` (ohne Angabe: die Heimatwelt der Figur oder die für sie gewählte Welt), `?stage=7`, `?species=dino|gorilla|robot|tank|jet`, `?tool=<Angriffs-Id>`, `?unlock=1`, `?quality=1…5` (Detailstufe; `low` und `high` gehen weiter), `?fly=1`, `?idle=1`.
 - **`window.game`** gibt in der Browser-Konsole Zugriff auf alles, z. B. `game.tools.use(game.tool, true)` oder `game.gain += 1e6`.
 - **`tools/`** (siehe `tools/README.md`): `node --experimental-default-type=module tools/check.mjs` prüft ohne Browser Spielstand-Laden, Erfolgsliste und die Erzeugung aller Welten; `node tools/smoke.mjs` spielt in einem eigenen Headless-Browser jede Welt und einige längere Szenarien durch und meldet Skriptfehler. Nach jeder größeren Änderung beide laufen lassen.
 - **Messen statt schätzen:** `node tools/browser.mjs name "world=skyline&stage=6&idle=1&run=55000" income 58000` liefert die Macht pro Sekunde im Selbstspiel; daraus sind die Stufen-Schwellen (`NEED` in `monster.js`) abgeleitet.

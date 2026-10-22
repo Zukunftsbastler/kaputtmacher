@@ -61,6 +61,11 @@ export const T = {
   ICE: def(MAT.EARTH, 0xbfe6f5, F_TERRAIN),
   SEABED: def(MAT.EARTH, 0xd9c98f, F_TERRAIN),
   SEABED2: def(MAT.EARTH, 0xb9b07e, F_TERRAIN),
+  FLAGSTONE: def(MAT.EARTH, 0xd2b98c, F_TERRAIN), // the paved streets of Babel
+  FLAGSTONE2: def(MAT.EARTH, 0xc2a87a, F_TERRAIN),
+  MOSS: def(MAT.EARTH, 0x4f7d34, F_TERRAIN), // the floor of the primeval forest
+  MUD: def(MAT.EARTH, 0x5e4630, F_TERRAIN),
+  LAVA: def(MAT.EARTH, 0xff6a1a, F_TERRAIN, 230), // glows in the crater of the volcano
 
   BRICK_RED: def(MAT.BRICK, 0xb5503c),
   BRICK_DARK: def(MAT.BRICK, 0x8f3f31),
@@ -87,6 +92,9 @@ export const T = {
   MARBLE: def(MAT.CONCRETE, 0xeeeae2),
   SANDSTONE: def(MAT.CONCRETE, 0xd8bf96),
   TERRACOTTA: def(MAT.CONCRETE, 0xb5654a),
+  BASALT: def(MAT.CONCRETE, 0x3d3638),
+  GLAZE_BLUE: def(MAT.BRICK, 0x2f5fb3), // the glazed bricks of the Ishtar gate
+  MUDBRICK: def(MAT.BRICK, 0xc9a26b),
 
   GLASS: def(MAT.GLASS, 0x9fdcf5),
   GLASS_DARK: def(MAT.GLASS, 0x5fa8d6),
@@ -124,6 +132,9 @@ export const T = {
   FLOWER_RED: def(MAT.LEAF, 0xe84a5f),
   FLOWER_YELLOW: def(MAT.LEAF, 0xffd54f),
   FLOWER_WHITE: def(MAT.LEAF, 0xffffff),
+  FERN: def(MAT.LEAF, 0x7fb83a),
+  PALM: def(MAT.LEAF, 0x4e9a3c),
+  REED: def(MAT.LEAF, 0x9caf4c),
 
   STEEL: def(MAT.STEEL, 0x8d99a6),
   STEEL_DARK: def(MAT.STEEL, 0x55606b),
@@ -156,6 +167,8 @@ export const T = {
   BALLOON_RED: def(MAT.FABRIC, 0xff4d5e, 0, 50),
   BALLOON_BLUE: def(MAT.FABRIC, 0x4da3ff, 0, 50),
   BALLOON_YELLOW: def(MAT.FABRIC, 0xffd84d, 0, 50),
+  GOLD: def(MAT.STEEL, 0xe0b23a),
+  EGG: def(MAT.GLASS, 0xeee3c8), // dinosaur eggs: they break like glass
 };
 
 // Rubble twins: same material, dustier colour.

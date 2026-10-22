@@ -1,0 +1,1 @@
+Ich möchte, dass die Kaputtmacher, die Fassaden erklimmen, eine schönere Animation erhalten. Noch nicht committen, denn ich will es erst testen. Ich will, dass die Arme und Beine sich sichtbar an der Wand festklammern und nicht einfach nur eine symbolische Bewegung stattfindet. Die Bewegung nach oben, unten und zur Seite soll möglichst glaubhaft aussehen.

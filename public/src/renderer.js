@@ -7,6 +7,17 @@ uniform float u_curv;
 vec3 curve(vec3 rel) { rel.y -= dot(rel.xz, rel.xz) * u_curv; return rel; }
 `;
 
+// Night (the neon megacity): no sun. Colours sink into a deep violet and are lit only by the glow of the city,
+// pink and turquoise in slow waves across the map, strongest down at street level where the signs hang.
+const NIGHT = `
+vec3 nightLight(vec3 p, float light) {
+  float street = exp(-max(p.y - 12.0, 0.0) / 38.0);
+  float wave = 0.5 + 0.5 * sin(p.x * 0.013 + sin(p.z * 0.011) * 2.0);
+  vec3 glow = mix(vec3(0.95, 0.22, 0.8), vec3(0.12, 0.7, 1.0), wave);
+  return vec3(0.07, 0.06, 0.16) * light + glow * (0.05 + 0.34 * street);
+}
+`;
+
 const VOXEL_VS = `#version 300 es
 layout(location=0) in vec4 a_pos;
 layout(location=1) in vec4 a_col;
@@ -36,8 +47,9 @@ void main() {
 const VOXEL_FS = `#version 300 es
 precision highp float;
 in vec3 v_col; in float v_light; in float v_dist; in vec2 v_flat; in float v_em; in float v_y; in vec3 v_cell;
-uniform vec3 u_fog; uniform float u_fogDist, u_cap2, u_alpha, u_holeY; uniform vec4 u_tint, u_hole;
+uniform vec3 u_fog; uniform float u_fogDist, u_cap2, u_alpha, u_holeY, u_night; uniform vec4 u_tint, u_hole;
 out vec4 o;
+${NIGHT}
 void main() {
   if (dot(v_flat, v_flat) > u_cap2) discard;
   // Peephole: whatever stands between the camera and the monster is cut away around it.
@@ -52,7 +64,25 @@ void main() {
   uint n = uint(ic.x) * 374761393u + uint(ic.y) * 668265263u + uint(ic.z) * 1274126177u;
   n = (n ^ (n >> 13u)) * 1103515245u;
   float shade = 0.9 + 0.14 * float((n ^ (n >> 16u)) & 0xffffu) / 65535.0;
-  vec3 c = mix(v_col * v_light * shade, v_col * 1.35, v_em);
+  vec3 lit = v_col * v_light * shade;
+  float em = v_em;
+  if (u_night > 0.0) {
+    vec3 dark = v_col * nightLight(v_cell, v_light) * shade;
+    // Glass in a night world carries a marker (emissive 1 of 255, see setNight in main.js): every window
+    // is lit or dark as a whole, in warm, cold or pink light.
+    if (v_em > 0.002 && v_em < 0.006) {
+      ivec3 wc = ivec3(floor(v_cell / vec3(6.0, 5.0, 6.0)));
+      uint h = uint(wc.x) * 2246822519u ^ uint(wc.y) * 3266489917u ^ uint(wc.z) * 668265263u;
+      h = (h ^ (h >> 15u)) * 2654435761u;
+      float r = float((h >> 8u) & 0xffffu) / 65535.0;
+      vec3 w = r < 0.07 ? vec3(1.0, 0.78, 0.5) : r < 0.11 ? vec3(0.55, 0.85, 1.0) : r < 0.13 ? vec3(1.0, 0.45, 0.9) : vec3(0.0);
+      dark = r < 0.13 ? w * (0.6 + 0.25 * shade) : dark * 0.7;
+      em = 0.0;
+    }
+    lit = mix(lit, dark, u_night);
+    em = min(1.0, em * (1.0 + 0.4 * u_night));
+  }
+  vec3 c = mix(lit, v_col * 1.35, em);
   c = mix(c, u_tint.rgb, u_tint.a);
   float f = clamp(v_dist / u_fogDist, 0.0, 1.0);
   c = mix(c, u_fog, f * f * 0.85);
@@ -70,7 +100,7 @@ layout(location=4) in vec2 i_rot;
 layout(location=5) in vec4 i_col;
 uniform mat4 u_vp; uniform vec3 u_sun, u_eye; uniform vec2 u_focus; uniform float u_wrap;
 ${CURVE}
-out vec3 v_col; out float v_light; out float v_dist; out float v_em;
+out vec3 v_col; out float v_light; out float v_dist; out float v_em; out vec3 v_pos;
 vec3 rot(vec3 v) {
   float c = cos(i_rot.y), s = sin(i_rot.y);
   v = vec3(v.x, v.y * c - v.z * s, v.y * s + v.z * c);
@@ -84,17 +114,20 @@ void main() {
   vec3 n = rot(a_nrm);
   v_light = 0.55 + 0.18 * n.y + 0.5 * max(dot(n, u_sun), 0.0);
   v_col = i_col.rgb; v_em = i_col.a;
+  v_pos = i_pos;
   v_dist = length(rel - u_eye);
   gl_Position = u_vp * vec4(rel, 1.0);
 }`;
 
 const CUBE_FS = `#version 300 es
 precision highp float;
-in vec3 v_col; in float v_light; in float v_dist; in float v_em;
-uniform vec3 u_fog; uniform float u_fogDist;
+in vec3 v_col; in float v_light; in float v_dist; in float v_em; in vec3 v_pos;
+uniform vec3 u_fog; uniform float u_fogDist, u_night;
 out vec4 o;
+${NIGHT}
 void main() {
-  vec3 c = mix(v_col * v_light, v_col * 1.4, v_em);
+  vec3 lit = mix(v_col * v_light, v_col * nightLight(v_pos, v_light), u_night);
+  vec3 c = mix(lit, v_col * 1.4, v_em);
   float f = clamp(v_dist / u_fogDist, 0.0, 1.0);
   o = vec4(mix(c, u_fog, f * f * 0.85), 1.0);
 }`;
@@ -118,10 +151,12 @@ void main() {
 const BILL_FS = `#version 300 es
 precision highp float;
 in vec2 v_uv; in vec4 v_col; in float v_add;
+uniform float u_night;
 out vec4 o;
 void main() {
   float a = smoothstep(1.0, 0.25, length(v_uv)) * v_col.a;
-  o = vec4(v_col.rgb * a, a * (1.0 - v_add));
+  // At night smoke and dust are dark shapes; only what glows (fire, sparks: drawn additively) stays bright.
+  o = vec4(v_col.rgb * a * (1.0 - 0.7 * u_night * (1.0 - v_add)), a * (1.0 - v_add));
 }`;
 
 const SKY_VS = `#version 300 es
@@ -273,6 +308,12 @@ export class Renderer {
     }
     gl.useProgram(this.voxel.p);
     gl.uniform1f(this.voxel.u.u_cap2, cam.cap2);
+  }
+
+  // 0 = day, 1 = night (see NIGHT). Set for the whole frame; the creature is drawn at a lower value so it stays easy to see.
+  setNight(v) {
+    const gl = this.gl;
+    for (const pr of [this.voxel, this.cube, this.bill]) { gl.useProgram(pr.p); gl.uniform1f(pr.u.u_night, v); }
   }
 
   // x, y: centre in device pixels; r: radius in pixels (0 = off); dist: only fragments nearer than this are cut; minY: and only above this height.

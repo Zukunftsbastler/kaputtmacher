@@ -4,6 +4,7 @@
 // usage: node tools/browser.mjs <name> <query> <scenario> [waitMs] [width] [height]
 //   e.g. node tools/browser.mjs fair "world=funfair&stage=5" walk 5000
 // Needs tools/serve.mjs running. BROWSER=/path/to/chromium picks the browser (default: Chrome or Brave on macOS).
+// CDP_PORT=9334 (and a profile of its own) lets several runs go side by side.
 import { spawn } from 'node:child_process';
 import net from 'node:net';
 import http from 'node:http';
@@ -13,10 +14,10 @@ import os from 'node:os';
 import path from 'node:path';
 
 const [name, query = '', scenario = 'none', waitMs = '4000', W = '1280', H = '720'] = process.argv.slice(2);
-const OUT = decodeURIComponent(new URL('./out/', import.meta.url).pathname), PORT = 9333;
+const OUT = decodeURIComponent(new URL('./out/', import.meta.url).pathname), PORT = Number(process.env.CDP_PORT ?? 9333);
 fs.mkdirSync(OUT, { recursive: true });
 // A profile of its own in the temp folder: the browser you use every day is never touched.
-const PROFILE = path.join(os.tmpdir(), 'kaputtmacher-test-profile');
+const PROFILE = path.join(os.tmpdir(), 'kaputtmacher-test-profile' + (process.env.CDP_PORT ? '-' + process.env.CDP_PORT : ''));
 const BROWSER = process.env.BROWSER ?? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser', '/Applications/Chromium.app/Contents/MacOS/Chromium', '/usr/bin/chromium', '/usr/bin/google-chrome'].find((p) => fs.existsSync(p));
 if (!BROWSER) { console.log('no browser found: set BROWSER=/path/to/chromium'); process.exit(1); }
 const args = ['--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${PROFILE}`, '--no-first-run', '--mute-audio', '--hide-scrollbars',

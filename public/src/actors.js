@@ -8,6 +8,17 @@ import { T } from './materials.js';
 
 const SHIRTS = [[0.9, 0.25, 0.25], [0.2, 0.5, 0.9], [0.95, 0.8, 0.2], [0.3, 0.75, 0.4], [0.9, 0.5, 0.75], [0.95, 0.95, 0.95], [0.5, 0.3, 0.7]];
 const SKINS = [[1, 0.82, 0.66], [0.85, 0.62, 0.45], [0.55, 0.38, 0.26]];
+const JEANS = [0.2, 0.22, 0.35];
+// People of other times (world.folk): what they wear. legs: 'skin' (bare legs), 'robe' (the robe reaches the ground).
+const FOLK = {
+  tribe: { shirts: [[0.55, 0.38, 0.22], [0.45, 0.3, 0.18], [0.7, 0.55, 0.35], [0.36, 0.26, 0.2]], legs: 'skin', heads: null },
+  // The castle world: peasants in tunics and hose; now and then a lady of the castle in a long gown with a tall hat.
+  medieval: { shirts: [[0.45, 0.36, 0.22], [0.36, 0.42, 0.25], [0.55, 0.45, 0.3], [0.62, 0.55, 0.42]], legs: [0.3, 0.24, 0.18], heads: [[0.5, 0.4, 0.25]], ladies: { share: 0.15, gowns: [[0.6, 0.12, 0.2], [0.2, 0.3, 0.65], [0.85, 0.75, 0.45], [0.3, 0.5, 0.3]], hat: [0.95, 0.92, 0.85] } },
+  soldiers: { shirts: [[0.36, 0.4, 0.24], [0.42, 0.44, 0.3], [0.55, 0.5, 0.35]], legs: [0.3, 0.32, 0.22], heads: [[0.3, 0.34, 0.2]] }, // fortress Titan: uniforms and helmets
+  robes: { shirts: [[0.95, 0.93, 0.86], [0.85, 0.72, 0.45], [0.2, 0.32, 0.65], [0.62, 0.18, 0.15], [0.9, 0.82, 0.62]], legs: 'robe', heads: [[0.97, 0.96, 0.92], [0.85, 0.75, 0.5], [0.3, 0.3, 0.55]] },
+};
+// Small dinosaurs that live among the people of the primeval world (world.fauna): body colour, belly.
+const DINOS = [[[0.35, 0.5, 0.25], [0.75, 0.7, 0.45]], [[0.55, 0.4, 0.22], [0.85, 0.72, 0.5]], [[0.3, 0.42, 0.45], [0.7, 0.75, 0.65]]];
 const v3 = [0, 0, 0];
 const ALARM_RISE = 8; // seconds of ongoing destruction per star
 const ALARM_HOLD = 12; // seconds of peace before the alarm starts to ebb
@@ -39,14 +50,22 @@ export class Actors {
     this.helis.length = 0; this.heliT = 3; this.heliOn = count > 0 || !g.world.people;
     this.units.length = 0; this.jets.length = 0; this.shots.length = 0; this.unitT = 1; this.jetT = 6; this.alarmT = 0; this.slot = 0;
     this.cityOn = (g.world.people ?? 0) > 0 && !g.world.quiet;
-    if (g.world.quiet) this.heliOn = false;
+    if (g.world.quiet || g.world.era) this.heliOn = false; // nothing flies in the middle ages
+    const folk = FOLK[w.folk] ?? null, pick = (a) => a[(rnd() * a.length) | 0];
     for (let i = 0, tries = 0; i < count && tries < count * 8; tries++) {
       const x = rnd() * w.sx, z = rnd() * w.sz, y = w.heightBelow(x, z, w.sy - 1);
       if (y > 16 || (w.water && y < w.water.level) || w.structures[w.footprint[Math.floor(x) + w.sx * Math.floor(z)]].id) continue; // not on roofs, not in the harbour basin
-      this.list.push({ x, y, z, vx: 0, vy: 0, vz: 0, dir: rnd() * 6.28, state: 'walk', t: rnd() * 5, phase: rnd() * 6, spin: 0,
-        shirt: SHIRTS[(rnd() * SHIRTS.length) | 0], skin: SKINS[(rnd() * SKINS.length) | 0] });
+      const a = { x, y, z, vx: 0, vy: 0, vz: 0, dir: rnd() * 6.28, state: 'walk', t: rnd() * 5, phase: rnd() * 6, spin: 0, dino: false,
+        shirt: pick(folk ? folk.shirts : SHIRTS), skin: pick(SKINS), head: folk?.heads && rnd() < 0.7 ? pick(folk.heads) : null };
+      a.legs = folk?.legs === 'skin' ? a.skin : folk?.legs === 'robe' ? a.shirt : Array.isArray(folk?.legs) ? folk.legs : JEANS;
+      if (folk?.ladies && rnd() < folk.ladies.share) { a.shirt = a.legs = pick(folk.ladies.gowns); a.head = null; a.hennin = folk.ladies.hat; }
+      if (w.fauna === 'dinos' && rnd() < 0.45) { const c = pick(DINOS); a.dino = true; a.shirt = c[0]; a.skin = c[1]; } // a small dinosaur, about as tall as a person
+      this.list.push(a);
       i++;
     }
+    // Flying reptiles circle high above the primeval forest; they shy away from the creature and never come to harm.
+    this.birds = [];
+    if (w.fauna === 'dinos') for (let k = 0; k < 14; k++) this.birds.push({ cx: rnd() * w.sx, cz: rnd() * w.sz, r: 40 + rnd() * 90, a: rnd() * 6.28, y: 70 + rnd() * 110, v: (0.15 + rnd() * 0.15) * (rnd() < 0.5 ? 1 : -1), flap: rnd() * 6, x: 0, z: 0, yaw: 0, scare: 0 });
   }
 
   update(dt) {
@@ -75,7 +94,7 @@ export class Actors {
       if (scared) { a.dir = Math.atan2(dx, dz) + Math.sin(a.phase + a.t) * 0.5; fleeing++; }
       else if (a.t <= 0) { a.dir += (g.rng() - 0.5) * 2.5; a.t = 2 + g.rng() * 4; }
       a.run = scared;
-      const sp = scared ? run : walk, nx = a.x + Math.sin(a.dir) * sp * dt, nz = a.z + Math.cos(a.dir) * sp * dt;
+      const sp = (scared ? run : walk) * (a.dino ? 1.6 : 1), nx = a.x + Math.sin(a.dir) * sp * dt, nz = a.z + Math.cos(a.dir) * sp * dt;
       // Walls taller than a step turn the walker around.
       const gy = w.heightBelow(nx, nz, a.y + 1.2 * u);
       if (w.get(Math.floor(nx), Math.floor(a.y + 1.2 * u), Math.floor(nz)) || (!w.wrap && (nx < 2 || nz < 2 || nx > w.sx - 2 || nz > w.sz - 2))) {
@@ -89,10 +108,18 @@ export class Actors {
       if (w.wrap) { a.x = ((a.x % w.sx) + w.sx) % w.sx; a.z = ((a.z % w.sz) + w.sz) % w.sz; }
       a.phase += dt * sp * 2.2 / u;
     }
+    for (const b of this.birds ?? []) { // flying reptiles: slow circles, startled upwards when the creature comes near
+      b.a += b.v * dt * (1 + b.scare * 2); b.flap += dt * (5 + b.scare * 8);
+      b.x = b.cx + Math.cos(b.a) * b.r; b.z = b.cz + Math.sin(b.a) * b.r; b.yaw = Math.atan2(-Math.sin(b.a) * b.v, Math.cos(b.a) * b.v);
+      const d = Math.hypot(wrapDelta(b.x - m.x, size), b.y - m.y - m.h, wrapDelta(b.z - m.z, size));
+      b.scare = Math.max(0, b.scare - dt * 0.3);
+      if (d < m.h * 2.5 + 30) { b.scare = 1; b.y = Math.min(w.sy - 10, b.y + dt * 25); }
+    }
     this.screamT -= dt;
     if (fleeing > 2 && this.screamT <= 0) { this.screamT = 1.2 + g.rng() * 2; g.audio.scream(); }
     this.updateUnits(dt);
     this.updateHelis(dt);
+    this.updateTurrets(dt);
   }
 
   // Emergency services ------------------------------------------------------------------
@@ -154,8 +181,8 @@ export class Actors {
     this.burnT = burning > 0.01 ? this.burnT + dt : Math.max(0, this.burnT - dt * 2);
     this.want.fire = on && this.burnT > FIRE_CALL ? this.scaled(1 + (level >= 3 ? 1 : 0) + (burning > 0.4 ? 1 : 0)) : 0;
     this.want.news = this.heliOn && g.progress.settings.units && g.heat > 0.02 ? (level >= 4 || !this.cityOn ? 2 : 1) : 0;
-    this.want.army = level >= 4 ? this.scaled((level - 3) * 2) : 0;
-    this.want.water = on && level >= 3 && burning > 0.25 && this.burnT > FIRE_CALL * 2 ? (level >= 5 ? 2 : 1) : 0;
+    this.want.army = level >= 4 && !w.era ? this.scaled((level - 3) * 2) : 0;
+    this.want.water = on && !w.era && level >= 3 && burning > 0.25 && this.burnT > FIRE_CALL * 2 ? (level >= 5 ? 2 : 1) : 0;
 
     // Arrivals: one vehicle at a time, a few seconds apart.
     this.unitT -= dt;
@@ -171,7 +198,7 @@ export class Actors {
       break;
     }
     // Fighter jets: a pass every now and then at the highest alarm level.
-    if (level >= 5 && (this.jetT -= dt) <= 0) {
+    if (level >= 5 && !w.era && (this.jetT -= dt) <= 0) {
       this.jetT = 9 + rnd() * 8;
       for (let k = 0; k < (rnd() < 0.5 ? 2 : 1); k++) {
         const a = rnd() * 6.283, d = 520, sp = 170;
@@ -250,7 +277,7 @@ export class Actors {
       const ed = Math.hypot(wrapDelta(c.x - g.eye[0], size), c.y - g.eye[1], wrapDelta(c.z - g.eye[2], size));
       siren = Math.max(siren, 1 - ed / 240);
     }
-    this.siren = siren;
+    this.siren = w.era ? 0 : siren; // knights blow no sirens
 
     // What the army fires: tracers and rockets that fly at the creature and fizzle out on its skin.
     for (let i = this.shots.length - 1; i >= 0; i--) {
@@ -287,6 +314,26 @@ export class Actors {
         for (const side of [-1, 1]) this.shots.push({ x: j.x + Math.cos(j.yaw) * side * 3, y: j.y - 1, z: j.z - Math.sin(j.yaw) * side * 3, speed: 260, t: 3, rocket: true });
         g.audio.flyby();
       }
+    }
+  }
+
+  // The guns of fortress Titan (world.turrets, fortress.js): every gun whose barrel is still there fires at the
+  // creature once it comes within range – tracers from the machine guns, rockets from the heavy ones. Like the
+  // army's fire it does no harm (unless "Militär stößt zurück" is on in the settings).
+  updateTurrets(dt) {
+    const g = this.g, w = g.world, list = w.turrets;
+    if (!list || !list.length || g.fly) return;
+    const m = g.monster, size = w.wrap ? w.sx : 0, rnd = g.rng, range = 150 + m.h * 3;
+    for (const t of list) {
+      if (t.dead || (t.cool -= dt) > 0) continue;
+      const d = Math.hypot(wrapDelta(m.x - t.x, size), m.y - t.y, wrapDelta(m.z - t.z, size));
+      if (d > range) { t.cool = 0.5 + rnd() * 0.5; continue; }
+      if (!w.get(Math.floor(t.x), Math.floor(t.y), Math.floor(t.z))) { t.dead = true; continue; } // the gun has been destroyed
+      t.cool = t.rocket ? 3 + rnd() * 2.5 : 1.2 + rnd() * 1.6;
+      if (this.shots.length > 70) continue;
+      for (let k = 0; k < (t.rocket ? 1 : 3); k++) this.shots.push({ x: t.x + 0.5, y: t.y + 0.5, z: t.z + 0.5, speed: t.rocket ? 120 : 190 + k * 15, t: 4, rocket: t.rocket });
+      g.fx.sparks(t.x + 0.5, t.y + 0.5, t.z + 0.5, 10, 4, 1, 0.85, 0.4);
+      if (d < 220) { if (t.rocket) g.audio.rocket(); else g.audio.hit('metal', 0.12); }
     }
   }
 
@@ -342,7 +389,18 @@ export class Actors {
 
   // A ground vehicle is destroyed: it bursts into its parts.
   wreck(i) {
-    const g = this.g, c = this.units[i], u = g.world.unit, rnd = g.rng, types = c.kind === 'police' ? [T.CAR_WHITE, T.CAR_BLUE, T.TIRE] : [T.STEEL_RED, T.CAR_RED, T.TIRE];
+    const g = this.g, c = this.units[i], u = g.world.unit, rnd = g.rng;
+    if (g.world.era) { // a knight (or the water cart) is thrown: pieces of armour and wood fly, the rider tumbles away and gets up again
+      for (let k = 0; k < 8; k++) g.debris.spawn(c.x + (rnd() - 0.5) * 2 * u, c.y + 1 + rnd() * 2 * u, c.z + (rnd() - 0.5) * 2 * u, (rnd() - 0.5) * 24, 10 + rnd() * 16, (rnd() - 0.5) * 24, k & 1 ? T.STEEL : T.WOOD);
+      g.fx.dust(c.x, c.y + u, c.z, 2 * u, 0.6, 0.5, 0.4, 4);
+      this.list.push({ x: c.x, y: c.y + u, z: c.z, vx: (rnd() - 0.5) * 30, vy: 16 + rnd() * 10, vz: (rnd() - 0.5) * 30, dir: rnd() * 6.28, state: 'fly', t: 0, phase: 0, spin: 0, dino: false, shirt: [0.6, 0.63, 0.67], legs: [0.5, 0.52, 0.56], skin: [0.6, 0.63, 0.67], head: null });
+      g.audio.hit('metal', 0.6);
+      g.stat(c.kind === 'police' ? 'police' : 'trucks');
+      this.units.splice(i, 1);
+      this.unitT = Math.max(this.unitT, 4);
+      return;
+    }
+    const types = c.kind === 'police' ? [T.CAR_WHITE, T.CAR_BLUE, T.TIRE] : [T.STEEL_RED, T.CAR_RED, T.TIRE];
     for (let k = 0; k < 14; k++) g.debris.spawn(c.x + (rnd() - 0.5) * 3 * u, c.y + 1 + rnd() * 2 * u, c.z + (rnd() - 0.5) * 3 * u, (rnd() - 0.5) * 30, 12 + rnd() * 22, (rnd() - 0.5) * 30, types[k % 3]);
     g.fx.explosion(c.x, c.y + 1.5 * u, c.z, 2.5 * u);
     g.audio.boom(0.3); g.audio.hit('metal', 0.7);
@@ -506,9 +564,21 @@ export class Actors {
         out[o++] = sx; out[o++] = sy; out[o++] = sz; out[o++] = a.dir; out[o++] = tumble;
         out[o++] = c[0]; out[o++] = c[1]; out[o++] = c[2]; out[o++] = 0;
       };
-      cube(0, s * 0.8, 0, s * 0.9, s * 1.6, s * 0.6, [0.2, 0.22, 0.35]);
-      cube(0, s * 2.3, 0, s * 1.1, s * 1.5, s * 0.7, a.shirt);
+      if (a.dino) { // body level with the ground, neck and head forward, a stiff tail behind, two running legs
+        const st = a.state === 'walk' ? Math.sin(a.phase) * s * 0.35 : 0;
+        cube(0, s * 2.0, 0, s * 0.9, s * 0.9, s * 2.0, a.shirt);
+        cube(0, s * 1.75, s * 0.2, s * 0.7, s * 0.3, s * 1.5, a.skin);
+        cube(0, s * 2.9, s * 1.2, s * 0.55, s * 1.2, s * 0.55, a.shirt);
+        cube(0, s * 3.5, s * 1.7, s * 0.6, s * 0.6, s * 1.1, a.shirt);
+        cube(0, s * 2.2, -s * 1.9, s * 0.45, s * 0.45, s * 1.9, a.shirt);
+        cube(-s * 0.35, s * 0.8, st, s * 0.3, s * 1.6, s * 0.35, a.skin); cube(s * 0.35, s * 0.8, -st, s * 0.3, s * 1.6, s * 0.35, a.skin);
+        continue;
+      }
+      if (a.legs === a.shirt) cube(0, s * 1.5, 0, s * 1.2, s * 3, s * 0.85, a.shirt); // a robe down to the ground
+      else { cube(0, s * 0.8, 0, s * 0.9, s * 1.6, s * 0.6, a.legs); cube(0, s * 2.3, 0, s * 1.1, s * 1.5, s * 0.7, a.shirt); }
       cube(0, s * 3.5, 0, s * 0.8, s * 0.8, s * 0.8, a.skin);
+      if (a.head) cube(0, s * 3.85, -s * 0.05, s * 0.9, s * 0.45, s * 0.9, a.head); // a headcloth
+      if (a.hennin) { cube(0, s * 4.2, -s * 0.1, s * 0.6, s * 0.9, s * 0.6, a.hennin); cube(0, s * 4.9, -s * 0.15, s * 0.3, s * 0.7, s * 0.3, a.hennin); } // the tall hat of a lady
       if (a.run || a.state === 'fly') { // arms up
         cube(-s * 0.8, s * 3.3, 0, s * 0.3, s * 1.4, s * 0.3, a.skin);
         cube(s * 0.8, s * 3.3, 0, s * 0.3, s * 1.4, s * 0.3, a.skin);
@@ -522,6 +592,15 @@ export class Actors {
       out[o++] = sx * hs; out[o++] = sy * hs; out[o++] = sz * hs; out[o++] = rot; out[o++] = 0;
       out[o++] = c[0]; out[o++] = c[1]; out[o++] = c[2]; out[o++] = em;
     };
+    // Flying reptiles: body, crested head, and wings in two parts whose tips beat up and down.
+    const HIDE = [0.42, 0.33, 0.28], WING = [0.6, 0.42, 0.32];
+    for (const b of this.birds ?? []) {
+      if (o + 100 > max) break;
+      at(b, u * 1.3, b.yaw);
+      const f = Math.sin(b.flap) * 1.1;
+      cube(0, 0, 0, 0.7, 0.6, 2.4, HIDE); cube(1.6, 0.3, 0, 0.4, 0.4, 1.4, HIDE); cube(1.3, 0.75, 0, 0.15, 0.6, 1.2, [0.75, 0.3, 0.2]);
+      for (const sd of [-1, 1]) { cube(0, 0.1 + f * 0.3, sd * 1.6, 2.4, 0.12, 1.4, WING); cube(-0.2, 0.1 + f, sd * 3.6, 1.6, 0.12, 2.0, WING); }
+    }
     const DARK = [0.2, 0.2, 0.22], GLASS = [0.35, 0.7, 0.9], BLUE = [0.15, 0.4, 1], RED = [1, 0.15, 0.1], WHITE = [0.95, 0.95, 0.97], GREY = [0.6, 0.63, 0.67];
     // Helicopters: fuselage, cockpit, tail boom, fin, skids and two rotor blades.
     for (const h of this.helis) {
@@ -553,6 +632,23 @@ export class Actors {
       if (fx * fx + fz * fz > far) continue;
       const flash = Math.floor(c.blink * 5) % 2;
       at(c, u * 1.15, c.yaw);
+      if (g.world.era) { // the middle ages: a knight on horseback instead of the police, a water cart instead of the fire engine
+        const gallop = c.state === 'drive' ? Math.sin(c.age * 12) : 0, HORSE = c.slot % 3 ? [0.45, 0.3, 0.2] : [0.9, 0.88, 0.84];
+        cube(0, 1.5 + gallop * 0.08, 0, 0.9, 0.9, 2.6, HORSE); cube(1.5, 2.2 + gallop * 0.1, 0, 0.5, 1.2, 0.6, HORSE); cube(1.9, 2.6, 0, 0.5, 0.5, 1.0, HORSE); // body, neck, head
+        for (const sd of [-0.3, 0.3]) for (const f of [-1, 1]) cube(f * 0.95 + f * sd * gallop * 0.8, 0.55, sd, 0.25, 1.1, 0.25, HORSE); // legs, striding
+        cube(-1.4, 1.6, 0, 0.2, 0.9, 0.2, [0.15, 0.12, 0.1]); // tail
+        if (c.kind === 'police') {
+          const coat = c.slot % 2 ? [0.7, 0.12, 0.12] : [0.15, 0.25, 0.65], STEEL = [0.68, 0.7, 0.74];
+          cube(0, 1.75, 0, 1.05, 0.25, 2.7, coat); // the caparison
+          cube(0, 2.7, 0, 0.7, 1.1, 0.5, coat); cube(0, 3.5, 0, 0.5, 0.55, 0.5, STEEL); cube(0, 3.85, 0, 0.12, 0.25, 0.4, coat); // rider: tabard, helmet, plume
+          cube(0.6, 2.8, 0.45, 0.12, 0.12, 4.2, [0.55, 0.4, 0.25], 0, yaw); cube(2.7, 2.8, 0.45, 0.05, 0.4, 0.5, coat); // lance with a pennant
+          cube(0, 2.6, -0.5, 0.15, 0.9, 0.7, STEEL); // shield
+        } else {
+          cube(-2.6, 1.0, 0, 1.6, 0.25, 2.2, [0.5, 0.36, 0.22]); for (const sd of [-1.1, 1.1]) cube(-2.6, 0.55, sd, 0.15, 1.1, 1.1, [0.3, 0.22, 0.14]); // cart and wheels
+          cube(-2.6, 1.7, 0, 1.1, 1.1, 1.3, [0.42, 0.28, 0.16]); cube(-2.6, 2.3, 0, 1.15, 0.12, 1.35, [0.35, 0.36, 0.38]); // barrel of water
+        }
+        continue;
+      }
       if (c.kind === 'police') {
         cube(0, 0.75, 0, 1.8, 0.8, 4.2, WHITE); cube(0, 0.75, 0, 1.86, 0.45, 1.7, [0.1, 0.25, 0.7]);
         cube(-0.2, 1.45, 0, 1.6, 0.7, 2, [0.25, 0.4, 0.55]);

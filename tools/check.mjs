@@ -42,7 +42,7 @@ for (const w of WORLDS) if (!ACHIEVEMENTS.some((a) => a.id === 'world:' + w.id))
 const quality = { planet: 512, tall: 512 }, mix = {};
 for (const [i, w] of WORLDS.entries()) {
   try {
-    const t0 = performance.now(), world = w.make(1000 + i * 77, quality, mix);
+    const t0 = performance.now(), world = w.make(1000 + (w.seed ?? i) * 77, quality, mix);
     world.finalize();
     const major = world.structures.filter((s) => s.major && s.total > 0).length;
     if (!major || !world.spawn) fail(w.id + ': no buildings or no starting point');

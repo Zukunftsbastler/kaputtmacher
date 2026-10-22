@@ -10,7 +10,7 @@ const KEY = 'kaputtmacher.v1';
 export const MAX_STAGE = 30; // far beyond what any world can show; keeps model building and maths bounded
 export const MAX_DETAIL = 5; // detail slider: 1 = fastest .. 5 = richest, 0 = chosen automatically
 const HINTS = ['move', 'light', 'heavy', 'stomp', 'roar', 'worlds', 'next']; // demonstrations that can be marked as seen
-const TOGGLES = ['shake', 'life', 'units', 'smoke', 'fireSpread', 'fightBack', 'unlockAll', 'cascade', 'autoIdle'];
+const TOGGLES = ['shake', 'life', 'units', 'smoke', 'fireSpread', 'fightBack', 'unlockAll', 'cascade', 'autoIdle', 'minimap'];
 const VERSION = 2; // format of the save; raised whenever a field changes its meaning
 
 const DEFAULTS = {
@@ -20,9 +20,10 @@ const DEFAULTS = {
   playStage: 1, // stage currently played (may be lower by choice)
   power: 0, // power collected towards the next stage
   t: 0, // seconds played on the current stage
+  pick: '', // world the player chose for this creature; empty: the creature starts in its home world
   log: [], // play log: { c: creature, s: stage, t: seconds it took, a: 1 if the game was playing itself }
-  creatures: {}, // id -> { stage, playStage, power } for every creature
-  world: 'skyline', // id of the world last played; a new game starts in the skyscraper city
+  creatures: {}, // id -> { stage, playStage, power, t, pick } for every creature
+  world: 'skyline', // id of the world last played
   completed: [], // ids of worlds destroyed to 100 % at least once
   species: 'dino',
   stickers: [], // icons of structure kinds destroyed completely at least once
@@ -30,7 +31,7 @@ const DEFAULTS = {
   stats: {}, // counters behind the achievements (buildings felled, jumps ...)
   achieved: [], // ids of achievements reached
   mixSeed: 0, // seed of the last randomly mixed world
-  settings: { volume: 0.8, music: 0.6, detail: 0, shake: true, life: true, units: true, smoke: true, fireSpread: true, fightBack: false, unlockAll: false, cascade: true, autoIdle: false },
+  settings: { volume: 0.8, music: 0.6, detail: 0, shake: true, life: true, units: true, smoke: true, fireSpread: true, fightBack: false, unlockAll: false, cascade: true, autoIdle: false, minimap: true },
   mix: { ...DEFAULT_MIX },
 };
 
@@ -44,6 +45,8 @@ export function cleanStage(v, fallback = 1) {
   return Math.round(num(n, 1, MAX_STAGE, fallback));
 }
 export const cleanSpecies = (v) => oneOf(v, SPECIES.map((s) => s.id), DEFAULTS.species);
+// Where a creature starts: the world the player picked for it, else its home world.
+export const startWorld = (p) => p.pick || (WORLDS.find((w) => w.home === p.species) ?? WORLDS[0]).id;
 // Detail level 0..MAX_DETAIL. Also understands the names older saves and links use.
 export function cleanDetail(v) {
   if (v === 'low') return 2;
@@ -54,7 +57,7 @@ export function cleanDetail(v) {
 
 function cleanCreature(c) {
   const stage = cleanStage(c.stage);
-  return { stage, playStage: Math.min(stage, cleanStage(c.playStage, stage)), power: num(c.power, 0, 1e15, 0), t: num(c.t, 0, 1e9, 0) };
+  return { stage, playStage: Math.min(stage, cleanStage(c.playStage, stage)), power: num(c.power, 0, 1e15, 0), t: num(c.t, 0, 1e9, 0), pick: oneOf(c.pick, WORLDS.map((w) => w.id), '') };
 }
 
 // Builds a valid progress object from arbitrary input; anything unexpected falls back to its default.
@@ -92,21 +95,23 @@ export function loadProgress() {
 }
 
 // Switches the live stage and power over to another creature's own progress.
+const own = (p) => ({ stage: p.stage, playStage: p.playStage, power: p.power, t: p.t, pick: p.pick });
+
 export function switchCreature(p, id) {
-  p.creatures[p.species] = { stage: p.stage, playStage: p.playStage, power: p.power, t: p.t };
+  p.creatures[p.species] = own(p);
   p.species = id;
   Object.assign(p, p.creatures[id]);
 }
 
 export function saveProgress(p) {
   if (p.volatile) return; // started with debug parameters in the URL: never touch the real save
-  p.creatures[p.species] = { stage: p.stage, playStage: p.playStage, power: p.power, t: p.t };
+  p.creatures[p.species] = own(p);
   try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* ignore */ }
 }
 
 // The save as text, for a backup file or for moving to another device.
 export function exportProgress(p) {
-  p.creatures[p.species] = { stage: p.stage, playStage: p.playStage, power: p.power, t: p.t };
+  p.creatures[p.species] = own(p);
   const { volatile, ...rest } = p;
   void volatile;
   return JSON.stringify(rest);

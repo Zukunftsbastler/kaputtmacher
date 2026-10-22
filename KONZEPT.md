@@ -2,6 +2,14 @@
 
 Status: in Umsetzung. Dieser Entwurf nennt überall konkrete Zahlen; sie entsprechen dem Stand im Code. Was fehlt oder abweicht, steht in Abschnitt 16.
 
+**Nachtrag 3 zu Entwurf 12:** Heimatwelten für alle fünf Figuren (7.4b); Klettern mit festen Griffen für Hände und Füße, doppelt so schnell (4.2).
+
+**Nachtrag 6 zu Entwurf 12:** Superstrukturen verbinden die Bauten der Welten zu Netzen über mehrere Höhenebenen: Hochbahnen, Skybridges, Superhighways, Lianen, Hängebrücken, Riesenachterbahnen und mehr (7.4c).
+
+**Nachtrag 5 zu Entwurf 12:** Garten, Wohnstraße, Spielzeugland und Parklandschaft gestrichen; die Heimatwelten stehen vorn, und jede Figur beginnt in ihrer (7.4); Ritterburgen als echtes Mittelalter mit Rittern, Bauern und Burgfrauen (7.4); Winterwelt, Flughafen und Hafen mit viel mehr Höhe (7.4); weniger Staub (11.7); Festung Titan als Wüstenfestung mit Mauerringen, Vorposten, feuernden Geschützen und einem Munitionsdepot, das in die Luft fliegt (7.4b); der Macht-Vorrat fasst eine ganze Stufe (5.1).
+
+**Nachtrag 4 zu Entwurf 12:** Minimap (13); Stufe N dauert N Minuten, das Tempo ist nach oben begrenzt (5.1, 5.3); Waffen des Roboters neu geordnet, das Schwert zuerst (9.2); die Neon-Megacity wirklich bei Nacht mit Start an einer Kreuzung, Urzeit-Nekropole und Babel ohne Straßenlaternen, Autos und Polizei, dafür mit eigenen Bauten, Bewohnern und Tieren (7.4b).
+
 **Neu gegenüber Entwurf 11:** Klettermodus an Wänden (4.2), Welten mit eigenen Naturgesetzen und Meeresbewohnern (11.1a, 8.2), Großgrundstücke mit Wahrzeichen, Hafenbecken, Stadtviertel, eingerichtete Häuser und Büros, versteckte Fundstücke (7.4a), Standfestigkeit schlanker Bauten (11.4a), Musik, die der Handlung folgt (13a), gezieltes Abschießen von Fliegendem (8.1), der Flieger prallt ab (9.2), der Affe hebt immer etwas auf (9.2), die Feuerwehr lässt Bränden Zeit (8.1).
 
 **Neu in Entwurf 11 war:** Festhalten und Klettern an Hauswänden (4.2), fahrender Verkehr auf einem Straßennetz (8.2), acht neue Welten (7.4), sanft einsetzende Kettenreaktionen mit neuen Schwellen (5.3, 11.6), Dachlandung ohne Krater (4.2), Spielprotokoll und Spielstand als Datei (13), ruhigeres Selbstspiel (17), Testwerkzeuge im Projekt (16). Der Verlauf aller früheren Entwürfe steht in [VERLAUF.md](VERLAUF.md).
@@ -65,6 +73,7 @@ Maus und Tastatur haben Vorrang und werden zuerst abgestimmt; Gamepad und Touch 
 | Angriff wechseln | Leiste, Tasten 1–4, Mausrad | Schultertasten | Leiste |
 | Monster / Flugkamera | Einstellungen, Tab | Select | Einstellungen |
 | Flughöhe (Flugkamera) | Q, E | Steuerkreuz | – |
+| Minimap ein/aus | M, Knopf 🗺️ | – | Knopf 🗺️ im Menü |
 | Weltauswahl | Knopf | – | Knopf |
 
 ### 4.1a Bedienung auf dem Handy
@@ -95,7 +104,7 @@ Weitere Anpassungen: Vorführ-Hinweise erscheinen oben statt unten, damit sie ni
 | **Sprung mit Richtung** | Wer beim Springen eine Richtung hält, fliegt in diese Richtung: beim ersten Sprung mit dem **2-Fachen**, nach dem zweiten Sprung mit dem **3,4-Fachen des Lauftempos**, im Sprint jeweils das 1,75-Fache davon. Kleine Figuren laufen langsam und sind nur kurz in der Luft; für sie gilt ein Mindesttempo von 12 (erster Sprung) und 21 (zweiter Sprung) Welt-Einheiten pro Sekunde. Gemessen: Doppelsprung ohne Sprint rund 40 Würfel auf Stufe 1, 48 auf Stufe 2, 60 auf Stufe 3 – eine normale Straße ist 8, eine Allee 16 Würfel breit, dazu die Gehwege. Ein einfacher Sprung trägt 15 bis 27 Würfel. Ohne Richtung geht es senkrecht hoch; die Stampfattacke (dritter Druck) bricht den Flug ab. Je höher der Absprungpunkt, desto länger der Flug. Es ist kein Angriff: Im Flug bricht nur, was auch beim Laufen bricht |
 | Dachkante | In der Luft wird eine Kante bis zu einer halben Körperhöhe über den Füßen noch gefasst – ein Sprung, der ein Dach fast erreicht, landet darauf |
 | **Festhalten an der Wand** | Ein Sprung, der an der Wand eines Gebäudes endet, reißt nicht einfach ein Loch hinein: Die Figur **krallt sich fest** (Arme hoch, Beine angezogen) und ist damit im **Klettermodus**. Beim Zupacken bricht ein Stück heraus – eine Delle bei einer kleinen Figur, ein richtiges Loch bei einer großen (Radius 9 % der Körperhöhe plus 0,8 Würfel) |
-| **Klettern** | Dieselbe Steuerung wie am Boden, nur an der Wand: **vorwärts = hinauf, rückwärts = hinunter, links und rechts = seitlich an der Wand entlang**. Am Handy ist das der Stick. An einer Hausecke geht es von selbst um die Ecke herum auf die nächste Seite, in einer Innenecke auf die Querwand. Oben zieht sich die Figur aufs Dach oder auf einen Sims; unten steht sie wieder auf dem Boden. Tempo: 4 + 1,1 × Körperhöhe Würfel pro Sekunde. Die Kamera stellt sich hinter die Figur |
+| **Klettern** | Dieselbe Steuerung wie am Boden, nur an der Wand: **vorwärts = hinauf, rückwärts = hinunter, links und rechts = seitlich an der Wand entlang**. Am Handy ist das der Stick. An einer Hausecke geht es von selbst um die Ecke herum auf die nächste Seite, in einer Innenecke auf die Querwand. Oben zieht sich die Figur aufs Dach oder auf einen Sims; unten steht sie wieder auf dem Boden. Tempo: 8 + 2,2 × Körperhöhe Würfel pro Sekunde, gedrosselt, während eine Hand umgreift. Die Kamera stellt sich hinter die Figur |
 | Klettermodus verlassen | Nur auf drei Arten: Es gibt nichts mehr zum Greifen (die Wand ist weg), die Füße stehen (Boden, Dach, Sims), oder man drückt die Sprungtaste. Wer rennt (Umschalt), krallt sich gar nicht erst fest, sondern bricht wie bisher durch die Wand |
 | Sprung von der Wand | Die Sprungtaste stößt die Figur **nach oben und ein Stück nach hinten** ab (2,4 Körperhöhen hoch). Wer danach wieder nach vorn drückt, landet weiter oben erneut an der Wand; der Doppelsprung ist danach wieder frei |
 | Gewicht | Ab Stufe 3 reißen die Krallen beim Klettern jede Sekunde weiter Stücke heraus. Gibt die Wand nach, fällt die Figur |
@@ -124,8 +133,9 @@ Zerstören → Macht sammeln → wachsen → Größeres zerstören können → m
 - **Was nur mitfällt, zählt weniger:** Würfel, die das Monster selbst wegschlägt, zählen voll. Würfel, die bei einem Einsturz ihren Halt verlieren oder im nachgebenden Stockwerk zerdrückt werden, zählen nur zu 20 %. Ohne diese Regel brachte ein einziger gefällter Turm samt Kettenreaktion mehrere Stufen auf einmal.
 - **Macht ist sichtbar.** Wo etwas zerbricht, platzen leuchtende Kugeln mit Lichthof heraus, fliegen eine Drittelsekunde frei auseinander und ziehen dann zum Monster. Ihre Größe wächst mit dem Monster (0,7 + 4,5 % der Körperhöhe), damit sie auch neben einem Riesen auffallen. Ist ein Gebäude vollständig zerstört, schleudert es 10 bis 28 große Kugeln auf einmal heraus; gibt ein Stockwerk nach, sind es acht.
 - **Macht kommt an.** Erreicht eine Kugel das Monster, leuchtet es kurz golden auf, ein Ton steigt an, und ein Funke fliegt vom Monster zum Macht-Ring oben links, der dabei zuckt und sich füllt. So ist zu sehen, wohin die Macht geht und was sie bewirkt.
+- **Macht fließt im Tempo der Stufe** auf den Ring (5.3): höchstens so schnell, dass Stufe N N Minuten dauert; was darüber hinaus anfällt, wartet in einem Vorrat (bis zu einer ganzen Stufe), Überschuss darüber verfällt.
 - Ist der Ring voll, folgt der **Wachstumsmoment**: Brüllen, Aufleuchten, sichtbares Wachsen, Druckwelle, Fanfare. Zwischen zwei Wachstumsmomenten liegen mindestens 2 Sekunden, damit jeder einzeln wirkt.
-- Macht geht nie verloren, auch nicht beim Weltwechsel – außer man beginnt in den Einstellungen bewusst von vorn.
+- Macht auf dem Ring geht nie verloren, auch nicht beim Weltwechsel – außer man beginnt in den Einstellungen bewusst von vorn. (Nur was über den vollen Vorrat hinaus anfällt, verfällt; der Vorrat selbst gilt nur für die laufende Sitzung und Figur.)
 
 ### 5.2 Woran man Macht sieht
 
@@ -135,18 +145,18 @@ Größe · detailreicheres Modell je Stufe (Rückenstacheln ab 2, Hörner ab 4, 
 
 | Stufe | Höhe | Macht bis zur nächsten | Neu freigeschaltet |
 |---|---|---|---|
-| 1 | 1,8 m (Auto) | 1 500 | Laufen, Rennen, Springen, erster Angriff (schnell und stark) |
-| 2 | 2,9 m (Garage) | 8 000 | Landung wird zum Stampfer |
-| 3 | 4,7 m (Haus) | 25 000 | zweiter Angriff; **Kettenreaktionen** setzen schwach ein (abschaltbar) |
-| 4 | 6,8 m | 300 000 | Kettenreaktionen werden mit jeder Stufe stärker |
-| 5 | 10,8 m | 1 600 000 | dritter Angriff |
-| 6 | 16 m (Wohnblock) | 2 600 000 | Schulterpanzer |
-| 7 | 25 m (Kirchturm) | 4 000 000 | vierter Angriff |
-| 8 | 36 m (Hochhaus) | 12 000 000 | Leuchtstreifen, Aura |
-| 9 | 54 m | × 1,7 je Stufe | Brüllen als Waffe |
-| 10+ | × 1,25 je Stufe | × 1,7 je Stufe | mehr Wucht |
+| 1 | 1,8 m (Auto) | 280 | Laufen, Rennen, Springen, erster Angriff (schnell und stark) |
+| 2 | 2,9 m (Garage) | 1 600 | Landung wird zum Stampfer |
+| 3 | 4,7 m (Haus) | 8 500 | zweiter Angriff; **Kettenreaktionen** setzen schwach ein (abschaltbar) |
+| 4 | 6,8 m | 25 000 | Kettenreaktionen werden mit jeder Stufe stärker |
+| 5 | 10,8 m | 850 000 | dritter Angriff |
+| 6 | 16 m (Wohnblock) | 2 800 000 | Schulterpanzer |
+| 7 | 25 m (Kirchturm) | 3 200 000 | vierter Angriff |
+| 8 | 36 m (Hochhaus) | 5 600 000 | Leuchtstreifen, Aura |
+| 9 | 54 m | × 1,6 je Stufe | Brüllen als Waffe |
+| 10+ | × 1,25 je Stufe | × 1,6 je Stufe | mehr Wucht |
 
-- **Wachsen soll verdient sein.** Das erste Wachstum kommt nach ein bis zwei Minuten; danach ist jede Stufe auf drei bis vier Minuten stetiger Zerstörung ausgelegt (im Tempo des Selbstspiels – wer weiß, was er tut, ist auf den frühen Stufen schneller). Nebenbei passiert kein Aufstieg mehr. Grundlage sind Messungen im Selbstspiel des Dinos in der Wolkenkratzer-Stadt, in Macht pro Sekunde: Stufe 1: 11, Stufe 3: 86, Stufe 5: 7 100, Stufe 7: 10 000, Stufe 8: 54 000. Der Sprung kommt mit dem ersten Wolkenkratzer, der sich fällen lässt; auf Stufe 4 ist das Glückssache (gemessen zwischen 58 und 3 900), darum liegt deren Schwelle niedrig. Ab Stufe 7 braucht eine Stufe den größten Teil einer Welt. Die Messwerte streuen stark; das Spielprotokoll in den Einstellungen (13) zeigt, wie lange die Stufen im echten Spiel dauern.
+- **Stufe N dauert N Minuten:** die erste eine Minute, die zweite zwei, die dritte drei und so weiter. Schneller geht es nie: Was zerstört wird, kommt zuerst in einen **Vorrat**, und aus ihm fließt die Macht höchstens so schnell auf den Ring, dass eine Stufe N Minuten braucht (`PACE` in `main.js`). Der Vorrat fasst eine ganze Stufe (anfangs waren es 30 %; in der Festung, wo Zerstörung in Schüben kommt, ging dabei der größte Teil verloren); ein großer Einsturz füllt den Ring also eine Weile weiter, statt die Figur mehrere Stufen auf einmal wachsen zu lassen. Die Kugeln fliegen weiterhin sofort. Die Schwellen sind so gesetzt, dass stetige Zerstörung dieses Tempo bei den meisten Figuren erreicht. Gemessen im Selbstspiel in der Wolkenkratzer-Stadt, Macht pro Sekunde (Dino / Gorilla / Roboter / Panzer / Flieger): Stufe 1: 6 / – / 6 / 56 / 13, Stufe 2: 28 / 12 / 25 / 38 / 107, Stufe 3: 52 / 46 / 225 / 644 / 254, Stufe 4: 136 / 95 / 1 100 / 5 300 / 320, Stufe 5: 5 700 / 2 900 / 4 100 / 6 800 / 5 800, Stufe 8: 37 000 / 11 600 / 21 000 / 15 000 / 21 500. Sieben Minuten Selbstspiel ab Stufe 1 ergaben (Sekunden für Stufe 1, 2, 3): Dino 62, 120, 184; Panzer 74, 120, 180; Gorilla 123, 215; Roboter 71, 288 – danach wurden die Schwellen der Stufen 1 und 2 für Gorilla und Roboter noch gesenkt (nicht nachgemessen). Die langsamste Figur einer Stufe braucht bis etwa anderthalbmal so lange. Die Messwerte streuen stark; das Spielprotokoll in den Einstellungen (13) zeigt, wie lange die Stufen im echten Spiel dauern.
 - Erreichte Stufen bleiben erhalten. In der Weltauswahl kann jede bereits erreichte kleinere Stufe gewählt werden.
 - Grenze: Das Monster wird bei 92 % der Welthöhe gedeckelt. Das sind 58 m auf normalen Planeten, 118 m in der Stadt und 235 m in der Wolkenkratzer-Stadt – dort ist Platz bis etwa Stufe 15.
 
@@ -200,48 +210,93 @@ Ein Treffer hat eine Stärke, die zum Rand hin abnimmt. Ist sie größer als die
 
 | Welt | Form | Kantenlänge | Würfel | Zählbare Würfel | Gebäude | Gebaut für Stufe |
 |---|---|---|---|---|---|---|
-| 🌆 **Wolkenkratzer-Stadt (Hauptszenario)** | Planet, 256 m hoch | 512 m | 50 cm | 9 100 000 | 249 | 1 |
+| 🦕 **Urzeit-Nekropole** (Heimat des Dinos) | Planet, 144 m hoch | 512 m | 50 cm | rund 4 500 000 | rund 230 | 6 |
+| 🏛️ **Babel** (Heimat des Affen) | Planet, 160 m hoch | 512 m | 50 cm | rund 3 200 000 | rund 410 | 7 |
+| 🌃 **Neon-Megacity** (Heimat des Roboters) | Planet, 176 m hoch | 512 m | 50 cm | rund 8 600 000 | rund 230 | 8 |
+| 🏰 **Festung Titan** (Heimat des Panzers) | Planet, 128 m hoch | 512 m | 50 cm | rund 1 600 000 | rund 80 | 7 |
+| ☁️ **Wolkenwerft** (Heimat des Fliegers) | Planet, 128 m hoch | 512 m | 50 cm | rund 2 300 000 | rund 700 | 6 |
+| 🌆 **Wolkenkratzer-Stadt** | Planet, 256 m hoch | 512 m | 50 cm | 9 100 000 | 249 | 1 |
 | 🧱 Bauklotz-Zimmer | Insel | 64 m | 20 cm | 122 000 | 25 | 1 |
-| 🌷 Garten | Insel | 96 m | 25 cm | 121 000 | 24 | 2 |
-| 🏠 Wohnstraße | Insel | 96 m | 25 cm | 159 000 | 20 | 3 |
-| 🧸 Spielzeugland | Planet | 512 m | 50 cm | 6 400 000 | 848 | 4 |
 | 🏘️ Dorf | Planet | 512 m | 50 cm | 1 290 000 | 548 | 5 |
-| 🌳 Parklandschaft | Planet | 512 m | 50 cm | 2 150 000 | 113 | 5 |
 | 🎡 **Vergnügungspark** | Planet | 512 m | 50 cm | rund 600 000 | rund 370 | 4 |
-| 🏰 **Burg und Dorf** | Planet | 512 m | 50 cm | rund 1 700 000 | rund 380 | 5 |
-| ⛄ **Winterwelt** | Planet | 512 m | 50 cm | rund 1 900 000 | rund 230 | 5 |
 | 🏙️ Stadt | Planet, 128 m hoch | 512 m | 50 cm | 3 970 000 | 233 | 6 |
-| 🛫 **Flughafen** | Planet | 512 m | 50 cm | rund 700 000 | rund 190 | 6 |
 | 🏭 Fabrik | Planet | 512 m | 50 cm | 2 210 000 | 708 | 8 |
-| ⚓ **Hafen** | Planet | 512 m | 50 cm | rund 2 400 000 | rund 360 | 7 |
+| 🏰 **Ritterburgen** | Planet | 512 m | 50 cm | rund 1 800 000 | rund 390 | 5 |
+| ⛄ **Winterwelt** | Planet, 144 m hoch | 512 m | 50 cm | rund 2 700 000 | rund 190 | 5 |
+| 🛫 **Flughafen** | Planet, 128 m hoch | 512 m | 50 cm | rund 1 400 000 | rund 190 | 6 |
+| ⚓ **Hafen** | Planet, 128 m hoch | 512 m | 50 cm | rund 2 400 000 | rund 280 | 7 |
+| 🗿 **Welt der Riesenbauten** | Planet, 192 m hoch | 512 m | 50 cm | rund 5 300 000 | rund 230 | 9 |
 | 🐠 **Stadt unter dem Meer** | Planet | 512 m | 50 cm | rund 800 000 | rund 560 | 7 |
 | 🚀 **Raumhafen** | Planet, 128 m hoch | 512 m | 50 cm | rund 2 200 000 | rund 320 | 8 |
-| 🗿 **Welt der Riesenbauten** | Planet, 192 m hoch | 512 m | 50 cm | rund 5 300 000 | rund 230 | 9 |
 | 🎲 Gewürfelt | Planet | 128–512 m | 50 cm | je nach Mischung | – | – |
+
+Die Reihenfolge ist die der Weltauswahl: die fünf Heimatwelten zuerst. **Gestartet wird in der Heimatwelt der Figur**, solange der Spieler für diese Figur keine andere Welt gewählt hat; wählt er eine Welt in der Weltauswahl, merkt sich das Spiel sie für diese Figur (`pick` im Spielstand), und beim nächsten Start oder Figurenwechsel geht es dorthin. Das Selbstspiel reist durch die Liste, ändert die gemerkte Wahl aber nicht. Wer die Figur wechselt, reist sofort in deren Welt. Jede Welt hat einen festen Startwert (`seed`), damit sie beim Umsortieren der Liste gleich bleibt.
+
+Gestrichen (Nachtrag 5): Garten und Wohnstraße (zu klein), Spielzeugland (Riesenbauklötze in einer Stadt passten nicht zusammen; das Bauklotz-Zimmer macht es besser) und die Parklandschaft (Natur, aber viele Straßen, Zerstören machte wenig Spaß). Erfolge für diese Welten gibt es nicht mehr; ein Spielstand, der in einer davon stand, beginnt in der Heimatwelt.
 
 Gegenüber Entwurf 2 haben die Inseln die vierfache und die Planeten die vierfache Fläche; die Planeten haben 256 statt 64 Häuserblocks. Auf schwachen Geräten und Handys sind Planeten 256 m groß.
 
 Inhalt:
 
 - **Bauklotz-Zimmer:** 25 Bauten auf einem Teppich – Türme, hohe Türme, Burgen mit Ecktürmchen, Mauern, Bögen, Pyramiden, Treppen.
-- **Garten:** Gartenhäuser, Gewächshäuser, Schaukeln, Tische mit Stühlen, Grills mit Gasflasche, Hecken, Blumenbeete, Bäume, Gartenzwerge, Zaun.
-- **Wohnstraße:** Sieben Häuser mit Zimmern, Treppen, Möbeln und Dachstuhl, dazu Garagen, Autos, ein Bus, Laternen, Briefkästen, Zäune.
-- **Spielzeugland:** ein Planet voller Riesen-Bauklötze, bis 24 Lagen hoch.
 - **Dorf:** Häuser mit Gärten, Wohnblocks, Kirchen, Tankstellen, Wassertürme, Parks mit Hügeln.
-- **Parklandschaft:** Wälder und hohe Hügel, dazwischen einzelne Häuser.
 - **Stadt:** Hochhäuser mit Glasfassaden bis 34 Stockwerke (rund 100 m), Wohnblocks, Baustellen mit Kran.
 - **Fabrik:** Hallen mit Maschinen, über 40 m hohe Schornsteine, Tanks, Silos.
 - **Vergnügungspark:** Riesenräder mit Gondeln, Achterbahnen auf Holzgerüsten mit Zug, Karussells und Zirkuszelte mit gestreiften Stoffdächern (brennen gut), Budenreihen mit Markisen, Lichtern und Luftballons, die davonfliegen, wenn man sie losreißt, Freifalltürme. Viele Besucher.
-- **Burg und Dorf:** Burgen mit Ringmauer, Zinnen, vier Rundtürmen mit Spitzdach, Torhaus und hohem Bergfried samt Schatz; Windmühlen mit Stoffsegeln; Bauernhöfe mit Holzscheune und Heuballen, die wie Zunder brennen; Dorfhäuser, Kirchen, Wald und Hügel. Kaum Autos.
-- **Winterwelt:** Schnee statt Rasen, verschneite Tannen statt Laubbäumen. Skisprungschanzen mit Anlaufturm und Aufsprunghang, Holzhäuser unter Schnee, Riesenschneemänner mit Hut, Schal und Möhre, Eisbahnen mit Banden und Flutlicht, Iglus.
-- **Flughafen:** Verkehrsflugzeuge auf dem Vorfeld (mit Treibstoff in den Flügeln), Rollbahnen mit blauen Randfeuern und Kleinflugzeugen, gläserne Abfertigungshallen mit Fluggastbrücken, Kontrolltürme mit Radar, Hangars mit Tonnendach, ein Tanklager.
+- **Ritterburgen:** Mittelalter aus einem Guss. Feldwege statt Straßen, ohne Laternen, Hydranten, Ampeln und parkende Autos; kein Verkehr. Burgen mit Ringmauer, Zinnen, vier Rundtürmen mit Spitzdach, Torhaus und hohem Bergfried samt Schatz (eine davon doppelt so groß); **Fachwerkhäuser** mit vorkragenden Obergeschossen, dunklem Balkenwerk, Ziegel- oder Strohdach und Schornstein; Windmühlen mit Stoffsegeln; Bauernhöfe mit Holzscheune und Heuballen, die wie Zunder brennen; ein Markt mit Ständen und Brunnen; ein **Turnierplatz** mit Schranke, überdachter Tribüne, Fahnen und gestreiften Zelten; Kirchen, Wald und Hügel. Statt Passanten **Bauern** in Kittel und Beinlingen und hin und wieder eine **Burgfrau** im langen Kleid mit Spitzhut. Statt der Polizei reiten **Ritter** aus (Pferd, Schabracke und Wappenrock in Rot oder Blau, Helm mit Federbusch, Lanze mit Wimpel, Schild), statt der Feuerwehr kommt ein **Wasserkarren** mit Fass. Keine Sirenen, keine Hubschrauber, keine Kampfflieger. Wird ein Ritter getroffen, fliegen Rüstungsteile und Holz, und er purzelt davon wie die Bewohner – es explodiert nichts.
+- **Winterwelt** (bis rund 170 Würfel hoch): Schnee statt Rasen, verschneite Tannen statt Laubbäumen. Ein **Berg** auf einem Großgrundstück: ein zerklüfteter Kegel aus Fels mit Schneekappe und Gipfelkreuz, hohl wie der Vulkan. **Grandhotels** bis 140 Würfel: Steinsockel, Stockwerke aus dunklem Holz, die alle fünf Etagen zurückspringen, Balkone, Schnee auf jeder Terrasse, Fahne auf dem Dach. **Seilbahnen**: Gittermasten bis 110 Würfel mit Querträger, zwei Seile ins Tal, rote und blaue Gondeln, Talstation. Skisprungschanzen, eine davon doppelt so groß (rund 120 Würfel), Holzhäuser unter Schnee, Riesenschneemänner, Eisbahnen, Iglus, ein zugefrorener See.
+- **Flughafen** (bis rund 210 Würfel hoch): Verkehrsflugzeuge auf dem Vorfeld (mit Treibstoff in den Flügeln), Rollbahnen mit blauen Randfeuern und Kleinflugzeugen, gläserne Abfertigungshallen mit Fluggastbrücken, Kontrolltürme mit Radar, ein **Kontrollturm doppelter Größe** (rund 130 Würfel), **Radarmasten** bis 100 Würfel in Rot und Weiß mit Warnlichtern, **Flughafenhotels** als Hochhäuser, ein Parkhaus, Hangars mit Tonnendach, ein Tanklager.
 - **Stadt unter dem Meer:** Meeresboden statt Rasen, dunkelblaues Wasser, ringsum steigen Luftblasen auf. Glaskuppeln mit Wohnmodul und Verbindungsröhren, verzweigte Korallen mit leuchtenden Spitzen, Tangwälder, ein gelbes U-Boot auf seinem Gestell, versunkene Frachter, Bohrinseln auf vier Beinen mit Tanks und Bohrturm. Hier gibt es weder Einsatzkräfte noch Verkehr.
 - **Raumhafen:** Raketen von rund 50 m auf der Startrampe, randvoll mit Treibstoff, neben dem Startturm – ein Treffer, und sie explodieren Stück für Stück nach oben; Radioteleskope mit großer Schüssel, eine riesige hohle Montagehalle, das Kontrollzentrum mit Antennen, Tanklager.
-- **Hafen:** Containerberge bis fünf Lagen, Portalkräne mit Ausleger und Container am Haken, Frachter in Hafenbecken mit Decksladung, Brücke und Schornstein, Lagerhallen, Silos – und Tanklager aus je vier Treibstofftanks, die einander hochjagen.
+- **Hafen** (bis rund 180 Würfel hoch): Containerberge bis fünf Lagen, Portalkräne mit Ausleger und Container am Haken, ein **Portalkran doppelter Größe**, Frachter in Hafenbecken mit Decksladung, Brücke und Schornstein, Lagerhallen, Silos und **Silos doppelter Größe**, **Leuchttürme** bis 130 Würfel in roten und weißen Ringen mit Galerie und Laterne, **Hafenbüros** als Hochhäuser, Baukräne – und Tanklager aus je vier Treibstofftanks, die einander hochjagen.
 - **Welt der Riesenbauten:** für Kaputtmacher, denen gewöhnliche Häuser zu klein geworden sind. Wenige, gewaltige Bauwerke: Stufenpyramiden mit Schatzkammer, über 50 m hohe Kühltürme, Fernsehtürme bis rund 150 m mit Kanzel und Antenne, Glaskuppeln mit Garten, Stadien mit bunten Rängen und Flutlichtmasten, Kolossalstatuen eines Roboters mit erhobenen Fäusten (67 m), dazu die höchsten Hochhäuser.
-- **Wolkenkratzer-Stadt:** das Hauptszenario, eine Szene wie Manhattan oder Tokio; Aufbau in 7.6. Ein neues Spiel beginnt hier, und sie ist die erste Kachel der Weltauswahl.
+- **Wolkenkratzer-Stadt:** eine Szene wie Manhattan oder Tokio; Aufbau in 7.6. Früher begann jedes neue Spiel hier; jetzt beginnt jede Figur in ihrer Heimatwelt.
 
 Alle Welten entstehen aus Bauplänen im Code mit festem Startwert: Wer eine Welt in der Weltauswahl erneut wählt, bekommt dieselbe Welt heil zurück. Einen eigenen Neu-aufbauen-Knopf gibt es nicht mehr.
+
+### 7.4b Heimatwelten
+
+Jede der fünf Figuren hat eine Welt, die auf das zugeschnitten ist, was sie am besten kann (`landmarks3.js`). In der Weltauswahl trägt ihre Kachel das Symbol der Figur. Alle sind hoch – 180 bis 250 Würfel – und voller Schwachstellen, von denen aus ein Einsturz um sich greift.
+
+| Welt | Was dort steht | Wie es fällt |
+|---|---|---|
+| 🦕 Urzeit-Nekropole (Dino) | Ein Urwald ohne Straßen auf Moos- und Schlammboden. **Mammutbäume** bis gut 200 Würfel hoch: ein Stamm mit Wurzelfuß, Plattformen in drei Höhen mit je drei Baumhütten, Streben, Geländer, Leiter, oben eine Krone aus riesigen Laubballen. Auf einem Großgrundstück vier solche Bäume, verbunden durch **Hängebrücken** in zwei Höhen, die in der Mitte durchhängen. Dazwischen **Riesenskelette** (Wirbelsäule, Rippenbögen, Schädel) und Tempelruinen mit einem Altar, **Farnhaine** mit Findlingen und einem umgestürzten Stamm, **Nester** mit sechs Rieseneiern, **Steinkreise** mit Decksteinen und Altar. Statt gewöhnlicher Bäume wachsen Urwaldriesen mit Schirmkrone und Lianen, Baumfarne und Palmfarne. Großgrundstücke: ein rauchender **Vulkan** (hohler Kegel aus dunklem Gestein, Lavasee im Krater, Lavaströme an der Flanke) und ein **Sumpf** mit trübem Wasser, Schilf, Seerosenblättern, Pfahlhütten und dem halb versunkenen Skelett eines Langhalses. Es leben dort ein Stamm in Fell und Leder und kleine Saurier, die flinker fliehen als Menschen; oben kreisen **Flugsaurier**. Keine Laternen, keine Autos, keine Boote, keine Einsatzkräfte | Wer den Stamm durchtrennt, bringt den ganzen Baum samt Dorf herunter; die Brücken reißen mit. Ist der Krater zerstört, hört der Vulkan auf zu rauchen |
+| 🏛️ Babel (Affe) | **Zikkurats**: Stufen um Stufe eine Halle voller Pfeiler unter schwerer Decke, mit Torbögen und einem goldenen Schrein oben. Der **Turm zu Babel** auf einem Großgrundstück: runde Stockwerke, jedes schmaler, mit Pfeilern, Bogenfenstern, einer Rampe außen herum und Gärten auf jeder Terrasse, bis rund 250 Würfel hoch. Dazu **Aquädukte** mit Wasserrinne und **hängende Gärten** mit Palmen und Ranken; Sandboden. Die Straßen sind aus Steinplatten ohne Markierung, an den Ecken stehen **Feuerschalen** statt Laternen. Gewohnt wird in **Lehmhäusern** mit Flachdach, Brüstung, kleinen Fenstern, Balkenköpfen, Sonnensegel oder Krügen auf der Dachterrasse. Dazu ein **Basar** mit gestreiften Markisen, Krügen, Teppichen und Brunnen, **Obelisken** mit goldener Spitze und eine Reihe **Sphingen**, einmal das blau glasierte **Ischtar-Tor** mit goldenen Tieren und Stadtmauer und ein öffentlicher **Brunnen** unter einem Dach. Statt Laubbäumen Dattelpalmen. Die Menschen tragen bodenlange Gewänder und Kopftücher; keine Autos, keine Polizei | Die Decken sind die Böden der Stufe darüber: Wer sie von oben zerstampft oder die Pfeiler wegschlägt, lässt die Etagen aufeinander fallen |
+| 🌃 Neon-Megacity (Roboter) | **Bei Nacht**: Alles ist dunkel und violett, beleuchtet nur vom Schein der Stadt – rosa und türkis in breiten Wellen über die Karte, am stärksten unten auf der Straße. Leuchtreklamen, Lampen und Scheinwerfer leuchten voll; Fahrbahnmarkierungen glimmen; von den Fenstern ist etwa jedes achte Feld erleuchtet (warm, kalt oder rosa), der Rest ist dunkles Glas. Rauch und Staub sind dunkle Schatten. Die Figur selbst bleibt heller, damit man sie sieht. Gestartet wird nicht im Park, sondern **mitten auf einer Kreuzung zweier Prachtstraßen**, an deren vier Ecken Leuchtreklame-Türme stehen; der Blick geht die Straßenschlucht hinunter. Türme bis rund 300 Würfel mit **riesigen Leuchtreklamen** an der Fassade, **Lichtlinien**, die vom Bürgersteig bis zum Dach an der Fassade hinauflaufen und Rücksprünge mitgehen, **Hochstraßen** in zwei Ebenen auf Stelzen mit Autos und Laternen, eine **Arkologie** (eine Stadt in einem Gebäude, bis 230 Würfel), Zwillingstürme mit Brücken | Ein Laserschnitt quer durch einen Turm lässt den oberen Teil abrutschen; Hochstraßen hängen an wenigen Pfeilern |
+| 🏰 Festung Titan (Panzer) | Eine **Festung in der Wüste** (`fortress.js`), in die man eindringen muss. Start auf der leeren Sandebene vor dem Tor, Dünen, Kakteen. Auf der Ebene **Vorposten** – Bunker mit Sandsäcken, hölzerne Wachtürme, Zeltlager mit Treibstofffässern und Funkmast –, die für Stufe 2 reichen. Dann ein **trockener Graben** mit einem Damm zum Tor und die **äußere Mauer** (40 Würfel hoch, sechs dick, Zinnen, Strebepfeiler) mit Rundtürmen an den Ecken und in den Seitenmitten und einem Torhaus mit Stahltor. Im Hof zwischen den Mauern stehen Reihen von **Kasernen**, **Flaktürmen**, **Bunkern**, **Radarmasten**, Lagerhallen, Hangars und **Tanklagern**, in den Ecken ein **Riesenpanzer** und ein **Riesenjet**. Dahinter die **innere Mauer** (54 Würfel), und in der Zitadelle der dreistufige **Kommandoturm** (rund 140 Würfel), ein **Riesenroboter** (rund 120 Würfel) und das **Munitionsdepot**: ein Bunker voller Granaten und Fässer hinter Panzertüren. **Jedes Geschütz** auf Türmen, Torhäusern, Flaktürmen, Vorposten und dem Kommandoturm (rund 60) ist ein Schütze: Kommt die Figur näher als 150 Würfel plus drei Körperhöhen, feuert es Leuchtspur (Maschinengewehre, drei Schuss) oder Raketen (schwere Geschütze). Wie beim Militär richtet das keinen Schaden an (außer „Militär stößt zurück“ ist an). Ein zerstörtes Geschütz schweigt. Keine Polizei, keine Feuerwehr, kein Verkehr; es laufen Soldaten mit Helm herum | Geht im Depot das erste Fass hoch, explodiert das ganze Depot: sieben Explosionen rollen durch den Bunker, dann eine riesige (bis Radius 48) mit Zeitlupe. Die Mauern sind dick und müssen Stück für Stück aufgebrochen werden |
+| ☁️ Wolkenwerft (Flieger) | Ein offenes Meer ohne Straßen, darüber **schwebende Inseln** in 50 bis 190 Würfeln Höhe mit Häuschen, Funkmast und Baum, **Felsnadeln** mit einer Insel obenauf, **Luftschiffe** an Ankermasten, und auf einem Großgrundstück ein **Luftschiffhafen**: eine große Insel mit Hangar und angedocktem Luftschiff, verbunden durch eine **Seilbahn** mit zwei Gondeln mit einer kleineren Insel | Die Inseln schweben nicht von selbst: Sie hängen an zwei leuchtenden **Schwebestrahlen** aus Triebwerken unter der Insel und an zwei **Stahlseilen** zu Ankerblöcken im Meer. Sind alle gekappt, stürzt die Insel ab. Ein Luftschiff hängt nur mit der Nase am Mast |
+
+**Grenzen:** Das Licht der Nacht ist ein Schein, keine echte Beleuchtung: Leuchtreklamen werfen kein Licht auf ihre Umgebung, und Schatten gibt es nicht. Ein zerbrochenes Fenster wird zu dunklem Schutt. Die Hochstraßen enden an den Rändern ihres Grundstücks. In der Festung gibt es entlang der Klippen keine Laternen und geparkten Autos; Polizei und Feuerwehr fahren dort noch Autos von heute. In Urzeit und Babel gibt es ohne Einsatzkräfte auch keine Alarmsterne. Ein Zusammenhang zwischen Figur und Heimatwelt besteht außer dem Symbol nicht (kein Bonus).
+
+### 7.4c Superstrukturen: Netze zwischen den Bauten
+
+Bisher standen viele Bauten für sich. Jetzt verbinden **Superstrukturen** sie zu Netzen (`links.js`). Für jede Welt ist festgelegt, welcher Stil zu ihr passt und welche Bauten mitmachen; daraus entsteht ein Netz:
+
+- **Knoten** sind die passenden Bauten, die hoch genug sind. **Zuerst** werden die nächstgelegenen Paare verbunden, bis alles Erreichbare zusammenhängt (ein aufspannender Baum, nie zwei Verbindungen in dieselbe Gruppe); **danach** schließen einige zusätzliche Verbindungen Schleifen. Kein Bau bekommt mehr als vier.
+- **Verschiedene Höhen:** Jede Verbindung beginnt und endet an der Fassade ihrer beiden Bauten, auf einer Höhe, die für jeden Bau einzeln gewählt wird (innerhalb eines Bands seiner Höhe), und steigt oder fällt dazwischen – so steil, wie der Stil es zulässt. Bauten mit Plattformen (die Mammutbäume) verbinden ihre Plattformen. So entstehen Netze über mehrere Ebenen, nicht eine flache Lage.
+- **Freie Bahn:** Gebaut wird nur, wo der Weg frei ist: nie durch einen dritten Bau oder einen Hügel, nie auf derselben Höhe durch eine andere Verbindung. Pfeiler landen nicht auf Straßen.
+- **Echte Bauten:** Jede Verbindung ist ein eigenes Bauwerk – sie zählt, steht auf der Minimap, lässt sich zerstören und hängt an den Bauten, die sie verbindet; fällt ein Bau, reißt sie mit oder hängt am anderen Ende. Das Selbstspiel lässt Verbindungen, die hoch über der Figur schweben, in Ruhe.
+
+| Welt | Stil |
+|---|---|
+| 🌆 Wolkenkratzer-Stadt, 🏙️ Stadt | **Hochbahn** auf Betonträger und Pfeilern zwischen Hochhäusern, Wohnblocks, Läden und Parkhäusern, höchstens 46 bzw. 40 Würfel über dem Boden, mit Zügen aus drei Wagen; dazu **Skybridges** (gläserne Röhren mit Stahlrippen) zwischen hohen Türmen |
+| 🌃 Neon-Megacity | **Skybridges** mit leuchtenden Kanten zwischen Türmen und Arkologie in allen Höhen, dazu **Superhighways**: 13 Würfel breit, Leitplanken mit Neon, Fahrbahnmarkierung, Autos, auf hohen Pfeilern zwischen Türmen und Hochstraßen |
+| 🦕 Urzeit-Nekropole | **Lianengeflechte**: drei durchhängende Stränge mit Blätterbüscheln und herabhängenden Ranken zwischen den Kronen der Urwaldriesen und Mammutbäume; **Hängebrückensysteme** zwischen den Baumhaus-Plattformen aller Mammutbäume, von Plattform zu Plattform auf verschiedenen Höhen |
+| 🎡 Vergnügungspark | **Riesenachterbahnen** von Fahrgeschäft zu Fahrgeschäft: steile Buckel, zwei rote Schienen auf Schwellen, Gitterstützen, ein bunter Zug |
+| 🏛️ Babel | **Steinerne Brücken** mit Brüstung und Blumen auf hohen Pfeilern zwischen Zikkurats, Turm, Gärten, Aquädukten und Tor |
+| 🏰 Ritterburgen | **Wehrgänge** mit Zinnen auf Steinpfeilern zwischen Burgen, Kirchen und Windmühlen |
+| 🐠 Stadt unter dem Meer | **Glasröhren** mit Stahlrippen zwischen Kuppeln, U-Booten, Bohrinseln und Wracks |
+| 🏭 Fabrik | **Rohrleitungen** (zwei Rohre auf Stahlrahmen) zwischen Hallen, Tanks, Schornsteinen, Silos und Wassertürmen |
+| ⚓ Hafen | **Förderbrücken** (überdachtes Stahlfachwerk mit Band) zwischen Silos, Lagerhallen, Kränen, Tanks, Bürotürmen und Leuchttürmen |
+| 🛫 Flughafen | **Skywalks** (weiße Glasgänge auf Pfeilern) zwischen Terminals, Tower, Hotels, Hangars, Radar und Parkhaus |
+| ⛄ Winterwelt | **Seilbahnen**: zwei Seile mit Gondeln zwischen Hotels, Liftmasten, Berg, Schanzen und Kirche |
+| 🚀 Raumhafen, 🏰 Festung Titan | **Laufstege** aus Stahlgitter mit Geländer zwischen Raketen, Montagehalle, Kontrollzentrum, Schüsseln bzw. Türmen, Flaktürmen, Kommandoturm, Radar und Toren |
+| ☁️ Wolkenwerft | **Hängebrücken** zwischen den Inseln und Felsnadeln, dazu **Seilbahnen** |
+| 🗿 Riesenbauten | **Superhighways** und **Skybridges** zwischen den Riesen |
+
+Bei voller Weltgröße entstehen so je Welt zwischen rund 17 (Festung) und 130 (Urzeit) Verbindungen. Dorf und Bauklotz-Zimmer bleiben ohne.
+
+**Grenzen:** Die Verbindungen führen gerade von Bau zu Bau (mit Durchhang, Buckeln oder Steigung), sie verzweigen nicht unterwegs, und Haltestellen oder Auffahrten gibt es nicht. Züge, Autos und Gondeln stehen still. Wo ein Bau an der gewählten Höhe hohl ist, endet die Verbindung an seiner Außenwand, ohne Durchgang ins Innere.
 
 ### 7.4a Großgrundstücke, Viertel und Innenleben
 
@@ -417,10 +472,12 @@ Jede Planetenwelt ist auf einem Raster aus Grundstücken gebaut; daraus ergibt s
 
 | Angriff | Schnell | Stark |
 |---|---|---|
-| ⚡ Laser (1) | Drei kurze Impulse aus der Armkanone: kleine, tiefe Löcher auf beliebige Entfernung | Schneidstrahl: lädt 0,6 s, dann schwenkt der Strahl 1,15 Sekunden lang von links nach rechts durch den Zielpunkt und schneidet eine Linie |
-| 🚀 Raketen (3) | Eine Rakete aus dem Schultermagazin | Salve: acht Raketen steigen auf und senken sich gelenkt auf das Zielgebiet |
-| ⚔️ Klinge (5) | Ein sauberer Schnitt mit der Laserklinge | Rotorschnitt: zwei volle Drehungen mit ausgestreckter Klinge, die zweite höher als die erste |
-| 🛰️ Orbit (7) | Streut drei Plasmaminen mit Zeitzünder | Orbitalschlag: zeigt zum Himmel; ein Ring zieht sich um das Ziel zusammen, dann fährt eine Lichtsäule von oben durch das ganze Gebäude und explodiert am Boden |
+| ⚔️ Klinge (1) | Ein sauberer Schnitt mit der Laserklinge, so weit der Arm reicht | Rotorschnitt: zwei volle Drehungen mit ausgestreckter Klinge, die zweite höher als die erste |
+| 🛰️ Orbit (3) | Streut drei Plasmaminen mit Zeitzünder | Orbitalschlag: zeigt zum Himmel; ein Ring zieht sich um das Ziel zusammen, dann fährt eine Lichtsäule von oben durch das ganze Gebäude und explodiert am Boden |
+| 🚀 Raketen (5) | Eine Rakete aus dem Schultermagazin | Salve: acht Raketen steigen auf und senken sich gelenkt auf das Zielgebiet |
+| ⚡ Laser (7) | Drei kurze Impulse aus der Armkanone: kleine, tiefe Löcher auf beliebige Entfernung | Schneidstrahl: lädt 0,6 s, dann schwenkt der Strahl 1,15 Sekunden lang von links nach rechts durch den Zielpunkt und schneidet eine Linie |
+
+Der Roboter beginnt mit der Klinge, die nur so weit reicht wie sein Arm; was aus der Ferne wirkt, kommt später, der Schneidstrahl zuletzt. Früher war der Laser der erste Angriff: Damit holte ein Roboter auf Stufe 2 rund hundertmal so viel Macht wie der Dino und sprang in kurzer Zeit mehrere Stufen hinauf. Die Klinge schneidet jetzt nach Stufe: anfangs Glas, Holz und Mauerwerk, Beton nur zum Teil, Stahl erst ab etwa Stufe 5 (Schneidkraft 1,25 × Schlagkraft der Stufe, vorher fest 80, also alles).
 
 **🪖 Panzer**
 
@@ -584,7 +641,7 @@ Feuer richtet sich nach dem Material. Flammen, Strahlen, Explosionen und brennen
 - **Brandherde:** Wo nichts brennen kann, etwa im Krater einer Rakete im Betonturm, brennt 5 bis 12 Sekunden ein Brandherd mit Flammen und dichtem schwarzem Rauch; er versengt, worauf er steht.
 - **Löschen:** Wasser löscht (Hydranten 11.7a, Feuerwehr 8.1). Gelöschtes Holz bleibt verkohlt stehen.
 - **Abschaltbar:** „Feuer breitet sich aus“ in den Einstellungen; ohne Ausbreitung brennt nur, was direkt getroffen wird. Wie viele Würfel gleichzeitig brennen dürfen (150 bis 1 500), bestimmt die Detailstufe.
-- **Staub:** Schwere Trümmer (ab 600 Würfeln) werfen beim Aufschlag sofort einen Staubstoß auf und hinterlassen meist eine helle Staubwolke, die 3 bis 6 Sekunden steht. Gibt ein Stockwerk nach, steigen über dem Grundriss drei solche Wolken auf, bei einem zerdrückten Gebäude zwei und dazu sieben Staubstöße. Staub ist hell (Mauerwerk), Rauch dunkel (Feuer). Abschaltbar („Staub- und Rauchwolken“).
+- **Staub:** Schwere Trümmer (ab 600 Würfeln) werfen beim Aufschlag sofort einen Staubstoß auf und hinterlassen meist eine helle Staubwolke, die 1,5 bis 3 Sekunden steht. Gibt ein Stockwerk nach, steigen über dem Grundriss drei solche Wolken auf, bei einem zerdrückten Gebäude zwei und dazu vier Staubstöße. **Seit Nachtrag 5 sparsamer:** Staubstöße haben 40 % weniger Teilchen, sind durchsichtiger, wachsen weniger und vergehen nach gut einer halben Sekunde (vorher fast eine Sekunde), die hängenden Wolken sind halb so lange da, halb so dicht besetzt und blasser – der Staub soll den Einsturz zeigen, nicht verdecken. Staub ist hell (Mauerwerk), Rauch dunkel (Feuer). Abschaltbar („Staub- und Rauchwolken“).
 
 ### 11.7a Die Welt reagiert
 
@@ -713,9 +770,11 @@ Musik, die der Handlung folgt, vollständig im Browser komponiert und gerendert;
 
 Eigener Lautstärkeregler in den Einstellungen (0 = aus). **Stand:** Gemessen im Browser unter der Policy von Netlify: Worker und Policy greifen, die Musik startet, beim Einstieg sind Schlagzeug und Melodie stumm, die Wechsel in die schnelleren Zustände laufen ohne Skriptfehler. **Nicht beurteilt:** wie sie klingt, ob der Ohrwurm trägt, ob die Lautstärke zu den Geräuschen passt, das Verhalten auf Handy und Tablet (Renderzeit, Speicher).
 
-**Oberfläche:** unten Werkzeugleiste, rechts unten Springen und Brüllen, oben Welt-Zähler mit den Sternen der Alarmstufe, links oben Macht-Ring mit Stufe und darunter die Einblendungen der Erfolge, rechts oben Weltauswahl, Selbstspiel und Einstellungen. Die Liste der Erfolge liegt nicht mehr im Spielfeld, sondern als Pokal in der Weltauswahl und als Knopf in den Einstellungen.
+**Oberfläche:** unten Werkzeugleiste, rechts unten Springen und Brüllen, oben Welt-Zähler mit den Sternen der Alarmstufe, links oben Macht-Ring mit Stufe und darunter die Einblendungen der Erfolge, rechts oben Weltauswahl, Selbstspiel, Karte und Einstellungen, links unten die Minimap.
 
-**Einstellungen** (Zahnrad, ein gewöhnlicher Knopf; neben dem Impressum-Link der einzige Ort mit Text): Lautstärke, Grafik-Regler (12.4), Staub und Rauch, Feuerausbreitung, Einsatzkräfte, Kamerawackeln, Bewohner und Verkehr, Kettenreaktionen, Militär stößt zurück, Selbstspiel nach 2 Minuten, alles freischalten, Vollbild, freie Flugkamera – und **„Von vorn beginnen“**. Früher öffnete sich das Zahnrad erst nach drei Sekunden Halten und war blass dargestellt; das wirkte wie abgeschaltet und ließ sich nicht entdecken.
+**Minimap** (`minimap.js`): ein rundes Fenster auf die Umgebung, damit man trotz des engen Blickfelds den Überblick behält. Sie dreht sich mit der Kamera – oben ist, wohin man schaut –, in der Mitte zeigt ein weißer Pfeil die Figur und ihre Blickrichtung. Der Boden erscheint in seinen gedämpften Farben (Straßen, Wiese, Sand, Wasser), Gebäude hell, je höher, desto heller; je mehr von einem Gebäude fehlt, desto orangener wird es, ein abgerissenes ist dunkelrot. Wo etwas zerstört wurde, liegt ein **roter Fleck**, je mehr, desto kräftiger (gezählt je 4 × 4 Würfel). Darüber Punkte für Feuer (flackernd orange), Polizei (blinkend), Feuerwehr, Hubschrauber und Autos. Der Ausschnitt wächst mit der Figur: mindestens 150 Würfel in jede Richtung, 8 Körperhöhen plus 120 bei großen Figuren, höchstens die halbe Welt. Am Rechner unten links (184 Pixel), auf Handy und kleinen Fenstern klein oben rechts unter dem Menüknopf (96 Pixel). **Ein- und ausblenden:** Knopf 🗺️ oben rechts (auf dem Handy im Menü), Taste **M** oder in den Einstellungen; die Wahl wird gespeichert. Das Bild wird gut sechsmal pro Sekunde neu gezeichnet. Die Liste der Erfolge liegt nicht mehr im Spielfeld, sondern als Pokal in der Weltauswahl und als Knopf in den Einstellungen.
+
+**Einstellungen** (Zahnrad, ein gewöhnlicher Knopf; neben dem Impressum-Link der einzige Ort mit Text): Lautstärke, Grafik-Regler (12.4), Staub und Rauch, Feuerausbreitung, Einsatzkräfte, Kamerawackeln, Bewohner und Verkehr, Kettenreaktionen, Militär stößt zurück, Selbstspiel nach 2 Minuten, Minimap, alles freischalten, Vollbild, freie Flugkamera – und **„Von vorn beginnen“**. Früher öffnete sich das Zahnrad erst nach drei Sekunden Halten und war blass dargestellt; das wirkte wie abgeschaltet und ließ sich nicht entdecken.
 
 **Spielprotokoll.** In den Einstellungen steht aufklappbar, wie lange jede Stufe jeder Figur gedauert hat (die letzten 60 Einträge, Selbstspiel gekennzeichnet). Es ist das Werkzeug, um die Schwellen aus 5.3 an echtem Spiel auszurichten.
 
@@ -764,7 +823,7 @@ Offen aus der Analyse vom Oktober 2026, nach Wirkung sortiert:
 
 **Starten:** im Projektordner `python3 serve.py` ausführen und `http://localhost:8000` öffnen. Der mitgelieferte Server verbietet dem Browser das Zwischenspeichern; mit einem gewöhnlichen Dateiserver kann nach einem Update eine alte Quelldatei neben einer neuen im Cache bleiben, und das Spiel bleibt mit „… is not a function“ stehen.
 
-**Testhilfen in der Adresse** (speichern keinen Fortschritt): `?world=skyline|blocks|garden|house|toyland|village|park|funfair|castle|winter|city|airport|factory|harbour|reef|spaceport|giants|random`, `?stage=1…`, `?unlock=1`, `?tool=rocket`, `?quality=low`, `?fly=1`.
+**Testhilfen in der Adresse** (speichern keinen Fortschritt): `?world=skyline|blocks|garden|house|toyland|village|park|funfair|castle|winter|city|airport|factory|harbour|reef|spaceport|giants|primeval|babel|neon|fortress|skyyard|random`, `?stage=1…`, `?unlock=1`, `?tool=rocket`, `?quality=low`, `?fly=1`.
 
 **Vorhanden:** alles, was in den Abschnitten 4 bis 13 beschrieben ist, mit den dort genannten Zahlen – außer den folgenden Punkten.
 

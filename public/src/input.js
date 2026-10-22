@@ -57,6 +57,7 @@ export class Input {
       else if (e.code === 'KeyR') this.actions.push('roar');
       else if (e.code === 'Tab') this.actions.push('camera');
       else if (e.code === 'KeyI') this.actions.push('idle');
+      else if (e.code === 'KeyM') this.actions.push('map');
       else if (/^Digit[1-9]$/.test(e.code)) this.actions.push('tool:' + (Number(e.code[5]) - 1));
       if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     });

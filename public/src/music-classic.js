@@ -48,8 +48,8 @@ const FORM = ['A', 'A', 'B', 'A'];
 const MOODS = {
   skyline: [0, 'minor', 'sawtooth'], city: [0, 'minor', 'sawtooth'], factory: [-2, 'minor', 'sawtooth'], harbour: [-4, 'minor', 'sawtooth'], airport: [2, 'minor', 'square'],
   spaceport: [3, 'minor', 'sawtooth'], giants: [-5, 'minor', 'sawtooth'], castle: [-2, 'minor', 'square'], reef: [-3, 'minor', 'square'], random: [1, 'minor', 'sawtooth'],
-  house: [0, 'minor', 'square'], village: [-2, 'minor', 'square'], park: [-4, 'minor', 'square'], winter: [5, 'minor', 'square'],
-  blocks: [3, 'major', 'square'], toyland: [5, 'major', 'square'], funfair: [7, 'major', 'sawtooth'], garden: [3, 'major', 'square'],
+  village: [-2, 'minor', 'square'], winter: [5, 'minor', 'square'],
+  blocks: [3, 'major', 'square'], funfair: [7, 'major', 'sawtooth'],
 };
 
 export class ClassicMusic {

@@ -6,9 +6,13 @@ import { T, isTerrain } from './materials.js';
 import { makeRng } from './math.js';
 import { skyscraper, twinTowers, lowrise, carPark, fountain, trafficLight, busStop, hydrant } from './citykit.js';
 import { LOTS as LOTS1, PAVED, WATER } from './landmarks.js';
-import { LOTS2, GROUND, PAVED2, BIG, pine, egg } from './landmarks2.js';
+import { LOTS2, GROUND, PAVED2, BIG as BIG2, pine, egg } from './landmarks2.js';
+import { LOTS3, BIG3, jungle, palm, brazier } from './landmarks3.js';
+import { fortressPlan, fortressHeight, fortressGround, buildFortress } from './fortress.js';
+import { linkUp } from './links.js';
 
-const LOTS = { ...LOTS1, ...LOTS2 };
+const LOTS = { ...LOTS1, ...LOTS2, ...LOTS3 };
+const BIG = { ...BIG2, ...BIG3 };
 
 class Gen {
   constructor(world, seed, u) {
@@ -30,6 +34,8 @@ class Gen {
     const st = this.w.addStructure(kind, icon, o.counted ?? true, o.grabbable ?? false);
     st.major = o.major ?? false;
     this.cur = st.id;
+    this.st = st;
+    st.bx0 = st.bz0 = st.by0 = 1e9; st.bx1 = st.bz1 = st.btop = -1e9; // its extent while it is built (links.js needs it before finalize)
     this.major = st.major;
     return st;
   }
@@ -39,6 +45,8 @@ class Gen {
     const w = this.w;
     w.set(x, y, z, t);
     if (!this.cur || !t || isTerrain(t)) return;
+    const st = this.st;
+    if (x < st.bx0) st.bx0 = x; if (x > st.bx1) st.bx1 = x; if (z < st.bz0) st.bz0 = z; if (z > st.bz1) st.bz1 = z; if (y < st.by0) st.by0 = y; if (y > st.btop) st.btop = y;
     if (w.wrap) { x &= w.mx; z &= w.mz; } else if (x < 0 || z < 0 || x >= w.sx || z >= w.sz) return;
     const i = x + w.sx * z;
     // The first structure owns a column; buildings take columns over from props.
@@ -409,131 +417,6 @@ function blockRoom(seed) {
   return w;
 }
 
-// Garden features, each drawn into a cell of about 50 x 50 voxels with its corner at (x, z).
-const GARDEN = {
-  shed(g, x, z, G) {
-    g.begin('shed', '🛖', { major: true });
-    house(g, x + 12, G, z + 14, 22, 16, 1, { wall: g.pick([T.WOOD, T.WOOD_DARK, T.WOOD_LIGHT]), roof: T.ROOF_BROWN });
-    g.box(x + 14, G + 1, z + 16, 4, 5, 3, T.WOOD_DARK); g.box(x + 26, G + 1, z + 16, 3, 4, 3, T.STEEL_RED);
-    g.end();
-  },
-  greenhouse(g, x, z, G) {
-    const gx = x + 8, gz = z + 14, gw = 30, gd = 20, gh = 10;
-    g.begin('greenhouse', '🪴', { major: true });
-    g.shell(gx, G, gz, gw, gh, gd, T.GLASS);
-    for (let i = 0; i < gw; i += 5) { g.box(gx + i, G, gz, 1, gh, 1, T.WOOD_WHITE); g.box(gx + i, G, gz + gd - 1, 1, gh, 1, T.WOOD_WHITE); }
-    g.box(gx + gw - 1, G, gz, 1, gh, 1, T.WOOD_WHITE); g.box(gx + gw - 1, G, gz + gd - 1, 1, gh, 1, T.WOOD_WHITE);
-    for (let k = 0; k < gd >> 1; k++) {
-      g.box(gx, G + gh + k, gz + k, gw, 1, 2, T.GLASS); g.box(gx, G + gh + k, gz + gd - 2 - k, gw, 1, 2, T.GLASS);
-      g.set(gx, G + gh + k, gz + k + 2, T.WOOD_WHITE);
-    }
-    for (let i = 3; i < gw - 4; i += 6) { g.box(gx + i, G, gz + 4, 3, 2, 3, T.ROOF_BROWN); g.ball(gx + i + 1, G + 4, gz + 5, 2, [T.LEAF_LIGHT, T.FLOWER_RED]); }
-    g.end();
-  },
-  swing(g, x, z, G) {
-    g.begin('swing', '🎠', { major: true });
-    for (const a of [12, 36]) { g.box(x + a, G, z + 20, 1, 12, 1, T.STEEL_RED); g.box(x + a, G, z + 28, 1, 12, 1, T.STEEL_RED); g.box(x + a, G + 12, z + 20, 1, 1, 9, T.STEEL_RED); }
-    g.box(x + 12, G + 13, z + 24, 25, 1, 1, T.STEEL_RED);
-    for (const a of [19, 28]) { g.box(x + a, G + 4, z + 24, 1, 9, 1, T.STEEL_DARK); g.box(x + a + 3, G + 4, z + 24, 1, 9, 1, T.STEEL_DARK); g.box(x + a, G + 3, z + 23, 4, 1, 3, T.WOOD_LIGHT); }
-    g.end();
-  },
-  table(g, x, z, G) {
-    g.begin('table', '🪑', { major: true });
-    g.box(x + 18, G + 3, z + 22, 12, 1, 7, T.WOOD_LIGHT);
-    for (const [a, b] of [[0, 0], [11, 0], [0, 6], [11, 6]]) g.box(x + 18 + a, G, z + 22 + b, 1, 3, 1, T.WOOD_DARK);
-    for (const [a, b] of [[2, -4], [7, -4], [2, 8], [7, 8]]) { g.box(x + 18 + a, G, z + 22 + b, 3, 2, 3, T.WOOD_WHITE); g.box(x + 18 + a, G + 2, z + 22 + b + (b < 0 ? 0 : 2), 3, 3, 1, T.WOOD_WHITE); }
-    g.end();
-  },
-  grill(g, x, z, G) {
-    g.begin('grill', '🍖', { major: true });
-    for (const [a, b] of [[0, 0], [4, 0], [0, 3], [4, 3]]) g.box(x + 20 + a, G, z + 24 + b, 1, 4, 1, T.STEEL_DARK);
-    g.box(x + 19, G + 4, z + 23, 7, 2, 6, T.STEEL_DARK);
-    g.cyl(x + 30, z + 26, 1, G, 5, T.GAS);
-    g.end();
-  },
-  hedge(g, x, z, G) {
-    g.begin('hedge', '🌿', { major: true });
-    g.box(x + 4, G, z + 22, 44, 7, 5, T.LEAF_DARK); g.box(x + 4, G + 7, z + 22, 44, 1, 5, T.LEAF);
-    if (g.chance(0.5)) { g.box(x + 4, G, z + 4, 5, 7, 18, T.LEAF_DARK); g.box(x + 4, G + 7, z + 4, 5, 1, 18, T.LEAF); }
-    g.end();
-  },
-  flowers(g, x, z, G) {
-    g.begin('flowers', '🌷', { major: true });
-    for (let i = 0; i < 46; i++) {
-      const fx = x + g.int(6, 44), fz = z + g.int(6, 44);
-      g.set(fx, G, fz, T.LEAF); g.set(fx, G + 1, fz, g.pick([T.FLOWER_RED, T.FLOWER_YELLOW, T.FLOWER_WHITE]));
-    }
-    g.end();
-  },
-  trees(g, x, z, G) {
-    for (let i = 0; i < g.int(2, 3); i++) tree(g, x + 8 + i * 16 + g.int(0, 5), G, z + g.int(8, 40), 0.9 + g.rnd() * 0.6);
-  },
-  gnomes(g, x, z, G) {
-    for (let i = 0; i < 3; i++) {
-      const gx = x + 10 + i * 12, gz = z + g.int(12, 36);
-      g.begin('gnome', '🧙', { grabbable: true });
-      g.box(gx, G, gz, 2, 2, 2, T.FABRIC_BLUE); g.box(gx, G + 2, gz, 2, 1, 2, T.TILE_WHITE); g.box(gx, G + 3, gz, 2, 2, 2, T.TOY_RED);
-      g.end();
-    }
-    tree(g, x + 40, G, z + 40, 0.8);
-  },
-};
-
-function garden(seed) {
-  const S = 384, w = new World(S, 96, S, false), g = new Gen(w, seed, 4), G = 8;
-  ground(g, S, S, G, (x, z) => (((x * 7 + z * 13) ^ (x * z)) & 7) < 2 ? T.GRASS2 : T.GRASS);
-  g.begin('fence', '🚧', { major: true });
-  fence(g, 12, G, 12, S - 24, true); fence(g, 12, G, S - 13, S - 24, true);
-  fence(g, 12, G, 12, S - 24, false); fence(g, S - 13, G, 12, S - 24, false);
-  g.end();
-  const deck = ['shed', 'shed', 'shed', 'greenhouse', 'greenhouse', 'greenhouse', 'swing', 'swing', 'table', 'table', 'table', 'grill', 'grill', 'hedge', 'hedge', 'hedge', 'hedge',
-    'flowers', 'flowers', 'flowers', 'flowers', 'trees', 'trees', 'trees', 'trees', 'trees', 'trees', 'trees', 'trees', 'gnomes', 'gnomes', 'gnomes', 'trees', 'trees', 'flowers', 'hedge'];
-  dealGrid(g, deck, 6, 6, 24, 20, 56, (kind, x, z) => GARDEN[kind](g, x, z, G));
-  w.spawn = [S / 2, G, S - 22];
-  w.heading = Math.PI;
-  return w;
-}
-
-// A residential street: detailed houses with rooms and furniture, garages, cars, gardens.
-function houseWorld(seed) {
-  const S = 384, w = new World(S, 128, S, false), g = new Gen(w, seed, 4), G = 8;
-  ground(g, S, S, G, (x, z) => {
-    if (z > 296 && z < 320) return z === 308 && (x >> 2) & 1 ? T.ROADLINE : T.ROAD;
-    if (z >= 292 && z <= 324) return T.SIDEWALK;
-    return (((x * 5 + z * 11) ^ (x * z)) & 7) < 2 ? T.GRASS2 : T.GRASS;
-  });
-  const plot = (x, z, floors, withGarage) => {
-    g.begin('house', '🏠', { major: true });
-    house(g, x, G, z, g.int(42, 50), g.int(32, 40), floors, { interior: true });
-    g.end();
-    if (withGarage) {
-      g.begin('garage', '🏚️', { major: true });
-      house(g, x + 56, G, z + 6, 26, 30, 1, { flat: true, wall: T.PLASTER_WHITE });
-      g.box(x + 61, G + 1, z + 35, 16, 9, 1, T.SHEET_GREY);
-      g.end();
-      car(g, x + 65, G, z + 44, false);
-    }
-    tree(g, x - 8, G, z + g.int(0, 30), 1 + g.rnd() * 0.5);
-    g.begin('mailbox', '📮', { major: true });
-    g.box(x + 20, G, z + 62, 1, 4, 1, T.WOOD_DARK); g.box(x + 19, G + 4, z + 61, 3, 2, 3, T.STEEL_YELLOW);
-    g.end();
-  };
-  for (let i = 0; i < 4; i++) plot(22 + i * 92, 196 + g.int(0, 10), i % 2 ? 2 : g.int(1, 3), i !== 3);
-  for (let i = 0; i < 3; i++) plot(60 + i * 100, 60 + g.int(0, 14), g.int(1, 2), i === 1);
-  g.begin('fence', '🚧', { major: true });
-  fence(g, 10, G, 12, S - 20, true); fence(g, 10, G, 12, 276, false); fence(g, S - 11, G, 12, 276, false);
-  for (let i = 0; i < 4; i++) fence(g, 12 + i * 92, G, 288, 60, true);
-  g.end();
-  for (let i = 0; i < 4; i++) car(g, 30 + i * 88 + g.int(0, 20), G, i % 2 ? 300 : 311, true, i === 2);
-  g.begin('lamp', '💡', { major: true });
-  for (let x = 40; x < S; x += 76) lamp(g, x, G, 294);
-  g.end();
-  for (let i = 0; i < 10; i++) tree(g, g.int(20, S - 24), G, g.pick([g.int(130, 170), g.int(336, 366), g.int(16, 40)]), 0.9 + g.rnd() * 0.6);
-  w.spawn = [S / 2, G, 344];
-  w.heading = Math.PI;
-  return w;
-}
-
 // Seamless town on a wrapping world. p: size, sy, weights per lot type, unique lots, height, cars, hills, green, people.
 // p.metro switches on the big-city street scene: avenues with trees, paved lots, a central park, traffic lights.
 function town(seed, p) {
@@ -543,7 +426,8 @@ function town(seed, p) {
   // Every fourth street of a metropolis is an avenue: twice as wide, with a planted median.
   const roadW = (i) => (metro && i % 4 === 0 ? 16 : 8);
   // The central park takes a square of lots in the middle of the map; the streets inside it disappear.
-  const pk = metro ? (n >= 16 ? 4 : 2) : 0, pk0 = (n - pk) >> 1;
+  // A world can start at a crossing of two avenues instead (p.start: the neon megacity).
+  const pk = metro && p.start !== 'crossing' ? (n >= 16 ? 4 : 2) : 0, pk0 = (n - pk) >> 1;
   const inPark = (i, j) => pk > 0 && i >= pk0 && i < pk0 + pk && j >= pk0 && j < pk0 + pk;
   const lots = [];
   for (let i = 0; i < n * n; i++) lots.push({ type: 'park', hill: 0 });
@@ -556,7 +440,7 @@ function town(seed, p) {
     // `wide` plots are the open spaces of a world: there is exactly one of each.
     const def = BIG[type], bw = typeof def.w === 'function' ? def.w(n) : def.w, bh = typeof def.h === 'function' ? def.h(n) : def.h;
     for (let c = def.wide ? 1 : Math.max(1, Math.round((count * n * n) / 64)), tries = 0; c > 0 && tries < 80; tries++) {
-      const i0 = g.int(0, n - bw), j0 = g.int(0, n - bh);
+      const [i0, j0] = def.place ? def.place(n, g) : [g.int(0, n - bw), g.int(0, n - bh)]; // some plots may have a place of their own
       let free = i0 + j0 > 0 || def.wide; // ordinary landmarks keep off the starting corner
       for (let j = j0; j < j0 + bh && free; j++) for (let i = i0; i < i0 + bw; i++) if (blockMap[i + n * j] >= 0 || inPark(i, j)) free = false;
       if (!free) continue;
@@ -564,6 +448,12 @@ function town(seed, p) {
       blocks.push({ type, def, i0, j0, w: bw, h: bh, x0: i0 * P + roadW(i0) + 2, z0: j0 * P + roadW(j0) + 2, W: bw * P - roadW(i0) - 4, D: bh * P - roadW(j0) - 4 });
       c--;
     }
+  }
+  // The starting crossing: two avenues (every fourth street) near the middle, with ordinary lots on all four corners.
+  let cross = null;
+  if (p.start === 'crossing') for (let k = 0, c = (n >> 3) * 4; k < n && !cross; k++, c = (c + 4) % n) {
+    const ok = [[c - 1, c - 1], [c, c - 1], [c - 1, c], [c, c]].every(([i, j]) => blockOf((i + n) % n, (j + n) % n) < 0);
+    if (ok) cross = c;
   }
   const order = lots.map((_, i) => i).filter((i) => !inPark(i % n, Math.floor(i / n)) && blockMap[i] < 0).sort(() => g.rnd() - 0.5);
   // Districts: the town is divided into neighbourhoods around a few centres, and each neighbourhood favours
@@ -590,18 +480,23 @@ function town(seed, p) {
     for (const [type, wt] of Object.entries(p.weights)) { r -= wt * (zone ? zone[type] ?? 1 : 1); if (r <= 0) { lots[li].type = type; break; } }
   });
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) if (inPark(i, j)) lots[i + n * j].type = 'cpark';
+  if (cross !== null) for (const [i, j] of [[cross - 1, cross - 1], [cross, cross - 1], [cross - 1, cross], [cross, cross]]) lots[((i + n) % n) + n * ((j + n) % n)].type = p.weights.neontower ? 'neontower' : 'tower'; // towers on all four corners
   if (!metro && (lots[0].type === 'tower' || lots[0].type === 'factory' || LOTS[lots[0].type])) lots[0].type = 'park'; // keep the view open at the start
   for (const l of lots) if (l.type === 'park' || l.type === 'forest') l.hill = Math.min(22, Math.round(p.hills * g.m(8) * (0.4 + g.rnd()) * (l.type === 'forest' ? 1.5 : 1))); // capped so slopes stay walkable
 
   // Terrain: flat streets, optional hills inside park lots.
   const height = (x, z) => {
+    if (p.terrain) return p.terrain(x, z, G, n); // a world with its own landscape
     const l = lots[(x >> 6) + n * (z >> 6)];
     if (!l.hill) return G;
     const dx = (x & 63) - 36, dz = (z & 63) - 36, d = Math.hypot(dx, dz) / 24;
     return d >= 1 ? G : G + Math.round(l.hill * Math.cos((d * Math.PI) / 2) ** 2);
   };
   // The world's ordinary soil: lawn, snow or the bottom of the sea.
-  const SOIL = { snow: [T.SNOW, T.SNOW2], seabed: [T.SEABED, T.SEABED2] }[p.soil] ?? [T.GRASS, T.GRASS2];
+  const SOIL = { snow: [T.SNOW, T.SNOW2], seabed: [T.SEABED, T.SEABED2], sand: [T.SAND, T.SEABED2], sea: [T.SEA, T.SEA], jungle: [T.MOSS, T.MUD] }[p.soil] ?? [T.GRASS, T.GRASS2];
+  // Streets of another age (p.streets): flagstones instead of asphalt, no markings, no kerbs of concrete.
+  const STREET = p.streets === 'flagstone' ? { [T.ROAD]: T.FLAGSTONE, [T.ROADLINE]: T.FLAGSTONE, [T.SIDEWALK]: T.FLAGSTONE2, [T.PAVE]: T.FLAGSTONE, [T.PAVE2]: T.FLAGSTONE2, [T.PAVE_RED]: T.FLAGSTONE2 }
+    : p.streets === 'dirt' ? { [T.ROAD]: T.DIRT, [T.ROADLINE]: T.DIRT, [T.SIDEWALK]: T.GRASS2, [T.PAVE_RED]: T.PAVE2 } : null; // the dirt tracks of the middle ages
   // The water of a harbour basin: a rectangle inside its plot whose sides are multiples of 16 (the size of the water tiles).
   const BASIN_DEPTH = 10;
   const basinRect = (bk) => {
@@ -609,8 +504,11 @@ function town(seed, p) {
     return [x0, z0, x0 + bw, z0 + bd];
   };
   const grass = (x, z) => ((((x * 7 + z * 13) ^ (x * z)) & 7) < 2 ? SOIL[1] : SOIL[0]);
-  const plant = p.soil === 'snow' ? pine : p.soil === 'seabed' ? () => null : tree; // no trees on the sea bed
+  const plant = p.flora === 'jungle' ? jungle : p.flora === 'palms' ? palm : p.soil === 'snow' ? pine : p.soil === 'seabed' ? () => null : tree; // no trees on the sea bed
   if (p.sky) w.sky = p.sky;
+  w.folk = p.folk ?? null; w.fauna = p.fauna ?? null; // people of another age, animals among them (actors.js)
+  w.era = p.era ?? null; // 'medieval': knights instead of the police, no traffic, nothing in the air
+  w.night = !!p.night; // lit only by neon and windows (renderer.js)
   w.quiet = !!p.quiet; // no emergency services, no road traffic (e.g. under water)
   w.under = p.soil === 'seabed';
   if (w.under) w.grav = 0.3;
@@ -625,7 +523,8 @@ function town(seed, p) {
       const kind = blocks[bi].def.ground, bk = blocks[bi];
       if (kind === 'basin') {
         const r = basinRect(bk);
-        if (x >= r[0] && x < r[2] && z >= r[1] && z < r[3]) { floor = G - BASIN_DEPTH; top = ((x >> 2) + (z >> 2)) & 1 ? T.SEABED : T.SEABED2; } else top = T.PAVE2;
+        const bed = bk.def.bed ?? [T.SEABED, T.SEABED2]; // a harbour basin has a sandy bed and a paved quay; a swamp has mud and moss
+        if (x >= r[0] && x < r[2] && z >= r[1] && z < r[3]) { floor = G - BASIN_DEPTH; top = ((x >> 2) + (z >> 2)) & 1 ? bed[0] : bed[1]; } else top = bk.def.rim === 'soil' ? grass(x, z) : T.PAVE2;
       } else if (kind === 'airfield') {
         // An airfield: a runway 22 m wide down the middle with centre line, edge lines and threshold bars,
         // a strip of grass on either side, and aprons along the edges.
@@ -637,7 +536,8 @@ function town(seed, p) {
       // Lawn with a round plaza in the middle and paths leading out to the four sides.
       const dx = Math.abs(x - pcx), dz = Math.abs(z - pcz), r = Math.hypot(dx, dz);
       top = r < 18 ? ((x >> 1) + (z >> 1)) & 1 ? T.PAVE : T.PAVE2 : dx < 3 || dz < 3 || Math.abs(r - pk * 26) < 2 ? T.PAVE_RED : grass(x, z);
-    } else if (lx < rwx || lz < rwz) {
+    } else if (p.noRoads) top = grass(x, z); // a world without streets (the cloud shipyard: open sea)
+    else if (lx < rwx || lz < rwz) {
       top = T.ROAD;
       const ax = lx < rwx && lz >= rwz, az = lz < rwz && lx >= rwx; // on the street running along z / along x
       if (ax || az) {
@@ -652,6 +552,7 @@ function town(seed, p) {
     else if (GROUND[l.type] === 'asphalt') top = (lz === 34 && (lx >> 2) & 1) || ((lz === 12 || lz === 56) && lx > 12 && lx < 60) ? T.ROADLINE : T.ROAD; // apron and runway markings
     else if (GROUND[l.type] === 'ice') top = T.ICE;
     else top = WATER.has(l.type) ? T.SEA : (metro && !green.has(l.type)) || PAVED.has(l.type) || PAVED2.has(l.type) ? (((x >> 2) + (z >> 2)) & 1 ? T.PAVE : T.PAVE2) : grass(x, z);
+    if (STREET) top = STREET[top] ?? top;
     w.set(x, 0, z, T.BEDROCK);
     for (let y = 1; y < floor - 1; y++) w.set(x, y, z, T.DIRT);
     w.set(x, floor - 1, z, top);
@@ -660,7 +561,7 @@ function town(seed, p) {
   const hf = p.height;
   const kit = { tree: plant, tank, silo, hall, house };
   // A car placed while another structure is being built must not end that structure.
-  const parkCar = (x, y, z) => { const cur = g.cur, major = g.major; car(g, x, y, z, true); g.cur = cur; g.major = major; };
+  const parkCar = (x, y, z) => { const cur = g.cur, major = g.major, st = g.st; car(g, x, y, z, true); g.cur = cur; g.major = major; g.st = st; };
   const towerFloors = () => {
     // Mostly mid-rise with a few giants: the random share is raised to a power, so tall towers are rare.
     const share = g.rnd() ** (p.skew ?? 1);
@@ -776,16 +677,8 @@ function town(seed, p) {
         for (let f = 0; f < 3; f++) { g.shell(x0 + 22, G + 1 + f * 6, z0 + 8, 18, 5, 28, f < 2 ? T.CONCRETE : T.STEEL); g.box(x0 + 22, G + 6 + f * 6, z0 + 8, 18, 1, 28, T.CONCRETE); }
         g.end();
         break;
-      case 'toys': // giant toy blocks, four stacks per lot
-        for (const [a, b] of [[2, 2], [28, 2], [2, 28], [28, 28]]) {
-          const nx = g.int(2, 5), nz = g.int(2, 5), lv = Math.max(2, Math.round(g.int(3, 16) * (0.5 + hf)));
-          g.begin('toy', lv > 12 ? '🗼' : '🧱', { major: true });
-          toyTower(g, x0 + a, G, z0 + b, nx, nz, Math.min(lv, 24), 4);
-          g.end();
-        }
-        break;
       default: { // special lots (landmarks.js), or else park and forest
-        if (LOTS[l.type]) { LOTS[l.type](g, x0, G, z0, L, kit, H); g.end(); break; }
+        if (LOTS[l.type]) { LOTS[l.type](g, x0, height(x0 + (L >> 1), z0 + (L >> 1)), z0, L, kit, H); g.end(); break; }
         const count = l.type === 'forest' ? g.int(12, 18) : Math.round(2 + p.green * 8 * g.rnd());
         // Trees keep their distance: crowns that grow into each other would hold each other up when one trunk is cut.
         const stand = [];
@@ -798,9 +691,16 @@ function town(seed, p) {
         }
       }
     }
-    if (l.type === 'cpark') continue;
+    if (l.type === 'cpark' || p.noRoads || p.terrain) continue; // no streets, or streets over cliffs: no lamps and parked cars
     // Street furniture and parked cars along the road.
     const bx = lx * P, bz = lz * P;
+    if (p.streets === 'dirt') continue; // the middle ages: nothing along the tracks
+    if (STREET) { // Babel: fire bowls instead of lamps; no hydrants, no cars
+      g.begin('lamp', '🔥', {});
+      brazier(g, bx + rwx, G, bz + rwz + 20); brazier(g, bx + rwx + 30, G, bz + rwz);
+      g.end();
+      continue;
+    }
     g.begin('lamp', '💡', {});
     lamp(g, bx + rwx, G, bz + rwz + 20);
     lamp(g, bx + rwx + 30, G, bz + rwz);
@@ -832,8 +732,11 @@ function town(seed, p) {
     g.end();
     w.spawn = [pcx, G, pcz];
     w.heading = 0;
+  } else if (cross !== null) {
+    w.spawn = [cross * P + 8, G, cross * P + 8]; // on the median, in the middle of the crossing, looking down the avenue
+    w.heading = 0;
   } else {
-    w.spawn = [4, G, 4];
+    w.spawn = [4, height(4, 4), 4];
     w.heading = Math.PI / 4;
   }
   // The big plots.
@@ -842,13 +745,16 @@ function town(seed, p) {
     if (bk.def.ground === 'basin') {
       const r = basinRect(bk);
       (w.water ??= { level: G - 2, rects: [] }).rects.push(r);
+      if (bk.def.tint) w.water.tint = bk.def.tint; // the colour of the water, if not clear blue
       bk.def.build(g, r[0], G - BASIN_DEPTH, r[1], r[2] - r[0], r[3] - r[1], kit, H);
-    } else bk.def.build(g, bx, G, bz, bw, bd, kit, H);
+    } else bk.def.build(g, bx, height(bx + (bw >> 1), bz + (bd >> 1)), bz, bw, bd, kit, H);
     g.end();
   }
+  // Superstructures that tie the buildings together: railways, sky bridges, lianas, rope bridges ... (links.js).
+  if (p.links) linkUp(g, p.links, G);
   w.people = Math.round(n * n * 4 * (p.people ?? 0.5));
   // The street map, for everything that drives (traffic.js): one street along every lot border, except inside the park.
-  w.roads = { pitch: P, n, width: roadW, cars: p.cars ?? 0.5,
+  w.roads = p.noRoads ? null : { pitch: P, n, width: roadW, cars: p.cars ?? 0.5,
     closed: (alongX, line, cell) => {
       const a = alongX ? [cell, line, cell, line - 1] : [line, cell, line - 1, cell], b = blockOf(a[0], a[1]);
       return (inPark(a[0], a[1]) && inPark(a[2], a[3])) || (b >= 0 && b === blockOf(a[2], a[3]));
@@ -856,30 +762,62 @@ function town(seed, p) {
   return w;
 }
 
+// Fortress Titan (fortress.js): a desert with a walled fortress in the middle. The creature starts on the plain
+// in front of the gate; there is no police and no traffic, but every gun on the walls fires at it.
+function fortressWorld(seed, q) {
+  const S = q.planet, H = 256, w = new World(S, H, S, true), g = new Gen(w, seed, 2), G = 12, f = fortressPlan(S);
+  f.height = (x, z) => fortressHeight(f, x, z, G);
+  f.spawnZ = f.c + f.A + Math.round((S / 2 - f.A) * 0.62);
+  for (let z = 0; z < S; z++) for (let x = 0; x < S; x++) {
+    const h = f.height(x, z);
+    w.set(x, 0, z, T.BEDROCK);
+    for (let y = 1; y < h - 1; y++) w.set(x, y, z, T.DIRT);
+    w.set(x, h - 1, z, fortressGround(f, x, z));
+  }
+  buildFortress(g, f, G, H, { tank, silo, hall, house, tree });
+  linkUp(g, [{ style: 'catwalk', kinds: ['flak', 'tower', 'command', 'radar', 'gate'], limit: 30, extra: 0.3 }], G); // catwalks between the towers
+  w.sky = [[0.5, 0.66, 0.9], [0.98, 0.88, 0.7]];
+  w.quiet = true; // no police, no fire brigade, no traffic: the fortress defends itself
+  w.folk = 'soldiers';
+  w.people = Math.round((S / 64) ** 2 * 1.5);
+  w.roads = null;
+  w.spawn = [f.c, f.height(f.c, f.spawnZ), f.spawnZ];
+  w.heading = Math.PI; // facing the gate
+  return w;
+}
+
 // World list --------------------------------------------------------------------
 
 // stage: the monster stage a world is built for (shown on its tile). `unique` counts are per 8 x 8 lots.
 export const WORLDS = [
-  // The skyscraper city is the main scenario and the first tile.
-  { id: 'skyline', icon: '🌆', stage: 1, make: (seed, q) => town(seed, { districts: [{ tower: 3, twin: 3, lowrise: 0.15, apartment: 0.1, garage: 0.4, square: 0.6 }, { tower: 0.5, twin: 0, lowrise: 3, apartment: 3, garage: 2.5, square: 2.5 }, { tower: 1.2, twin: 1, lowrise: 1, apartment: 0.6, garage: 1, square: 1 }], big: { stadium: 0.5 }, size: q.tall, sy: 512, skew: 1.8, metro: true, weights: { tower: 10, lowrise: 2.4, apartment: 0.8, garage: 0.7, square: 0.8, twin: 0.22 }, unique: { crane: 2, gas: 1, church: 1 }, height: 1, cars: 0.8, hills: 0, green: 0.4, people: 1 }) },
-  { id: 'blocks', icon: '🧱', stage: 1, make: (seed) => blockRoom(seed) },
-  { id: 'garden', icon: '🌷', stage: 2, make: (seed) => garden(seed) },
-  { id: 'house', icon: '🏠', stage: 3, make: (seed) => houseWorld(seed) },
-  { id: 'toyland', icon: '🧸', stage: 4, make: (seed, q) => town(seed, { big: { meadow: 1 }, size: q.planet, weights: { toys: 8, park: 1.5, parking: 0.5 }, unique: { water: 1 }, height: 0.6, cars: 0.6, hills: 0.5, green: 0.6, people: 0.4 }) },
-  { id: 'village', icon: '🏘️', stage: 5, make: (seed, q) => town(seed, { big: { meadow: 1 }, districts: [{ houses: 3, apartment: 2, parking: 2, park: 0.3 }, { houses: 0.4, park: 3, apartment: 0.1 }], size: q.planet, weights: { houses: 6, park: 3, apartment: 0.6, parking: 0.5 }, unique: { church: 1, gas: 1, water: 1 }, height: 0.4, cars: 0.5, hills: 0.7, green: 0.8, people: 0.6 }) },
-  { id: 'park', icon: '🌳', stage: 5, make: (seed, q) => town(seed, { big: { meadow: 1 }, size: q.planet, weights: { forest: 5, park: 4, houses: 1 }, unique: { church: 1, water: 1 }, height: 0.3, cars: 0.2, hills: 1.5, green: 1, people: 0.5 }) },
-  { id: 'funfair', icon: '🎡', stage: 4, make: (seed, q) => town(seed, { big: { meadow: 1, megacoaster: 1.5, bigwheel: 0.5 }, size: q.planet, weights: { wheel: 1.2, coaster: 1.6, carousel: 1.6, tent: 1.6, stalls: 2.6, drop: 0.9, park: 1.6, parking: 0.8 }, unique: { water: 1 }, height: 0.5, cars: 0.5, hills: 0.2, green: 0.7, people: 1.2 }) },
-  { id: 'city', icon: '🏙️', stage: 6, make: (seed, q) => town(seed, { districts: [{ tower: 3.5, apartment: 0.4, lowrise: 0.6, houses: 0, park: 0.3, parking: 0.6 }, { tower: 0.1, apartment: 3, lowrise: 2.5, houses: 0.6, garage: 2 }, { tower: 0, apartment: 0.5, lowrise: 0.6, houses: 6, park: 3, square: 2 }], big: { stadium: 0.5 }, size: q.planet, sy: 256, skew: 1.6, metro: true, weights: { tower: 5, apartment: 2.5, lowrise: 2, park: 1, parking: 0.6, houses: 0.4, square: 0.5, garage: 0.5 }, unique: { church: 1, gas: 1, crane: 1 }, height: 1, cars: 0.8, hills: 0.2, green: 0.5, people: 1 }) },
-  { id: 'factory', icon: '🏭', stage: 8, make: (seed, q) => town(seed, { big: { plaza: 1 }, size: q.planet, weights: { factory: 6, parking: 1, tower: 0.7, park: 0.6, apartment: 0.5 }, unique: { gas: 2, water: 2, crane: 2 }, height: 0.8, cars: 0.5, hills: 0.1, green: 0.3, people: 0.4 }) },
-  { id: 'castle', icon: '🏰', stage: 5, make: (seed, q) => town(seed, { big: { meadow: 1, bigcastle: 1 }, size: q.planet, weights: { keep: 1.6, houses: 4, farm: 2, windmill: 1.2, forest: 2, park: 2, square: 0.5 }, unique: { church: 2 }, height: 0.4, cars: 0.05, hills: 1, green: 0.9, people: 0.8 }) },
-  { id: 'winter', icon: '⛄', stage: 5, make: (seed, q) => town(seed, { big: { lake: 1, bigsnowman: 0.5 }, size: q.planet, soil: 'snow', sky: [[0.62, 0.74, 0.9], [0.93, 0.96, 1]], weights: { skijump: 1, chalet: 3.5, snowman: 1.3, icerink: 1, igloos: 1.2, forest: 3, park: 2 }, unique: { church: 1 }, height: 0.4, cars: 0.3, hills: 1.4, green: 0.8, people: 0.7 }) },
-  { id: 'airport', icon: '🛫', stage: 6, make: (seed, q) => town(seed, { big: { airfield: 1, jumbo: 1.5, bigterminal: 0.5 }, size: q.planet, weights: { airliner: 3, runway: 3, terminal: 1.5, atc: 0.6, hangar: 1.5, tanks: 0.6, warehouse: 0.8, parking: 1.2, park: 0.6 }, unique: { gas: 1 }, height: 0.5, cars: 0.7, hills: 0, green: 0.3, people: 0.8 }) },
-  { id: 'harbour', icon: '⚓', stage: 7, make: (seed, q) => town(seed, { big: { sea: 1 }, size: q.planet, weights: { containers: 4, gantry: 1.3, tanks: 1.4, ship: 1.6, warehouse: 2, silos: 0.8, parking: 0.6 }, unique: { crane: 2, gas: 1, water: 1 }, height: 0.6, cars: 0.6, hills: 0, green: 0.2, people: 0.4 }) },
+  // The home turfs of the five creatures come first (landmarks3.js): a creature starts in its own unless the player picks
+  // another world. `seed` keeps every world as it was when the list was reordered or shortened.
+  // The primeval forest has no streets, no cars and no police: a tribe living in the trees, small dinosaurs, flying reptiles.
+  { id: 'primeval', seed: 17, icon: '🦕', home: 'dino', stage: 6, make: (seed, q) => town(seed, { links: [{ style: 'vine', kinds: ['tree', 'mammoth'], count: 0.7, limit: 90, extra: 0.35 }, { style: 'rope', kinds: ['mammoth'], limit: 40, extra: 0.4 }], big: { treevillage: 1, volcano: 0.5, swamp: 0.5 }, size: q.planet, sy: 288, soil: 'jungle', flora: 'jungle', folk: 'tribe', fauna: 'dinos', noRoads: true, quiet: true, sky: [[0.5, 0.68, 0.6], [0.86, 0.9, 0.78]], weights: { mammoth: 3, fossil: 1.3, forest: 3, fernery: 1.6, nest: 0.9, henge: 0.7, park: 1 }, unique: {}, height: 0.5, cars: 0, hills: 1.2, green: 1, people: 0.45 }) },
+  // Babel: flagstone streets with fire bowls, mud-brick houses, a bazaar; people in robes, no cars and no police.
+  { id: 'babel', seed: 18, icon: '🏛️', home: 'gorilla', stage: 7, make: (seed, q) => town(seed, { links: [{ style: 'arch', kinds: ['ziggurat', 'babel', 'gardens', 'aqueduct', 'gate'], limit: 45, extra: 0.3 }], big: { babel: 0.5 }, size: q.planet, sy: 320, soil: 'sand', flora: 'palms', folk: 'robes', streets: 'flagstone', quiet: true, sky: [[0.5, 0.68, 0.95], [0.98, 0.9, 0.74]], weights: { ziggurat: 3, aqueduct: 1.2, gardens: 1.6, adobe: 3.2, bazaar: 1.2, obelisks: 0.8, park: 0.7 }, unique: { gate: 1, well: 1 }, height: 0.4, cars: 0, hills: 0.3, green: 0.6, people: 0.7 }) },
+  { id: 'neon', seed: 19, icon: '🌃', home: 'robot', stage: 8, make: (seed, q) => town(seed, { links: [{ style: 'skybridge', kinds: ['tower', 'arcology'], neon: true, count: 0.8, limit: 70, extra: 0.4 }, { style: 'highway', kinds: ['tower', 'arcology', 'highway'], neon: true, count: 0.6, limit: 28 }], big: { highway: 1, arcology: 0.5 }, size: q.planet, sy: 352, skew: 1.2, metro: true, night: true, start: 'crossing', sky: [[0.02, 0.01, 0.06], [0.16, 0.05, 0.24]], weights: { neontower: 8, twin: 0.6, lowrise: 1.6, garage: 1, square: 0.4, apartment: 0.5 }, unique: { crane: 1 }, height: 1, cars: 0.8, hills: 0, green: 0.2, people: 0.7 }) },
+  { id: 'fortress', seed: 20, icon: '🏰', home: 'tank', stage: 7, make: (seed, q) => fortressWorld(seed, q) },
+  { id: 'skyyard', seed: 21, icon: '☁️', home: 'jet', stage: 6, make: (seed, q) => town(seed, { links: [{ style: 'rope', kinds: ['island', 'spire'], at: [0.9, 1], minH: 30, limit: 50, extra: 0.3 }, { style: 'cable', kinds: ['island', 'spire', 'mast'], limit: 16, icon: '🚡' }], big: { skyharbor: 1 }, size: q.planet, sy: 256, soil: 'sea', noRoads: true, quiet: true, sky: [[0.35, 0.6, 0.97], [0.86, 0.93, 1]], weights: { island: 3.5, spire: 1, zeppelin: 1.2, park: 2.5 }, unique: {}, height: 0.6, cars: 0, hills: 0, green: 0.5, people: 0 }) },
+  { id: 'skyline', seed: 0, icon: '🌆', stage: 1, make: (seed, q) => town(seed, { links: [{ style: 'rail', kinds: ['tower', 'apartment', 'shops', 'carpark'], count: 0.6, top: 46, limit: 45 }, { style: 'skybridge', kinds: ['tower'], minH: 80, count: 0.5, limit: 30 }], districts: [{ tower: 3, twin: 3, lowrise: 0.15, apartment: 0.1, garage: 0.4, square: 0.6 }, { tower: 0.5, twin: 0, lowrise: 3, apartment: 3, garage: 2.5, square: 2.5 }, { tower: 1.2, twin: 1, lowrise: 1, apartment: 0.6, garage: 1, square: 1 }], big: { stadium: 0.5 }, size: q.tall, sy: 512, skew: 1.8, metro: true, weights: { tower: 10, lowrise: 2.4, apartment: 0.8, garage: 0.7, square: 0.8, twin: 0.22 }, unique: { crane: 2, gas: 1, church: 1 }, height: 1, cars: 0.8, hills: 0, green: 0.4, people: 1 }) },
+  { id: 'blocks', seed: 1, icon: '🧱', stage: 1, make: (seed) => blockRoom(seed) },
+  { id: 'village', seed: 5, icon: '🏘️', stage: 5, make: (seed, q) => town(seed, { big: { meadow: 1 }, districts: [{ houses: 3, apartment: 2, parking: 2, park: 0.3 }, { houses: 0.4, park: 3, apartment: 0.1 }], size: q.planet, weights: { houses: 6, park: 3, apartment: 0.6, parking: 0.5 }, unique: { church: 1, gas: 1, water: 1 }, height: 0.4, cars: 0.5, hills: 0.7, green: 0.8, people: 0.6 }) },
+  { id: 'funfair', seed: 7, icon: '🎡', stage: 4, make: (seed, q) => town(seed, { links: [{ style: 'coaster', count: 0.8, limit: 20, extra: 0.15, icon: '🎢' }], big: { meadow: 1, megacoaster: 1.5, bigwheel: 0.5 }, size: q.planet, weights: { wheel: 1.2, coaster: 1.6, carousel: 1.6, tent: 1.6, stalls: 2.6, drop: 0.9, park: 1.6, parking: 0.8 }, unique: { water: 1 }, height: 0.5, cars: 0.5, hills: 0.2, green: 0.7, people: 1.2 }) },
+  { id: 'city', seed: 8, icon: '🏙️', stage: 6, make: (seed, q) => town(seed, { links: [{ style: 'rail', kinds: ['tower', 'apartment', 'shops', 'carpark'], count: 0.6, top: 40, limit: 35 }, { style: 'skybridge', kinds: ['tower'], minH: 50, count: 0.4, limit: 18 }], districts: [{ tower: 3.5, apartment: 0.4, lowrise: 0.6, houses: 0, park: 0.3, parking: 0.6 }, { tower: 0.1, apartment: 3, lowrise: 2.5, houses: 0.6, garage: 2 }, { tower: 0, apartment: 0.5, lowrise: 0.6, houses: 6, park: 3, square: 2 }], big: { stadium: 0.5 }, size: q.planet, sy: 256, skew: 1.6, metro: true, weights: { tower: 5, apartment: 2.5, lowrise: 2, park: 1, parking: 0.6, houses: 0.4, square: 0.5, garage: 0.5 }, unique: { church: 1, gas: 1, crane: 1 }, height: 1, cars: 0.8, hills: 0.2, green: 0.5, people: 1 }) },
+  { id: 'factory', seed: 9, icon: '🏭', stage: 8, make: (seed, q) => town(seed, { links: [{ style: 'pipe', kinds: ['factory', 'tank', 'chimney', 'silo', 'watertower'], limit: 55, extra: 0.3 }], big: { plaza: 1 }, size: q.planet, weights: { factory: 6, parking: 1, tower: 0.7, park: 0.6, apartment: 0.5 }, unique: { gas: 2, water: 2, crane: 2 }, height: 0.8, cars: 0.5, hills: 0.1, green: 0.3, people: 0.4 }) },
+  // The middle ages: dirt tracks, half-timbered houses, farms, windmills, a market and the lists; knights ride out instead of the police.
+  { id: 'castle', seed: 10, icon: '🏰', stage: 5, make: (seed, q) => town(seed, { links: [{ style: 'stone', kinds: ['castle', 'church', 'windmill'], limit: 22, extra: 0.2 }], big: { meadow: 1, bigcastle: 1 }, size: q.planet, streets: 'dirt', era: 'medieval', folk: 'medieval', weights: { keep: 1.6, timber: 4.5, farm: 2, windmill: 1.2, bazaar: 0.7, tourney: 0.6, forest: 2, park: 1.6 }, unique: { church: 2 }, height: 0.4, cars: 0, hills: 1, green: 0.9, people: 0.9 }) },
+  // Snow: a mountain with a summit cross, ski jumps, grand hotels and cable cars; chalets, igloos and a frozen lake below.
+  { id: 'winter', seed: 11, icon: '⛄', stage: 5, make: (seed, q) => town(seed, { links: [{ style: 'cable', kinds: ['hotel', 'lift', 'mountain', 'skijump', 'church'], limit: 22, extra: 0.2, icon: '🚡' }], big: { lake: 1, peak: 1, bigjump: 0.6, bigsnowman: 0.4 }, size: q.planet, sy: 288, soil: 'snow', sky: [[0.62, 0.74, 0.9], [0.93, 0.96, 1]], weights: { skijump: 1, skihotel: 2.2, gondola: 1.2, chalet: 3, snowman: 1, icerink: 0.8, igloos: 1, forest: 2.5, park: 1.5 }, unique: { church: 1 }, height: 0.6, cars: 0.3, hills: 1.4, green: 0.8, people: 0.7 }) },
+  // The airport: a control tower of twice the size, radar masts, airport hotels and a car park among the runways.
+  { id: 'airport', seed: 12, icon: '🛫', stage: 6, make: (seed, q) => town(seed, { links: [{ style: 'skywalk', kinds: ['terminal', 'controltower', 'tower', 'hangar', 'radar', 'carpark'], limit: 32, extra: 0.25 }], big: { airfield: 1, jumbo: 1.5, bigterminal: 0.5, bigatc: 0.5 }, size: q.planet, sy: 256, skew: 1.3, weights: { airliner: 3, runway: 2.5, terminal: 1.5, atc: 0.8, radar: 0.8, tower: 1.6, garage: 0.8, hangar: 1.5, tanks: 0.6, warehouse: 0.6, parking: 0.8, park: 0.4 }, unique: { gas: 1 }, height: 1, cars: 0.7, hills: 0, green: 0.3, people: 0.8 }) },
+  // The harbour: gantry cranes and silos of twice the size, lighthouses, port offices, container stacks and ships.
+  { id: 'harbour', seed: 13, icon: '⚓', stage: 7, make: (seed, q) => town(seed, { links: [{ style: 'conveyor', kinds: ['silo', 'warehouse', 'gantry', 'tank', 'tower', 'lighthouse'], limit: 40, extra: 0.25 }], big: { sea: 1, biggantry: 1, bigsilos: 0.5 }, size: q.planet, sy: 256, skew: 1.3, weights: { containers: 4, gantry: 1.5, tanks: 1.2, ship: 1.6, warehouse: 1.5, silos: 1, lighthouse: 0.8, tower: 1.4, parking: 0.4 }, unique: { crane: 3, gas: 1, water: 1 }, height: 1, cars: 0.6, hills: 0, green: 0.2, people: 0.4 }) },
   // The giants: few, enormous structures for a creature that has outgrown ordinary houses.
-  { id: 'giants', icon: '🗿', stage: 9, make: (seed, q) => town(seed, { big: { plaza: 1, bigpyramid: 0.5, stadium: 0.5 }, size: q.planet, sy: 384, skew: 0.7, weights: { pyramid: 1.5, cooling: 1.6, tvtower: 1, dome: 1.3, statue: 1.1, arena: 1.3, tower: 1.6, park: 1.2 }, unique: { crane: 1 }, height: 1, cars: 0.3, hills: 0.2, green: 0.5, people: 0.6 }) },
-  { id: 'reef', icon: '🐠', stage: 7, make: (seed, q) => town(seed, { big: { meadow: 1, bighabitat: 1 }, size: q.planet, soil: 'seabed', quiet: true, sky: [[0.02, 0.2, 0.42], [0.1, 0.5, 0.68]], weights: { habitat: 2.5, coral: 3, kelp: 2.5, sub: 1.2, wreck: 1, rig: 0.8, park: 0.5 }, unique: {}, height: 0.5, cars: 0, hills: 0.8, green: 0, people: 0.25 }) },
-  { id: 'spaceport', icon: '🚀', stage: 8, make: (seed, q) => town(seed, { big: { plaza: 1, bigassembly: 0.5, bigdish: 0.5 }, size: q.planet, sy: 256, weights: { rocket: 2, dish: 1.5, assembly: 1.2, control: 1.5, tanks: 1.2, warehouse: 1, parking: 0.8, park: 1.5 }, unique: { crane: 2, gas: 1, water: 1 }, height: 0.7, cars: 0.4, hills: 0.1, green: 0.3, people: 0.5 }) },
-  { id: 'random', icon: '🎲', stage: 0, make: (seed, q, mix) => town(seed, mixToParams(mix, q)) },
+  { id: 'giants', seed: 14, icon: '🗿', stage: 9, make: (seed, q) => town(seed, { links: [{ style: 'highway', minH: 60, count: 0.6, limit: 16 }, { style: 'skybridge', minH: 60, count: 0.5, limit: 20 }], big: { plaza: 1, bigpyramid: 0.5, stadium: 0.5 }, size: q.planet, sy: 384, skew: 0.7, weights: { pyramid: 1.5, cooling: 1.6, tvtower: 1, dome: 1.3, statue: 1.1, arena: 1.3, tower: 1.6, park: 1.2 }, unique: { crane: 1 }, height: 1, cars: 0.3, hills: 0.2, green: 0.5, people: 0.6 }) },
+  { id: 'reef', seed: 15, icon: '🐠', stage: 7, make: (seed, q) => town(seed, { links: [{ style: 'tube', kinds: ['habitat', 'submarine', 'rig', 'ship'], minH: 6, limit: 50, extra: 0.3 }], big: { meadow: 1, bighabitat: 1 }, size: q.planet, soil: 'seabed', quiet: true, sky: [[0.02, 0.2, 0.42], [0.1, 0.5, 0.68]], weights: { habitat: 2.5, coral: 3, kelp: 2.5, sub: 1.2, wreck: 1, rig: 0.8, park: 0.5 }, unique: {}, height: 0.5, cars: 0, hills: 0.8, green: 0, people: 0.25 }) },
+  { id: 'spaceport', seed: 16, icon: '🚀', stage: 8, make: (seed, q) => town(seed, { links: [{ style: 'catwalk', kinds: ['rocket', 'assembly', 'control', 'dish', 'tower'], limit: 32, extra: 0.3 }], big: { plaza: 1, bigassembly: 0.5, bigdish: 0.5 }, size: q.planet, sy: 256, weights: { rocket: 2, dish: 1.5, assembly: 1.2, control: 1.5, tanks: 1.2, warehouse: 1, parking: 0.8, park: 1.5 }, unique: { crane: 2, gas: 1, water: 1 }, height: 0.7, cars: 0.4, hills: 0.1, green: 0.3, people: 0.5 }) },
+  { id: 'random', seed: 22, icon: '🎲', stage: 0, make: (seed, q, mix) => town(seed, mixToParams(mix, q)) },
 ];
 
 // Mixer sliders (all 0..1) -> town parameters.

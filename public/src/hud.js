@@ -51,6 +51,7 @@ export class Hud {
     this.btnCamera = this.button(tr, '🎥', () => game.doAction('camera'));
     this.btnWorlds = this.button(tr, '🌍', () => this.openWorlds());
     this.btnIdle = this.button(tr, '🍿', () => game.setIdle(!game.idle)); // lean back and watch: the game plays itself
+    this.btnMap = this.button(tr, '🗺️', () => game.toggleMap()); // the minimap (minimap.js) on and off
     this.btnGear = this.button(tr, '⚙️', () => this.openParent()); this.btnGear.id = 'gear';
     // On small and touch screens everything in this row folds away behind one menu button,
     // so the playing field stays free. The legal link moves in here as well.
@@ -160,6 +161,7 @@ export class Hud {
     const p = this.g.progress;
     this.btnCamera.classList.toggle('hidden', !this.g.fly);
     this.btnIdle.classList.toggle('sel', this.g.idle);
+    this.btnMap.classList.toggle('sel', p.settings.minimap);
     this.root.classList.toggle('idle', this.g.idle); // no demonstrations while the game plays itself
     this.btnWorlds.classList.toggle('hidden', false); // the world choice is open from the first minute
     this.btnCamera.textContent = SPECIES.find((s) => s.id === p.species).icon;
@@ -381,15 +383,16 @@ export class Hud {
     // (green once the monster has reached it); a tick marks worlds that were destroyed completely.
     for (const w of WORLDS) {
       if (w.id === 'random') continue; // the dice tile sits next to its mixer below
-      const b = this.button(worlds, w.icon, () => { this.close(); g.travel(w.id); });
+      const b = this.button(worlds, w.icon, () => { this.close(); g.pickWorld(w.id); });
       b.classList.add('tile');
       if (w.id === p.world) b.classList.add('sel');
       if (p.completed.includes(w.id)) b.classList.add('complete');
       el('span', 'key' + (p.stage >= w.stage ? ' ok' : ''), b, String(w.stage));
+      if (w.home) el('span', 'home', b, SPECIES.find((s) => s.id === w.home).icon); // the home turf of a creature
     }
     const mons = el('div', 'row', sheet);
     for (const s of SPECIES) {
-      const b = this.button(mons, s.icon, () => { g.setSpecies(s.id); this.openWorlds(); });
+      const b = this.button(mons, s.icon, () => { if (g.setSpecies(s.id)) this.close(); else this.openWorlds(); }); // off to its world, or stay and pick one
       if (s.id === p.species) b.classList.add('sel');
       // Every creature has its own stage.
       el('span', 'key ok', b, String(s.id === p.species ? p.stage : p.creatures[s.id].stage));
@@ -413,7 +416,7 @@ export class Hud {
         r.addEventListener('input', () => { p.mix[k] = Number(r.value); saveProgress(p); });
         el('span', '', mix, MIX_ICONS[k][1]);
       }
-      this.button(sheet, '🎲', () => { this.close(); g.travel('random', true); }).classList.add('tile');
+      this.button(sheet, '🎲', () => { this.close(); g.pickWorld('random', true); }).classList.add('tile');
     }
     if (p.stickers.length) el('div', 'stickers', sheet, p.stickers.join(' '));
     // The achievements live here, out of the way of the playing field.
@@ -475,6 +478,7 @@ export class Hud {
     check('Kettenreaktionen: einstürzende Gebäude reißen ihre Nachbarn mit (wirkt ab Stufe 3, mit jeder Stufe stärker)', 'cascade');
     check('Militär kann den Kaputtmacher kurz zurückstoßen (es gibt trotzdem kein Scheitern)', 'fightBack');
     check('Selbstspiel nach 2 Minuten ohne Eingabe', 'autoIdle');
+    check('Kleine Karte der Umgebung zeigen (auch mit der Taste M oder 🗺️)', 'minimap');
     check('Alles freischalten', 'unlockAll');
     el('button', '', sheet, `Erfolge ansehen (${p.achieved.length} von ${ACHIEVEMENTS.length})`).addEventListener('click', () => this.openAchievements());
     const full = el('button', '', sheet, 'Vollbild an/aus');

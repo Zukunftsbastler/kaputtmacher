@@ -39,6 +39,7 @@ export class Autopilot {
     const g = this.g, m = g.monster, size = g.cam.wrap, best = [], far = [], roam = this.rnd() < 0.35;
     for (const st of g.hud.major) {
       if (st.done || st.remaining < 20 || (this.skip.get(st) ?? 0) > g.time) continue;
+      if (st.link && st.y0 > m.y + m.h * 1.2) continue; // a bridge or railway high up in the air: out of reach
       const d = Math.hypot(wrapDelta((st.x0 + st.x1) / 2 - m.x, size), wrapDelta((st.z0 + st.z1) / 2 - m.z, size));
       if (d > 140 && d < 460) far.push(st);
       let i = best.length;
