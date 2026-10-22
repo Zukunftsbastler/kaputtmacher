@@ -489,6 +489,7 @@ export const BIG = {
   bigdish: { w: 2, h: 2, ground: 'soil', build: enlarged((g, x, G, z, L) => LOTS2.dish(g, x, G, z, L), 2) },
   bigsnowman: { w: 2, h: 2, ground: 'soil', build: enlarged((g, x, G, z, L) => LOTS2.snowman(g, x, G, z, L), 2) },
   // Taller landmarks for the snow world, the airport and the harbour.
+  bigdrop: { w: 2, h: 2, ground: 'pave', build: enlarged((g, x, G, z, L) => LOTS.drop(g, x, G, z, L), 2) },
   bigjump: { w: 2, h: 2, ground: 'soil', build: enlarged((g, x, G, z, L) => LOTS2.skijump(g, x, G, z, L), 2) },
   bigatc: { w: 2, h: 2, ground: 'pave', build: enlarged((g, x, G, z, L) => LOTS2.atc(g, x, G, z, L), 2) },
   biggantry: { w: 2, h: 2, ground: 'pave', build: enlarged((g, x, G, z, L) => LOTS.gantry(g, x, G, z, L), 2) },

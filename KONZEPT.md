@@ -4,6 +4,8 @@ Status: in Umsetzung. Dieser Entwurf nennt überall konkrete Zahlen; sie entspre
 
 **Nachtrag 3 zu Entwurf 12:** Heimatwelten für alle fünf Figuren (7.4b); Klettern mit festen Griffen für Hände und Füße, doppelt so schnell (4.2).
 
+**Nachtrag 10 zu Entwurf 12:** Superstrukturen mit Knotenpunkten (Bahnhöfe, Spiral-Auffahrten, Plattformtürme, Lifttürme, Aussichts- und Wachtürme, Kuppeln …), die auch auf Dächern stehen; Netze dürfen in andere Netze münden, Pfeiler stützen sich auf überbrückte Dächer; Neon-Megacity viel dichter vernetzt; Vergnügungspark mit viel mehr Höhe (7.4c, 7.4).
+
 **Nachtrag 9 zu Entwurf 12:** Beim Bagger tauschen Hammer (jetzt Stufe 3) und Schwenken (jetzt Stufe 5) die Plätze; der Hammer ist deutlich stärker und erschüttert Gebäude (9.2).
 
 **Nachtrag 8 zu Entwurf 12:** Lange Fahrzeuge folgen der Krümmung des Planeten (7.2).
@@ -218,14 +220,14 @@ Ein Treffer hat eine Stärke, die zum Rand hin abnimmt. Ist sie größer als die
 |---|---|---|---|---|---|---|
 | 🦕 **Urzeit-Nekropole** (Heimat des Dinos) | Planet, 144 m hoch | 512 m | 50 cm | rund 4 500 000 | rund 230 | 6 |
 | 🏛️ **Babel** (Heimat des Affen) | Planet, 160 m hoch | 512 m | 50 cm | rund 3 200 000 | rund 410 | 7 |
-| 🌃 **Neon-Megacity** (Heimat des Roboters) | Planet, 176 m hoch | 512 m | 50 cm | rund 8 600 000 | rund 230 | 8 |
+| 🌃 **Neon-Megacity** (Heimat des Roboters) | Planet, 176 m hoch | 512 m | 50 cm | rund 9 400 000 | rund 690 (mit Verbindungen und Knoten) | 8 |
 | 🏰 **Festung Titan** (Heimat des Panzers) | Planet, 128 m hoch | 512 m | 50 cm | rund 1 600 000 | rund 80 | 7 |
 | ☁️ **Wolkenwerft** (Heimat des Fliegers) | Planet, 128 m hoch | 512 m | 50 cm | rund 2 300 000 | rund 700 | 6 |
 | 🚧 **Großbaustelle** (Heimat des Baggers) | Planet, 128 m hoch | 512 m | 50 cm | rund 6 200 000 | rund 400 | 3 |
 | 🌆 **Wolkenkratzer-Stadt** | Planet, 256 m hoch | 512 m | 50 cm | 9 100 000 | 249 | 1 |
 | 🧱 Bauklotz-Zimmer | Insel | 64 m | 20 cm | 122 000 | 25 | 1 |
 | 🏘️ Dorf | Planet | 512 m | 50 cm | 1 290 000 | 548 | 5 |
-| 🎡 **Vergnügungspark** | Planet | 512 m | 50 cm | rund 600 000 | rund 370 | 4 |
+| 🎡 **Vergnügungspark** | Planet, 112 m hoch | 512 m | 50 cm | rund 670 000 | rund 350 | 4 |
 | 🏙️ Stadt | Planet, 128 m hoch | 512 m | 50 cm | 3 970 000 | 233 | 6 |
 | 🏭 Fabrik | Planet | 512 m | 50 cm | 2 210 000 | 708 | 8 |
 | 🏰 **Ritterburgen** | Planet | 512 m | 50 cm | rund 1 800 000 | rund 390 | 5 |
@@ -249,7 +251,7 @@ Inhalt:
 - **Dorf:** Häuser mit Gärten, Wohnblocks, Kirchen, Tankstellen, Wassertürme, Parks mit Hügeln.
 - **Stadt:** Hochhäuser mit Glasfassaden bis 34 Stockwerke (rund 100 m), Wohnblocks, Baustellen mit Kran.
 - **Fabrik:** Hallen mit Maschinen, über 40 m hohe Schornsteine, Tanks, Silos.
-- **Vergnügungspark:** Riesenräder mit Gondeln, Achterbahnen auf Holzgerüsten mit Zug, Karussells und Zirkuszelte mit gestreiften Stoffdächern (brennen gut), Budenreihen mit Markisen, Lichtern und Luftballons, die davonfliegen, wenn man sie losreißt, Freifalltürme. Viele Besucher.
+- **Vergnügungspark:** Riesenräder mit Gondeln, Achterbahnen auf Holzgerüsten mit Zug, Karussells und Zirkuszelte mit gestreiften Stoffdächern (brennen gut), Budenreihen mit Markisen, Lichtern und Luftballons, die davonfliegen, wenn man sie losreißt, Freifalltürme. **In die Höhe (Nachtrag 10):** Kettenflieger-Türme bis rund 95 Würfel (Mast mit Leuchtringen, Krone mit gestreiftem Dach, Sitze an schrägen Ketten), Aussichtstürme bis 160 Würfel mit einem gläsernen Kabinenring, Loopings (ein senkrechter Gleiskreis auf einem Gerüst), Freifalltürme und Riesenräder doppelter Größe, dazu die Lifttürme der Riesenachterbahnen (bis 100 Würfel). Die Welt ist dafür 224 statt 128 Würfel hoch. Viele Besucher.
 - **Ritterburgen:** Mittelalter aus einem Guss. Feldwege statt Straßen, ohne Laternen, Hydranten, Ampeln und parkende Autos; kein Verkehr. Burgen mit Ringmauer, Zinnen, vier Rundtürmen mit Spitzdach, Torhaus und hohem Bergfried samt Schatz (eine davon doppelt so groß); **Fachwerkhäuser** mit vorkragenden Obergeschossen, dunklem Balkenwerk, Ziegel- oder Strohdach und Schornstein; Windmühlen mit Stoffsegeln; Bauernhöfe mit Holzscheune und Heuballen, die wie Zunder brennen; ein Markt mit Ständen und Brunnen; ein **Turnierplatz** mit Schranke, überdachter Tribüne, Fahnen und gestreiften Zelten; Kirchen, Wald und Hügel. Statt Passanten **Bauern** in Kittel und Beinlingen und hin und wieder eine **Burgfrau** im langen Kleid mit Spitzhut. Statt der Polizei reiten **Ritter** aus (Pferd, Schabracke und Wappenrock in Rot oder Blau, Helm mit Federbusch, Lanze mit Wimpel, Schild), statt der Feuerwehr kommt ein **Wasserkarren** mit Fass. Keine Sirenen, keine Hubschrauber, keine Kampfflieger. Wird ein Ritter getroffen, fliegen Rüstungsteile und Holz, und er purzelt davon wie die Bewohner – es explodiert nichts.
 - **Winterwelt** (bis rund 170 Würfel hoch): Schnee statt Rasen, verschneite Tannen statt Laubbäumen. Ein **Berg** auf einem Großgrundstück: ein zerklüfteter Kegel aus Fels mit Schneekappe und Gipfelkreuz, hohl wie der Vulkan. **Grandhotels** bis 140 Würfel: Steinsockel, Stockwerke aus dunklem Holz, die alle fünf Etagen zurückspringen, Balkone, Schnee auf jeder Terrasse, Fahne auf dem Dach. **Seilbahnen**: Gittermasten bis 110 Würfel mit Querträger, zwei Seile ins Tal, rote und blaue Gondeln, Talstation. Skisprungschanzen, eine davon doppelt so groß (rund 120 Würfel), Holzhäuser unter Schnee, Riesenschneemänner, Eisbahnen, Iglus, ein zugefrorener See.
 - **Flughafen** (bis rund 210 Würfel hoch): Verkehrsflugzeuge auf dem Vorfeld (mit Treibstoff in den Flügeln), Rollbahnen mit blauen Randfeuern und Kleinflugzeugen, gläserne Abfertigungshallen mit Fluggastbrücken, Kontrolltürme mit Radar, ein **Kontrollturm doppelter Größe** (rund 130 Würfel), **Radarmasten** bis 100 Würfel in Rot und Weiß mit Warnlichtern, **Flughafenhotels** als Hochhäuser, ein Parkhaus, Hangars mit Tonnendach, ein Tanklager.
@@ -304,7 +306,29 @@ Bisher standen viele Bauten für sich. Jetzt verbinden **Superstrukturen** sie z
 
 Bei voller Weltgröße entstehen so je Welt zwischen rund 17 (Festung) und 130 (Urzeit) Verbindungen. Dorf und Bauklotz-Zimmer bleiben ohne.
 
-**Grenzen:** Die Verbindungen führen gerade von Bau zu Bau (mit Durchhang, Buckeln oder Steigung), sie verzweigen nicht unterwegs, und Haltestellen oder Auffahrten gibt es nicht. Züge, Autos und Gondeln stehen still. Wo ein Bau an der gewählten Höhe hohl ist, endet die Verbindung an seiner Außenwand, ohne Durchgang ins Innere.
+**Knotenpunkte (Nachtrag 10).** Damit die Netze nicht nur zwischen Gebäuden hängen, sondern irgendwo anfangen, enden und sich verzweigen, stellt jedes Netz eigene **Knotenpunkte** auf: auf freie, ebene Flächen (nicht ins Wasser, nicht auf den Start), manche auch über die Straße (Bahnhöfe auf Stelzen, Auffahrten an Kreuzungen) und manche **auf das Dach** eines niedrigen Gebäudes, das damit Teil des Netzes wird. Ein Knotenpunkt hat Plattformen auf mehreren Höhen; dort setzen die Verbindungen an. Knotenpunkte werden bevorzugt verbunden (als lägen sie halb so weit weg), dürfen auch aus der Nähe angefahren werden, bis zu sieben Verbindungen tragen, und zu ihnen darf es zweieinhalbmal so steil gehen – eine Rampe ist dafür da. Das Gebäude wählt seine Höhe zuerst, der Knoten bietet die nächstgelegene Plattform.
+
+| Knoten | Wo | Aussehen |
+|---|---|---|
+| 🚉 Bahnhof | Hochbahn (Städte, Neon) | Bahnsteig auf vier Pfeilern, 16–26 Würfel hoch, Dach, Treppe hinunter zur Straße |
+| 🗼 Plattformturm | Skybridges (Neon, Wolkenkratzer-Stadt, Riesenbauten) | schlanker dunkler Schaft mit leuchtenden Kanten, alle 24 Würfel eine Plattform mit Leuchtrand, 90–220 Würfel hoch, Antenne |
+| 🌀 Spiral-Auffahrt | Superhighways (Neon, Riesenbauten) | eine Rampe, die von der Straße bis 110–220 Würfel hinaufwindet, mit einem Ring auf jeder Ebene, an dem Highways und Skybridges ansetzen |
+| 🎢 Liftturm | Riesenachterbahnen | roter Gitterturm 45–100 Würfel mit Plattform, unten ein gestreiftes Stationsdach |
+| 🛖 Aussichtsturm | Hängebrücken der Urzeit | Holzturm auf vier Beinen, Plattformen mit Geländer, Strohdach |
+| 🏛️ Treppenturm | Babel | Sandsteinschacht mit Absätzen und Pflanzen, Zinnen |
+| 🏰 Wachturm | Ritterburgen | runder Steinturm mit Zinnen |
+| 🫧 Kuppel | Unterwasser | Glaskugel auf vier Beinen, in der die Röhren zusammenlaufen |
+| 🔧 Rohrbrücke | Fabrik | Stahlgerüst mit Böden alle 8 Würfel |
+| 🏗️ Umlenkturm | Hafen | Stahlgerüst mit verkleidetem Haus obenauf |
+| 🛗 Aufzugsturm | Flughafen | weißer Glasschacht mit Absätzen |
+| 🗼 Gitterturm | Raumhafen, Großbaustelle, Festung | gelber Gittermast mit Plattformen alle 15 Würfel |
+| 🚡 Seilbahnstation | Winterwelt | Gittermast mit Stationsplattform unter einem Dach |
+
+**Netze in Netzen.** Ein Netz darf in ein früher gebautes münden: In der Neon-Megacity enden Skybridges auf den Decks der Superhighways und auf anderen Skybridges (jeweils in deren Mitte), und sie nutzen die Spiral-Auffahrten mit. **Überbrücken:** Verbindungen führen über niedrigere Bauten hinweg, und ihre Pfeiler dürfen sich auf deren Dächer stützen – so werden auch Bauten, die selbst kein Ende einer Verbindung sind, Teil des Netzes.
+
+**Neon-Megacity** ist am dichtesten vernetzt: Superhighways mit drei Spiral-Auffahrten je 512 × 512 Würfel, Skybridges in drei Höhenbändern (unten 8–35 %, Mitte 35–65 %, oben 65–97 % der Turmhöhe) mit zwölf Plattformtürmen je 512 × 512, und eine Hochbahn mit Bahnhöfen. Bei voller Weltgröße: rund 390 Verbindungen und 66 Knotenpunkte (vorher 98 Verbindungen); Skybridges enden rund 35-mal auf Highways und rund 150-mal auf anderen Skybridges oder Auffahrten. In den anderen Welten (volle Größe): Urzeit 195, Wolkenkratzer-Stadt 119, Fabrik 91, Stadt 78, Unterwasser 75, Babel 72, Hafen und Großbaustelle je 65, Riesenbauten 64, Flughafen und Raumhafen je 54, Vergnügungspark 49, Ritterburgen 45, Winterwelt 40, Festung 26 – mit je 8 bis 24 Knotenpunkten.
+
+**Grenzen:** Eine einzelne Verbindung führt gerade von Ende zu Ende (mit Durchhang, Buckeln oder Steigung); verzweigt wird an Knotenpunkten. Züge, Autos und Gondeln stehen still. Wer an einem Bahnhof oder einer Auffahrt über die Straße geht, durch dessen Pfeiler fährt der Verkehr hindurch. Nicht jeder Knotenpunkt bekommt eine Verbindung; wo keine passt, steht er für sich. Wo ein Bau an der gewählten Höhe hohl ist, endet die Verbindung an seiner Außenwand, ohne Durchgang ins Innere.
 
 ### 7.4a Großgrundstücke, Viertel und Innenleben
 

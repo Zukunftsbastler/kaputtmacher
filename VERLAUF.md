@@ -2,6 +2,8 @@
 
 Was sich von Entwurf zu Entwurf des Spielkonzepts (KONZEPT.md) geändert hat, neueste zuerst. Die Zahlen in Klammern verweisen auf Abschnitte des Konzepts.
 
+**Nachtrag 10 zu Entwurf 12:** Knotenpunkte für die Superstrukturen – Bahnhöfe, Spiral-Auffahrten, Plattformtürme, Lifttürme, Aussichts-, Treppen- und Wachtürme, Kuppeln, Rohrbrücken, Umlenk-, Aufzugs- und Gittertürme, Seilbahnstationen –, auch auf Dächern; Skybridges münden in Highways und andere Skybridges; Pfeiler auf überbrückten Dächern; Neon-Megacity in drei Höhenbändern viel dichter vernetzt (rund 390 Verbindungen); Vergnügungspark mit Kettenfliegern, Aussichtstürmen, Loopings, großen Freifalltürmen und Riesenrädern (7.4c, 7.4).
+
 **Nachtrag 9 zu Entwurf 12:** Bagger: Hammer als zweiter, Schwenken als dritter Angriff; der Hammer schlägt breiter und tiefer, lässt Risse durch die Wand laufen und schwächt den Bau mit jedem Schlag (9.2).
 
 **Nachtrag 8 zu Entwurf 12:** Busse, Löschzüge und alles andere aus beweglichen Quadern werden an jeder Ecke gekrümmt und liegen damit auf dem gewölbten Boden auf, statt auf einer Achse zu schweben (7.2).

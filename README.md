@@ -126,7 +126,7 @@ public/
 | `achievements.js` | Liste der 131 Erfolge, Zähler (`STATS`), Prüfung |
 | `traffic.js` | Straßennetz (`Roads`: Kreuzungen, Rechtsverkehr, Ausweichen, Wenden) und fahrende Autos und Busse (`Traffic`) |
 | `landmarks3.js` | Heimatwelten der Figuren (Rohbauten, Haufen, Baucontainer und Steinbruch der Großbaustelle); Mammutbäume, Urwaldpflanzen, Nester, Steinkreise, Vulkan und Sumpf; Zikkurats, Turm zu Babel, Lehmhäuser, Basar, Obelisken, Ischtar-Tor, Palmen und Feuerschalen; Neon-Türme mit Lichtlinien und Hochstraßen; Flaktürme und Bunker; schwebende Inseln und Luftschiffe; Fachwerkhäuser und Turnierplatz der Ritterburgen; Berg, Grandhotel, Seilbahn, Leuchtturm und Radarmast für Winterwelt, Hafen und Flughafen |
-| `links.js` | Superstrukturen: verbindet die Bauten einer Welt zu Netzen über mehrere Höhen (Hochbahn, Skybridge, Superhighway, Lianen, Hängebrücke, Achterbahn, Steinbrücke, Wehrgang, Glasröhre, Rohrleitung, Förderbrücke, Skywalk, Laufsteg, Seilbahn) |
+| `links.js` | Superstrukturen: verbindet die Bauten einer Welt zu Netzen über mehrere Höhen, mit Knotenpunkten (Bahnhöfe, Auffahrten, Plattformtürme …) auf Flächen und Dächern (Hochbahn, Skybridge, Superhighway, Lianen, Hängebrücke, Achterbahn, Steinbrücke, Wehrgang, Glasröhre, Rohrleitung, Förderbrücke, Skywalk, Laufsteg, Seilbahn) |
 | `fortress.js` | Festung Titan: Wüste, Graben, zwei Mauerringe mit Türmen und Geschützen, Vorposten, Hof mit Militärbauten, Riesenmaschinen, Kommandoturm und Munitionsdepot |
 | `landmarks.js`, `landmarks2.js` | Besondere Grundstücke für den Stadtgenerator: Fahrgeschäfte, Hafenanlagen, Riesenbauten; Flughafen, Burg, Raumhafen, Winterwelt, Unterwasserstadt |
 | `autopilot.js` | Idle-Modus: füllt den Eingabezustand, wählt Ziele, Angriffe und Welten |

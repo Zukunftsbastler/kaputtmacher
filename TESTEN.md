@@ -70,6 +70,7 @@ Zu jedem Punkt reicht ein Haken oder ein Stichwort, was stört.
 - [ ] Bagger: Ist der Hammer (jetzt zweiter Angriff) stark genug, aber nicht zu stark? Stürzt ein Haus nach langem Hämmern ein?
 - [ ] Bagger: Sieht er aus und bewegt er sich wie ein echter Bagger? Folgt der Arm dem Ziel, dreht der Oberwagen glaubwürdig, wirken Graben, Schaufelschlag, Schwenken, Hammer, Auskippen und Planierschild? Fehlt etwas Typisches?
 - [ ] Großbaustelle: Passt sie zum Bagger? Fallen die Rohbauten schön, lassen sich Haufen und Steinbruch abtragen?
+- [ ] Knotenpunkte: Wirken Bahnhöfe, Auffahrten, Plattformtürme, Lifttürme usw. wie Anfang und Ende der Netze? Wächst die Welt sichtbar zusammen? Ist Neon zu voll oder genau richtig? Hat der Vergnügungspark jetzt genug Höhe?
 - [ ] Superstrukturen: Wirken Hochbahnen, Skybridges, Superhighways, Lianen, Hängebrücken, Achterbahnen usw. wie ein zusammenhängendes Netz über mehrere Ebenen? Sind es zu viele oder zu wenige? Stürzen sie mit, wenn man einen verbundenen Bau fällt? Stören sie beim Laufen oder Klettern?
 - [ ] Klettern: Halten Hände und Füße sichtbar fest, und greifen sie abwechselnd um? Passt das Tempo?
 - [ ] Minimap: Hilft sie beim Überblick? Ist die Zerstörung deutlich genug, stört sie im Bild, ist sie am Handy (oben rechts) gut zu sehen? Lässt sie sich mit 🗺️, Taste M und in den Einstellungen aus- und wieder einschalten, und bleibt die Wahl nach dem Neuladen?

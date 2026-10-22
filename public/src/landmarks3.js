@@ -599,6 +599,51 @@ function quarry(g, x, G, z, W, D) {
   g.end();
 }
 
+// Funfair, the tall rides -----------------------------------------------------------------------------
+
+// A chain flyer: a tall mast with a crown at the top from which the seats hang on long chains, flying outwards.
+function skyflyer(g, x0, G, z0, L, kit, H) {
+  const cx = x0 + (L >> 1), cz = z0 + (L >> 1), h = Math.min(H - G - 30, g.int(60, 95));
+  g.begin('skyflyer', '🎠', { major: true });
+  g.cyl(cx, cz, 9, G, 1, T.WOOD_LIGHT); for (let a = 0; a < 6.28; a += 0.3) g.set(Math.round(cx + Math.cos(a) * 9), G + 1, Math.round(cz + Math.sin(a) * 9), T.STEEL_RED);
+  g.cyl(cx, cz, 2, G, h, T.STEEL);
+  for (let y = G + 4; y < G + h; y += 5) g.cyl(cx, cz, 2, y, 1, g.pick([T.NEON_PINK, T.NEON_YELLOW, T.NEON_BLUE]));
+  g.cyl(cx, cz, 11, G + h, 1, T.STEEL_RED); g.cyl(cx, cz, 11, G + h + 1, 2, T.FABRIC_YELLOW, true); for (let k = 0; k < 6; k++) g.cyl(cx, cz, 10 - k * 2, G + h + 2 + k, 1, k & 1 ? T.FABRIC_RED : T.FABRIC_WHITE);
+  for (let a = 0; a < 6.28; a += 0.45) { // chains at an angle, the seat at the end
+    const sx = cx + Math.cos(a) * 10, sz = cz + Math.sin(a) * 10, ex = cx + Math.cos(a) * 17, ez = cz + Math.sin(a) * 17, ey = G + h - 14;
+    line(g, Math.round(sx), G + h - 1, Math.round(sz), Math.round(ex), ey, Math.round(ez), T.STEEL_DARK);
+    g.box(Math.round(ex), ey - 1, Math.round(ez), 2, 1, 2, g.pick([T.TOY_RED, T.TOY_BLUE, T.TOY_YELLOW, T.TOY_GREEN]));
+  }
+  g.end();
+  void kit;
+}
+
+// An observation tower: a slim mast with a glass ring for the visitors halfway up and a beacon on top.
+function gyro(g, x0, G, z0, L, kit, H) {
+  const cx = x0 + (L >> 1), cz = z0 + (L >> 1), h = Math.min(H - G - 30, g.int(100, 160)), ry = G + Math.round(h * g.rnd() * 0.5 + h * 0.35);
+  g.begin('gyro', '🗼', { major: true });
+  g.cyl(cx, cz, 6, G, 3, T.CONCRETE); g.cyl(cx, cz, 3, G + 3, h - 3, T.SHEET_WHITE, true);
+  for (let y = G + 10; y < G + h; y += 10) g.cyl(cx, cz, 3, y, 1, T.NEON_BLUE);
+  g.cyl(cx, cz, 10, ry, 1, T.STEEL); g.cyl(cx, cz, 10, ry + 1, 4, T.GLASS, true); g.cyl(cx, cz, 9, ry + 1, 4, T.GLASS, true); g.cyl(cx, cz, 10, ry + 5, 1, T.STEEL_RED); // the cabin ring
+  for (let y = 0; y < 10; y++) g.set(cx, G + h + y, cz, y === 9 ? T.NEON_RED : T.STEEL);
+  g.end();
+  void kit;
+}
+
+// A looping: a vertical loop of track on a frame, with the run-in and run-out on the ground.
+function looping(g, x0, G, z0, L) {
+  const cx = x0 + (L >> 1), cz = z0 + (L >> 1), R = Math.min(22, (L >> 1) - 4), cy = G + R + 4;
+  g.begin('looping', '🎢', { major: true });
+  for (let a = 0; a < 6.283; a += 0.02) {
+    const x = Math.round(cx + Math.sin(a) * R), y = Math.round(cy - Math.cos(a) * R), dz = Math.round((a / 6.283) * 6) - 3; // the loop twists sideways as it turns
+    g.set(x, y, cz + dz - 1, T.STEEL_RED); g.set(x, y, cz + dz + 1, T.STEEL_RED);
+    if (Math.round(a * 50) % 6 === 0) g.box(x, y, cz + dz - 1, 1, 1, 3, T.STEEL_DARK);
+  }
+  for (let i = -L / 2 + 3; i < L / 2 - 3; i++) { g.set(cx + i, G + 4, cz - 4, T.STEEL_RED); g.set(cx + i, G + 4, cz - 2, T.STEEL_RED); g.set(cx + i, G + 4, cz + 2, T.STEEL_RED); g.set(cx + i, G + 4, cz + 4, T.STEEL_RED); }
+  for (const s of [-1, 1]) { g.box(cx - 2, G, cz + s * 8, 4, cy - G, 1, T.STEEL); line(g, cx - R, G, cz + s * 8, cx, cy, cz + s * 8, T.STEEL); line(g, cx + R, G, cz + s * 8, cx, cy, cz + s * 8, T.STEEL); }
+  g.end();
+}
+
 // Neon megacity --------------------------------------------------------------------------------
 
 // A tower with giant billboards and neon strips. The billboards hang on its facade wherever that turns out to be.
@@ -782,6 +827,9 @@ export const LOTS3 = {
   shell,
   heaps,
   sitecamp,
+  skyflyer,
+  gyro,
+  looping,
   lighthouse,
   radar,
   // A floating island at a random height, somewhere above its lot.
