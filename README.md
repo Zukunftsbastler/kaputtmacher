@@ -58,7 +58,7 @@ Der Flieger ist immer in Bewegung: A/D lenkt, W/S steigt und sinkt, Umschalt ist
 
 **Die Welt reagiert:** Beim ersten Schaden kommt ein Polizeiauto, dann mehr, dazu Reporter im Hubschrauber, die Feuerwehr, sobald es brennt, und schließlich das Militär mit Hubschraubern und Kampffliegern. Niemand kann dem Kaputtmacher etwas anhaben; alle lassen sich umwerfen oder vom Himmel holen. Die Alarmstufe (Sterne) steigt mit der Zeit und ebbt wieder ab, wenn man nichts zerstört.
 
-**Erfolge:** 135 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der sechs Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
+**Erfolge:** 138 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der sechs Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
 
 Das vollständige Konzept mit allen Zahlen steht in [KONZEPT.md](KONZEPT.md).
 
@@ -84,7 +84,7 @@ Spielbar. Geprüft wurde bisher fast nur automatisiert (Durchläufe im Browser m
 
 ```
 serve.py            lokaler Entwicklungsserver ohne Cache
-tools/              Prüfwerkzeuge (Node, ohne Pakete): check.mjs, smoke.mjs, serve.mjs, browser.mjs, web/test.js
+tools/              Prüfwerkzeuge (Node, ohne Pakete): check.mjs, floating.mjs, smoke.mjs, serve.mjs, browser.mjs, web/test.js
 TESTEN.md           Checkliste für Tests von Hand
 VERLAUF.md          was sich von Entwurf zu Entwurf geändert hat
 netlify.toml        veröffentlicht public/
@@ -93,7 +93,7 @@ PROMPTS/            alle Prompts des Autors
 public/
   index.html, style.css, _headers
   impressum.html, legal.css, legal.js   Impressum, Datenschutzerklärung und der Knopf zum Löschen des Spielstands
-  src/              31 ES-Module, siehe unten, und vendor/musik-generator/ (eingekopierte Musik-Suite)
+  src/              37 ES-Module, siehe unten, und vendor/musik-generator/ (eingekopierte Musik-Suite)
 ```
 
 ### Module (`public/src`)
@@ -103,7 +103,7 @@ public/
 | `main.js` | Klasse `Game`: besitzt alle Systeme, feste Simulationsschritte (1/60 s), Kamera, Zielstrahl, Rendern eines Bildes, Macht/Wachstum, Zähler, Kettenreaktionen, Ereignis-Rückrufe (`onDamage`, `onImpact`, `onCollapse`, `onShove` …). Einstiegspunkt; legt `window.game` an |
 | `math.js` | Matrizen, Quaternionen, reproduzierbarer Zufall (`makeRng`), `wrapDelta` |
 | `materials.js` | Materialien (Festigkeit, Dichte, Machtwert, Klang) und Voxel-Typen (Material + Farbe). Tabellen `TYPE_MAT`, `TYPE_RGBA`, `TYPE_FLAGS` |
-| `world.js` | Statisches Voxel-Gitter in 32³-Blöcken; `get`/`set`; Gebäudeliste (`structures`) mit Grundriss-Karte; `finalize()` nach der Erzeugung |
+| `world.js` | Statisches Voxel-Gitter in 32³-Blöcken; `get`/`set`; Gebäudeliste (`structures`) mit Grundriss-Karte; `finalize()` nach der Erzeugung, davor `weld()` (verschweißt, was sich nur schräg berührt); `isLink` (gehört ein Würfel zu einer Superstruktur?) |
 | `worldgen.js` | Baukasten und Baupläne aller Welten; Liste `WORLDS`; Stadtgenerator `town()` |
 | `citykit.js` | Großstadt-Baukasten: Wolkenkratzer aus Segmenten, Fassaden, Dächer, Läden, Eingänge |
 | `mesher.js` | Voxel → Dreiecke: nur sichtbare Flächen, Kantenabdunklung, Zusammenfassen gleicher Flächen |
@@ -113,20 +113,22 @@ public/
 | `bodies.js` | Starre Bruchstücke: Fallen, Kontakt mit der Welt (Wucht nach Masse: Leichtes wird zerdrückt), Weiterzerbrechen, Zurückschreiben als Schutt |
 | `particles.js` | `Debris` (lose Würfel mit Kollision), `Fx` (Staub, Funken, Rauch …), `GRAVITY`, `launch()` |
 | `fire.js` | Hitze und Flammpunkte je Material (`heat`, `heatSphere`), brennende Voxel, langsame Ausbreitung, Ruß, Brandherde, Staubwolken, Löschen (`douse`) |
-| `reactions.js` | Reaktionen zerstörter Dinge: Hydranten-Fontänen, Wasserschwall, Funken an Lampen; Wasser löscht Feuer |
+| `reactions.js` | Reaktionen zerstörter Dinge: Hydranten-Fontänen, Wasserschwall, Funken an Lampen; Wasser löscht Feuer; Munitionsdepot; der Vulkan erwacht und wirft Lavabomben |
 | `sweeper.js` | Entfernt lose Trümmer nach 30 s, lässt Haufen ab 14 Würfeln stehen |
 | `monster.js` | Gelenkmodelle der sechs Figuren je Stufe, Körpersprache (`locomotion`), Steuerung am Boden und in der Luft (`Monster`) |
 | `tools.js` | Angriffe: Tabelle `MOVES` je Figur (leicht/schwer, Pose, Wirkung) und die Bausteine dafür (`blow`, `shock`, `bolt`, `ray`, `rocket`, `bomb`, `grab` …) |
 | `actors.js` | Bewohner und Einsatzkräfte: Polizeiautos, Feuerwehr, Reporter-, Lösch- und Militär-Hubschrauber, Kampfflieger; Alarmstufe |
 | `frail.js` | Standfestigkeit schlanker Bauten: Was mit dem Schwerpunkt neben seiner Standfläche hängt, kippt |
+| `rampart.js` | Der Schutzschirm über den Mauern von Festung Titan: keine Figur kommt hinüber, nur durch Tor oder Bresche |
+| `spans.js` | Wie Superstrukturen brechen: Seile reißen und schwingen an ihren Festpunkten herab (Kette aus Würfeln, danach als Schutt abgelegt), Träger halten als Kragarm oder brechen an der Stütze, Mauerwerk stürzt feldweise ein, Glas zerspringt; zu schwere Figuren brechen ein |
 | `music.js` | Musik, die der Handlung folgt: lässt die Musik beim Laden in einem Worker komponieren und rendern und steuert den Stem-Player (drei Zustände nach Alarmstufe, Schichten nach Zerstörung); fällt ohne Worker auf `music-classic.js` zurück |
 | `music-score.js` | Die Musik als Daten: Ohrwurm, Zustände (Bummeln, Verfolgung, Chaos), Schichten, Übergänge; Zuordnung Alarmstufe → Zustand |
 | `music-classic.js` | Die frühere handgeschriebene Electro-Swing-Musik (Rückfall) |
 | `vendor/musik-generator/` | Eingekopierte Teile der Musik-Generator-Suite des Autors (MIT): Stem-Player und Stem-Renderer. Nicht hier ändern; `tools/vendor-music.mjs` kopiert neu |
 | `achievements.js` | Liste der 131 Erfolge, Zähler (`STATS`), Prüfung |
 | `traffic.js` | Straßennetz (`Roads`: Kreuzungen, Rechtsverkehr, Ausweichen, Wenden) und fahrende Autos und Busse (`Traffic`) |
-| `landmarks3.js` | Heimatwelten der Figuren (Rohbauten, Haufen, Baucontainer und Steinbruch der Großbaustelle); Mammutbäume, Urwaldpflanzen, Nester, Steinkreise, Vulkan und Sumpf; Zikkurats, Turm zu Babel, Lehmhäuser, Basar, Obelisken, Ischtar-Tor, Palmen und Feuerschalen; Neon-Türme mit Lichtlinien und Hochstraßen; Flaktürme und Bunker; schwebende Inseln und Luftschiffe; Fachwerkhäuser und Turnierplatz der Ritterburgen; Berg, Grandhotel, Seilbahn, Leuchtturm und Radarmast für Winterwelt, Hafen und Flughafen |
-| `links.js` | Superstrukturen: verbindet die Bauten einer Welt zu Netzen über mehrere Höhen, mit Knotenpunkten (Bahnhöfe, Auffahrten, Plattformtürme …) auf Flächen und Dächern (Hochbahn, Skybridge, Superhighway, Lianen, Hängebrücke, Achterbahn, Steinbrücke, Wehrgang, Glasröhre, Rohrleitung, Förderbrücke, Skywalk, Laufsteg, Seilbahn) |
+| `landmarks3.js` | Heimatwelten der Figuren (Rohbauten, Haufen, Baucontainer und Steinbruch der Großbaustelle); Mammutbäume, Urwaldpflanzen, Nester, Steinkreise, Vulkan mit Geheimgang, Lavasee, Kristallen und goldenem Götzenbild, Sumpf; Zikkurats, Turm zu Babel, Lehmhäuser, Basar, Obelisken, Ischtar-Tor, Palmen und Feuerschalen; Neon-Türme mit Lichtlinien und Hochstraßen; Flaktürme und Bunker; schwebende Inseln und Luftschiffe; Fachwerkhäuser und Turnierplatz der Ritterburgen; Berg, Grandhotel, Seilbahn, Leuchtturm und Radarmast für Winterwelt, Hafen und Flughafen |
+| `links.js` | Superstrukturen: verbindet die Bauten einer Welt zu Netzen über mehrere Höhen, mit Knotenpunkten (Bahnhöfe, Auffahrten, Plattformtürme …) auf Flächen und Dächern (Hochbahn, Skybridge, Superhighway, Lianen, Hängebrücke, Achterbahn, Steinbrücke, Aquädukt auf Arkaden mit Wasserreservoir und Brunnentürmen, Wehrgang, Glasröhre, Rohrleitung, Förderbrücke, Skywalk, Laufsteg, Seilbahn); merkt sich je Verbindung den Verlauf für `spans.js` und je Bodensäule, wo Verbindungen liegen (`world.isLink`) |
 | `fortress.js` | Festung Titan: Wüste, Graben, zwei Mauerringe mit Türmen und Geschützen, Vorposten, Hof mit Militärbauten, Riesenmaschinen, Kommandoturm und Munitionsdepot |
 | `landmarks.js`, `landmarks2.js` | Besondere Grundstücke für den Stadtgenerator: Fahrgeschäfte, Hafenanlagen, Riesenbauten; Flughafen, Burg, Raumhafen, Winterwelt, Unterwasserstadt |
 | `autopilot.js` | Idle-Modus: füllt den Eingabezustand, wählt Ziele, Angriffe und Welten |

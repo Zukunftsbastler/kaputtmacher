@@ -36,6 +36,89 @@ async function run() {
   if (sc === 'model') { const q = new URLSearchParams(location.search), m = g.monster; g.hud.hintBox.remove(); if (q.get('tool')) g.selectTool(q.get('tool')); await wait(800); g.camOffset = Number(q.get('view') ?? 2.3); g.pitchOffset = Number(q.get('pitch') ?? -0.1); g.input.aimX = innerWidth * Number(q.get('ax') ?? 0.5); g.input.aimY = innerHeight * Number(q.get('ay') ?? 0.45); if (q.get('fire')) { await wait(400); if (q.get('fire') === 'heavy') g.input.press(true); else fire(Number(q.get('ax') ?? 0.5), Number(q.get('ay') ?? 0.45)); await wait(Number(q.get('at') ?? 350)); } else await wait(1200); window.__extra = { tool: g.tool, look: +m.pose.look.toFixed(2), pitch: +m.pose.aimPitch.toFixed(2), boom: +m.pose.j.boom[0].toFixed(2) }; }
   if (sc === 'busshot') { const q = new URLSearchParams(location.search), d = Number(q.get('d') ?? 120); await wait(1500); const b = g.traffic.cars.find((c) => c.bus) ?? g.traffic.cars[0]; if (b) { g.fly = true; for (let i = 0; i < 30; i++) { const px = -Math.cos(b.yaw), pz = Math.sin(b.yaw); g.flyPos = [b.x + px * d, b.y + d * 0.35 + 4, b.z + pz * d]; g.camYaw = Math.atan2(-px, -pz); g.flyPitch = -0.33; await wait(40); } } window.__extra = { bus: !!b?.bus, cars: g.traffic.cars.length }; }
   if (sc === 'movetest') { const q = new URLSearchParams(location.search), m = g.monster, w = g.world, heavy = q.get('heavy') === '1'; let best = null, bd = 1e9; for (const st of g.hud.major) { if (st.top - st.y0 < m.h * 1.5 || st.x1 - st.x0 < 20 || st.link) continue; const d = Math.hypot((st.x0 + st.x1) / 2 - m.x, (st.z0 + st.z1) / 2 - m.z); if (d < bd) { bd = d; best = st; } } const out = []; if (best) { const cx = (best.x0 + best.x1) / 2; m.x = cx; m.z = best.z0 - m.h * 0.9 - 2; m.y = w.heightBelow(m.x, m.z, 60); m.heading = 0; g.camYaw = 0; g.selectTool(q.get('tool')); await wait(600); for (let i = 0; i < 3; i++) { const r0 = w.remaining; g.aim.x = cx; g.aim.y = m.y + m.h * 0.5; g.aim.z = best.z0 + 2; g.tools.use(q.get('tool'), heavy); const t0 = performance.now(); while ((g.tools.act || performance.now() - t0 < 300) && performance.now() - t0 < 6000) { g.aim.x = cx; g.aim.y = m.y + m.h * 0.5; g.aim.z = best.z0 + 2; await wait(30); } await wait(300); out.push(r0 - w.remaining); } } window.__extra = { tool: q.get('tool'), heavy, h: +m.h.toFixed(1), removed: out }; }
+  if (sc === 'span') { // cut a superstructure (mode cut|anchor|pier|load) and watch it from the side
+    const q = new URLSearchParams(location.search), style = q.get('style'), mode = q.get('mode') ?? 'cut', w = g.world, { yAt } = await import('./src/spans.js');
+    const ks = g.spans.list.filter((k) => k.sp.style === style && (mode !== 'pier' || k.piers.length) && (!q.get('solid') || k.st.ends.every((e) => !w.structures[e].link))).sort((a, b) => b.sp.L - a.sp.L), k = ks[Math.min(Number(q.get('k') ?? 0), ks.length - 1)], out = { n: ks.length, log: [] };
+    window.__extra = out;
+    if (q.get('nospans')) g.spans.update = () => {};
+    if (q.get('nolinkcol')) w.linkHead.fill(-1);
+    if (k) {
+      const sp = k.sp, tm = Number(q.get('t') ?? 0.5) * sp.L, tl = Number(q.get('lt') ?? q.get('t') ?? 0.5) * sp.L, cx = sp.x + sp.ux * tm, cz = sp.z + sp.uz * tm, cy = yAt(sp, tm), lx = sp.x + sp.ux * tl, lz = sp.z + sp.uz * tl, ly = yAt(sp, tl) - Number(q.get('ldown') ?? 0), dist = Math.max(Number(q.get('dmin') ?? 70), sp.L * Number(q.get('d') ?? 0.75)), side = Number(q.get('side') ?? 1);
+      const total = () => { let n = 0; for (let t = 1; t < sp.L - 1; t++) n += g.spans.count(k, t); return n; };
+      Object.assign(out, { L: Math.round(sp.L), piers: k.piers.length, y: cy, ground: w.heightBelow(cx, cz, cy - 3) });
+      g.fly = true;
+      const look = () => { g.flyPos = [lx + sp.nx * dist * side, ly + dist * 0.25, lz + sp.nz * dist * side]; g.camYaw = Math.atan2(-sp.nx * side, -sp.nz * side); g.flyPitch = -0.24; };
+      for (let i = 0; i < 25; i++) { look(); await wait(60); }
+      out.before = total();
+      if (mode === 'cut') g.destruction.sphere(cx, cy + 1, cz, k.S.hw + 2.5, 500, { quiet: true });
+      if (mode === 'anchor') { const a = k.anchors[0]; for (let i = 0; i < a.length; i += 3) { w.set(a[i], a[i + 1], a[i + 2], 0); g.destruction.addSeeds(a[i], a[i + 1], a[i + 2]); } const r = k.S.hw + 7; g.destruction.sphere(sp.x - sp.ux * (r - 2), yAt(sp, 0) + 2, sp.z - sp.uz * (r - 2), r, 900, { quiet: true }); g.spans.mark(k); } // the building around the end is smashed
+      if (mode === 'pier') { const p = k.piers[Math.floor(k.piers.length / 2)]; out.pierT = Math.round(p.t); for (const row of p.rows) for (let i = 0; i < row.length; i += 3) { w.set(row[i], row[i + 1], row[i + 2], 0); g.destruction.addSeeds(row[i], row[i + 1], row[i + 2]); } g.spans.mark(k); }
+      if (mode === 'load') { const m = g.monster; m.stage = Number(q.get('stage') ?? 5); m.h = m.targetHeight(); m.x = cx; m.z = cz; m.y = cy + k.B.deck[1] + 1; m.vy = 0; out.h = +m.h.toFixed(1); }
+      const T = Number(q.get('run') ?? 6000), t0 = performance.now();
+      while (performance.now() - t0 < T) { if (q.get('follow') !== '0') look(); await wait(250); out.log.push([g.spans.chains.length, g.spans.timed.length, g.bodies.list.length, total()].join('/')); }
+      let rub = 0; for (let t = -2; t <= sp.L + 2; t += 1) for (let y = 0; y < cy + 4; y++) { const x = Math.round(sp.x + sp.ux * t), z = Math.round(sp.z + sp.uz * t), v = w.get(x, y, z); if (v >= 128 && v < 253) rub++; }
+      if (q.get('touch')) { const tk = {}; for (let t = 2; t < sp.L - 2; t++) { const x = sp.x + sp.ux * t, z = sp.z + sp.uz * t, y = yAt(sp, t); for (let s2 = -k.S.hw; s2 <= k.S.hw; s2++) for (let dy = k.S.clear[0]; dy <= k.S.clear[1]; dy++) { const px = Math.round(x + sp.nx * s2), pz = Math.round(z + sp.nz * s2), py = y + dy; if (!k.mine[w.get(px, py, pz)] || !w.isLink(px, py, pz)) continue; for (const [dx, ddy, dz] of [[1,0,0],[-1,0,0],[0,0,1],[0,0,-1],[0,-1,0],[0,1,0]]) { const v = w.get(px + dx, py + ddy, pz + dz); if (!v || g.spans.inside(k, px + dx, py + ddy, pz + dz)) continue; const key = (w.isLink(px + dx, py + ddy, pz + dz) ? 'L:' : 'B:') + w.structures[w.footprint[((px + dx) & w.mx) + w.sx * ((pz + dz) & w.mz)]].kind + '@t' + Math.round(t); tk[key] = (tk[key] ?? 0) + 1; } } } out.touch = Object.entries(tk).filter(([key]) => +key.split('@t')[1] > Number(q.get('tmin') ?? 0)).slice(0, 12); out.ends = k.st.ends.map((e) => w.structures[e].kind + (w.structures[e].linkStyle ?? '')); out.joined = (g.spans.byEnd.get(k.st.id) ?? []).length; }
+      Object.assign(out, { after: total(), gone: k.gone, failed: k.failed, rubbleOnPath: rub, spans: g.progress.stats.spans, lost: w.structures.filter((s) => s.total > 50 && s.remaining < s.total * 0.8).map((s) => s.kind + ':' + Math.round(100 * s.remaining / s.total)).slice(0, 30).join(' ') });
+    }
+  }
+  if (sc === 'spantime') { const t0 = performance.now(); g.spans.reset(g.world); const t1 = performance.now(); let n = 0; const t2 = performance.now(); for (let i = 0; i < 200; i++) { g.spans.update(1 / 60); n++; } const t3 = performance.now(); window.__extra = { links: g.spans.list.length, resetMs: +(t1 - t0).toFixed(1), updateMs: +((t3 - t2) / n).toFixed(3), anchors: g.spans.list.reduce((a, k) => a + k.anchors[0].length / 3 + k.anchors[1].length / 3, 0), pierRows: g.spans.list.reduce((a, k) => a + k.piers.reduce((b, p) => b + p.rows.length, 0), 0) }; }
+  if (sc === 'hubview') { const q = new URLSearchParams(location.search), kind = q.get('hub'), list = g.world.structures.filter((s) => s.hub === kind || s.kind === kind), st = list[Number(q.get('k') ?? 0)]; if (st) { const cx = (st.x0 + st.x1) / 2, cz = (st.z0 + st.z1) / 2, cy = (st.y0 + st.top) / 2, d = Number(q.get('d') ?? 120), a = Number(q.get('a') ?? 0.6), up = Number(q.get('up') ?? 0.5); g.fly = true; for (let i = 0; i < 40; i++) { g.flyPos = [cx - Math.sin(a) * d, cy + d * up, cz - Math.cos(a) * d]; g.camYaw = a; g.flyPitch = -Math.atan2(d * up, d) + Number(q.get('tilt') ?? 0); await wait(60); } } window.__extra = { n: list.length, at: st ? [st.x0, st.y0, st.z0, st.top] : null }; }
+  if (sc === 'volcano') { // a cutaway: the shell in front of the camera is lifted away (no physics), then the camera looks in
+    const q = new URLSearchParams(location.search), w = g.world, v = w.vents?.[0], out = {}; window.__extra = out;
+    if (v) {
+      const [cx, top, cz, crater, R, G] = v, a = Number(q.get('a') ?? 0.6), d = Number(q.get('d') ?? R * 1.6), up = Number(q.get('up') ?? 0.25), fx = -Math.sin(a), fz = -Math.cos(a);
+      if (q.get('cut') !== '0') { w.generating = true; for (let y = G - 1; y < top + 2; y++) for (let dz = -R - 2; dz <= R + 2; dz++) for (let dx = -R - 2; dx <= R + 2; dx++) { const t = w.get(cx + dx, y, cz + dz); if (!t) continue; const along = (dx * fx + dz * fz) / (Math.hypot(dx, dz) || 1); if (along > 0.55 && Math.hypot(dx, dz) > R * 0.5 && y >= G) { w.set(cx + dx, y, cz + dz, 0); w.markChunk((cx + dx) >> 5, y >> 5, (cz + dz) >> 5); } } w.generating = false; }
+      g.fly = true; for (let i = 0; i < 50; i++) { g.flyPos = [cx + fx * d, G + d * up, cz + fz * d]; g.camYaw = a; g.flyPitch = -Math.atan2(d * up - Number(q.get('aimy') ?? 20), d); await wait(60); }
+      if (q.get('erupt')) { const st = w.structures.find((s) => s.kind === 'idol'); const t0 = g.time; g.reactions.wake(v); for (let i = 0; i < Number(q.get('erupt')) / 60; i++) { g.flyPos = [cx + fx * d, G + d * up, cz + fz * d]; await wait(60); } out.bombs = g.reactions.bombs.length; out.secs = +(g.time - t0).toFixed(1); out.idol = st && +(st.remaining / st.total).toFixed(2); }
+      if (q.get('wake') === 'idol') { const { T } = await import('./src/materials.js'); const st = w.structures.find((s) => s.kind === 'idol'); let hit = null; for (let y = st.y0; y <= st.top && !hit; y++) for (let z = st.z0; z <= st.z1 && !hit; z++) for (let x = st.x0; x <= st.x1; x++) if (w.get(x, y, z) === T.SECRET) { hit = [x, y, z]; break; } out.secret = hit; if (hit) g.destruction.sphere(hit[0] + 0.5, hit[1] + 0.5, hit[2] + 0.5, 3, 200, {}); await wait(3500); out.woke = v.woke !== undefined; out.eggs = g.progress.stats.eggs; }
+      if (q.get('wake') === 'tear') { const st = w.structures[v[6]]; st.remaining = Math.floor(st.total * 0.65); await wait(3500); out.woke = v.woke !== undefined; }
+      Object.assign(out, { R: Math.round(R), top, eruptions: g.progress.stats.eruptions, fires: g.fire.n });
+    }
+  }
+  if (sc === 'floaters') { // cut structures at the foot, let everything fall, then ask the support search about every voxel left: what still detaches was hanging in the air
+    const q = new URLSearchParams(location.search), w = g.world, kinds = (q.get('kind') ?? 'wheel').split(','), n = Number(q.get('n') ?? 3), cut = Number(q.get('cut') ?? 0.15);
+    const sts = w.structures.filter((s) => kinds.includes(s.kind) && s.total > 100).slice(0, n), out = { found: sts.map((s) => s.kind) }; window.__extra = out;
+    if (q.get('nolinkcol')) w.linkHead.fill(-1);
+    if (q.get('trace')) { const os = w.set.bind(w); out.removed = []; w.set = (x, y, z, t) => { const o = w.get(x, y, z); if (!t && o && o < 128 && out.removed.length < 400000) out.removed.push([x, y, z, new Error().stack.split('\n').slice(2, 4).map((l) => l.trim().replace(/\(http.*src\//, '(')).join('<')]); return os(x, y, z, t); }; }
+    const box = (st, fn) => { for (let y = st.y0; y <= st.top + 2; y++) for (let z = st.z0 - 3; z <= st.z1 + 3; z++) for (let x = st.x0 - 3; x <= st.x1 + 3; x++) fn(x, y, z, w.get(x, y, z)); };
+    if (sts[0]) { const s0 = sts[0], d = Math.max(60, (s0.top - s0.y0) * 1.3); g.fly = true; g.flyPos = [(s0.x0 + s0.x1) / 2, s0.y0 + d * 0.5, s0.z1 + d]; g.camYaw = Math.PI; g.flyPitch = -0.35; }
+    for (const st of sts) { const yc = st.y0 + Math.max(2, Math.round((st.top - st.y0) * cut)); for (let x = st.x0; x <= st.x1; x += 2) for (let z = st.z0; z <= st.z1; z += 2) if (w.get(x, yc, z)) g.destruction.sphere(x + 0.5, yc + 0.5, z + 0.5, 2.2, 200, { quiet: true }); }
+    for (let i = 0; i < 60; i++) { if (sts[0]) { const s0 = sts[0], d = Math.max(60, (s0.top - s0.y0) * 1.3); g.flyPos = [(s0.x0 + s0.x1) / 2, s0.y0 + d * 0.5, s0.z1 + d]; } await wait(100); }
+    const held = new Map(); for (const st of sts) box(st, (x, y, z, t) => { if (t && y > st.y0 + 1) held.set(w.index(x, y, z), [x, y, z, t]); });
+    if (q.get('control') !== '1') for (const [, [x, y, z]] of held) { if (g.destruction.seed) g.destruction.seed(x, y, z); else g.destruction.addSeeds(x, y - 1, z); }
+    await wait(2500);
+    let gone = 0, built = 0; const why = {}; for (const [, [x, y, z, t]] of held) if (w.get(x, y, z) !== t) { gone++; if (t < 128) built++; const k = (t >= 128 ? 'rubble' : 'built') + (w.isLink?.(x, y, z) ? ':link' : '') + ':' + (t & 127); why[k] = (why[k] ?? 0) + 1; }
+    out.why = Object.entries(why).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const cnt = (st) => { let c = 0; for (const [, [x, y, z, t]] of held) if (w.get(x, y, z) !== t && x >= st.x0 - 3 && x <= st.x1 + 3 && z >= st.z0 - 3 && z <= st.z1 + 3) c++; return c; }, s0 = sts.slice().sort((a, b) => cnt(b) - cnt(a))[0], pts = []; for (const [, [x, y, z, t]] of held) if (w.get(x, y, z) !== t && x >= s0.x0 - 3 && x <= s0.x1 + 3 && z >= s0.z0 - 3 && z <= s0.z1 + 3) pts.push([x - s0.x0, y - s0.y0, z - s0.z0, t]); out.pts = pts.filter((p, i) => i % Math.max(1, Math.floor(pts.length / 40)) === 0).slice(0, 40).map((p) => p.join(',')).join(' '); out.box = [s0.x1 - s0.x0, s0.top - s0.y0, s0.z1 - s0.z0]; if (out.removed) { const p0 = pts.find((p) => p[3] === 45); if (p0) { const [rx, ry, rz] = p0, X = rx + s0.x0, Y = ry + s0.y0, Z = rz + s0.z0; out.p0 = [X, Y, Z]; out.under = out.removed.filter((r) => r[0] === X && r[2] === Z && r[1] < Y && r[1] >= Y - 14).map((r) => r[1] + ':' + r[3]).slice(0, 8); } out.removed = out.removed.length; }
+    Object.assign(out, { left: held.size, floating: gone, builtFloating: built, welded: w.welded });
+  }
+  if (sc === 'fortress') { // the shield over the walls, a breach, the hardness of the walls, an exploding gun
+    const q = new URLSearchParams(location.search), w = g.world, m = g.monster, r = w.ramparts?.[0], out = {}; window.__extra = out;
+    if (r) {
+      const D = () => Math.max(Math.abs(m.x - r.c), Math.abs(m.z - r.c)), mode = q.get('mode') ?? 'jump';
+      const off = Number(q.get('off') ?? 60); // along the south wall, away from the gate
+      const face = () => { m.x = r.c + off; m.z = r.c + r.a + 14 + m.h * 0.5; m.y = w.heightBelow(m.x, m.z, 80); m.heading = Math.PI; g.camYaw = Math.PI; };
+      face(); await wait(600);
+      if (mode === 'breach') { for (let y = r.G + 1; y < r.G + r.h + 3; y += 3) for (let k = -8; k <= 8; k += 3) for (let q2 = -m.h; q2 <= m.h; q2 += 3) g.destruction.sphere(r.c + off + q2, y, r.c + r.a + k, 3, 400, { quiet: true }); await wait(1500); face(); await wait(400); }
+      if (mode === 'siege') { // keep firing at the wall (off=0: the gate) until it lets the creature through
+        g.selectTool(q.get('tool') ?? g.unlockedTools()[0]); const heavy = q.get('heavy') !== '0', t0 = g.time; let shots = 0;
+        const probe = { x: r.c + off, z: r.c + r.a - 2, h: m.h }; // a creature just across the line
+        while (!g.ramparts.open(r, probe) && shots < Number(q.get('max') ?? 60)) { face(); g.aim.x = r.c + off + ((shots % 3) - 1) * m.h * 0.2; g.aim.y = r.G + 2 + (Math.floor(shots / 3) % 4) * Math.min(r.h, m.h * 0.8) * 0.25; g.aim.z = r.c + r.a + 3; g.tools.use(g.tool, heavy); shots++; const s0 = performance.now(); while ((g.tools.act || performance.now() - s0 < 250) && performance.now() - s0 < 5000) await wait(30); }
+        out.shots = shots; out.secs = +(g.time - t0).toFixed(1); out.open = g.ramparts.open(r, probe); out.tool = g.tool;
+        const hw = Math.max(2, Math.round(m.h * 0.22)), top = r.G + Math.min(r.h + 2, Math.max(4, Math.round(m.h * 0.8))), lay = [];
+        for (let k = -((r.thick >> 1) + 4); k <= (r.thick >> 1) + 4; k++) { let sd = 0, al = 0; for (let q2 = off - hw; q2 <= off + hw; q2++) for (let y = r.G + 1; y <= top; y++) { const t = w.get(r.c + q2, y, r.c + r.a + k); al++; if (t && t < 128) sd++; } lay.push(k + ':' + Math.round(100 * sd / al)); }
+        out.layers = lay.join(' ');
+      }
+      if (mode === 'hit') { g.selectTool(q.get('tool') ?? g.unlockedTools()[0]); const r0 = w.remaining; for (let i = 0; i < 4; i++) { g.aim.x = r.c + off; g.aim.y = m.y + m.h * 0.5; g.aim.z = r.c + r.a + 2; g.tools.use(g.tool, true); const t0 = performance.now(); while ((g.tools.act || performance.now() - t0 < 300) && performance.now() - t0 < 5000) await wait(30); } out.removed = r0 - w.remaining; out.tool = g.tool; }
+      if (mode === 'gun') { const t = w.turrets.find((u) => !u.dead && Math.abs(u.z - (r.c + r.a)) < 30); const e0 = g.progress.stats.explosions; if (t) { g.fly = true; g.flyPos = [t.x, t.y + 40, t.z + 70]; g.camYaw = Math.PI; g.flyPitch = -0.5; await wait(500); g.destruction.sphere(t.x + 0.5, t.y + 0.5, t.z + 0.5, 1.2, 400, {}); await wait(1500); } out.gun = !!t; out.dead = t?.dead; out.explosions = g.progress.stats.explosions - e0; }
+      if (mode === 'jump') { // walk and jump at the wall for a while
+        let minD = D(), zaps = 0, z0 = g.reactions; g.input.keys.add('KeyW');
+        for (let i = 0; i < 40; i++) { if (i % 6 === 0) { g.doAction('stomp'); await wait(120); g.doAction('stomp'); } await wait(150); minD = Math.min(minD, D()); }
+        g.input.keys.clear(); out.minD = Math.round(minD); out.a = r.a; out.inside = minD < r.a - 2; void z0;
+      }
+      out.h = +m.h.toFixed(1);
+    }
+  }
   if (sc === 'punch') { g.input.keys.add('KeyW'); await wait(1500); g.input.keys.delete('KeyW'); for (let i = 0; i < 12; i++) { fire(0.5, 0.45); await wait(350); } }
   if (sc === 'walk') { g.input.keys.add('KeyW'); await wait(4000); }
   if (sc === 'shoot') { for (let i = 0; i < 10; i++) { fire(0.35 + i * 0.03, 0.42); await wait(450); } }

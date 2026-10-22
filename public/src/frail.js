@@ -46,7 +46,7 @@ export class Frail {
     // Start from a few built voxels at the edge of the damage.
     for (const [dx, dy, dz] of [[rr, 0, 0], [-rr, 0, 0], [0, 0, rr], [0, 0, -rr], [0, rr, 0], [0, -rr, 0]]) {
       const sx = Math.floor(x + dx), sy = Math.floor(y + dy), sz = Math.floor(z + dz), t = w.get(sx, sy, sz);
-      if (t && t < 128 && !isTerrain(t) && this.examine(sx, sy, sz)) return;
+      if (t && t < 128 && !isTerrain(t) && !w.isLink(sx, sy, sz) && this.examine(sx, sy, sz)) return;
     }
   }
 
@@ -70,7 +70,7 @@ export class Frail {
       }
       for (const d of DIRS) {
         const ax = cx + d[0], ay = cy + d[1], az = cz + d[2], a = w.get(ax, ay, az);
-        if (!a || a >= 128 || isTerrain(a)) continue;
+        if (!a || a >= 128 || isTerrain(a) || w.isLink(ax, ay, az)) continue; // superstructures are spans.js's business: a tree neither leans on its lianas nor carries their weight here
         const k = w.index(ax, ay, az);
         if (seen.has(k)) continue;
         seen.add(k);

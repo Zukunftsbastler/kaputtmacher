@@ -208,7 +208,7 @@ export const LOTS2 = {
       if (y % 4 === 0) g.shell(tx, G + y, cz - 2, 5, 1, 5, T.STEEL_RED);
     }
     for (const y of [Math.round(h * 0.3), Math.round(h * 0.6), Math.round(h * 0.9)]) g.box(tx + 5, by + y, cz, cx - 5 - tx - 4, 1, 1, T.STEEL); // service arms
-    g.box(tx + 2, G + h + 10, cz, 1, 6, 1, T.STEEL); g.set(tx + 2, G + h + 16, cz, T.NEON_RED);
+    g.box(tx, G + h + 10, cz - 2, 5, 1, 5, T.STEEL_RED); g.box(tx + 2, G + h + 11, cz, 1, 5, 1, T.STEEL); g.set(tx + 2, G + h + 16, cz, T.NEON_RED); // a cap on the tower, the aerial on it
     g.end();
   },
 
@@ -247,8 +247,9 @@ export const LOTS2 = {
   control(g, x0, G, z0, L, kit) {
     g.begin('control', '🖥️', { major: true });
     kit.house(g, x0 + 4, G, z0 + 8, L - 10, 20, 2, { flat: true, wall: T.CONCRETE_LIGHT });
-    const y = G + 2 * g.m(2.8, 5) + 2;
-    for (let i = 0; i < 4; i++) { const ax = x0 + 8 + i * 10; g.box(ax, y, z0 + 14, 1, 6 + i * 3, 1, T.STEEL); g.set(ax, y + 6 + i * 3, z0 + 14, i & 1 ? T.NEON_RED : T.NEON_GREEN); }
+    const roof = (x, z) => g.w.heightBelow(x, z, G + 40); // aerials and the dish stand on the roof, wherever it is
+    for (let i = 0; i < 4; i++) { const ax = x0 + 8 + i * 10, y = roof(ax, z0 + 14); g.box(ax, y, z0 + 14, 1, 6 + i * 3, 1, T.STEEL); g.set(ax, y + 6 + i * 3, z0 + 14, i & 1 ? T.NEON_RED : T.NEON_GREEN); }
+    const y = Math.max(roof(x0 + 12, z0 + 20), roof(x0 + 17, z0 + 25), roof(x0 + 12, z0 + 25), roof(x0 + 17, z0 + 20));
     g.box(x0 + 12, y, z0 + 20, 6, 1, 6, T.SHEET_GREY); g.box(x0 + 13, y + 1, z0 + 21, 4, 3, 4, T.SHEET_WHITE);
     g.end();
   },
@@ -344,7 +345,7 @@ export const LOTS2 = {
   // Coral: branching trees in loud colours with glowing tips.
   coral(g, x0, G, z0, L) {
     const branch = (x, y, z, dx, dz, len, c, depth) => {
-      const ex = Math.round(x + dx * len * 0.5), ey = y + len, ez = Math.round(z + dz * len * 0.5);
+      const ex = Math.round(x + dx * len * 0.5), ey = y + Math.round(len), ez = Math.round(z + dz * len * 0.5);
       line(g, x, y, z, ex, ey, ez, c, depth < 2 ? 2 : 1);
       if (depth >= 3 || len < 4) { g.set(ex, ey + 1, ez, g.pick([T.NEON_PINK, T.NEON_YELLOW, T.NEON_GREEN, T.NEON_BLUE])); return; }
       for (let k = 0; k < 3; k++) { const a = g.rnd() * 6.283; branch(ex, ey, ez, Math.cos(a), Math.sin(a), len * (0.55 + g.rnd() * 0.25), c, depth + 1); }

@@ -3,7 +3,9 @@
 // first stage); behind a dry moat a great wall with towers runs round the fortress, and inside a second, higher
 // wall guards the citadel: a command tower, a giant war machine and the ammunition depot, which goes up in one
 // enormous explosion once it is set off (reactions.js). Every gun on a tower or bunker is a turret (world.turrets)
-// that fires at the creature as soon as it comes within range (actors.js); a destroyed gun falls silent.
+// that fires at the creature as soon as it comes within range (actors.js); a destroyed gun goes up in an explosion.
+// The walls, their towers and the gatehouses are fortification, almost three times as hard as concrete, and a
+// shield rises above them into the sky (world.ramparts, rampart.js): nothing gets over them, only through.
 // There is no police here, and no traffic: soldiers run about instead.
 
 import { T } from './materials.js';
@@ -12,6 +14,7 @@ import { LOTS2 } from './landmarks2.js';
 import { LOTS3 } from './landmarks3.js';
 
 const STONE = T.SANDSTONE, DARK = T.CONCRETE_DARK, OLIVE = T.SHEET_GREEN;
+const FORT = T.FORT_STONE, ARMOUR = T.FORT_CONCRETE; // the walls, towers and gatehouses
 
 // The layout for a world of size S: centre, half the side of the outer and the inner wall.
 export function fortressPlan(S) {
@@ -47,24 +50,26 @@ function gun(g, x, y, z, ax, az, rocket = false) {
 // A round tower: hollow, floors every ten, battlements, guns on top pointing outwards.
 function tower(g, x, z, r, G, h, ax, az, guns = 2) {
   g.begin('tower', '🏯', { major: true });
-  g.cyl(x, z, r, G, h, STONE, true); g.cyl(x, z, r - 1, G, h, STONE, true);
-  for (let y = 10; y < h; y += 10) g.cyl(x, z, r - 1, G + y, 1, DARK);
-  g.cyl(x, z, r + 1, G + h, 1, DARK);
-  for (let a = 0; a < 6.283; a += 0.35) g.box(Math.round(x + Math.cos(a) * r), G + h + 1, Math.round(z + Math.sin(a) * r), 1, 2, 1, STONE);
+  g.cyl(x, z, r, G, h, FORT, true); g.cyl(x, z, r - 1, G, h, FORT, true);
+  for (let y = 10; y < h; y += 10) g.cyl(x, z, r - 1, G + y, 1, ARMOUR);
+  g.cyl(x, z, r + 1, G + h, 1, ARMOUR);
+  for (let a = 0; a < 6.283; a += 0.35) g.box(Math.round(x + Math.cos(a) * r), G + h + 1, Math.round(z + Math.sin(a) * r), 1, 2, 1, FORT);
   for (let a = 0.6; a < 6.283; a += 1.2) g.box(Math.round(x + Math.cos(a) * (r + 0.5)), G + Math.round(h * 0.6), Math.round(z + Math.sin(a) * (r + 0.5)), 1, 3, 1, 0); // arrow slits
   for (let k = 0; k < guns; k++) { const s = guns > 1 ? (k ? 1 : -1) : 0; gun(g, x + Math.round(az * s * 4), G + h + 1, z + Math.round(-ax * s * 4), ax, az, k === 1); }
   g.end();
 }
 
-// A stretch of wall along x or z with a walkway, battlements on the outer side and buttresses.
+// A stretch of wall along x or z with a walkway, battlements on the outer side and buttresses. Down the middle of
+// the walkway runs the glowing line from which the shield rises.
 function wall(g, x0, z0, len, alongX, G, h, thick, out) {
   g.begin('wall', '🧱', { major: true });
   const box = (a, y, b, l, hh, t, m) => (alongX ? g.box(x0 + a, y, z0 + b, l, hh, t, m) : g.box(x0 + b, y, z0 + a, t, hh, l, m));
-  box(0, G, 0, len, h, thick, STONE);
-  box(0, G + h - 1, 0, len, 1, thick, DARK);
+  box(0, G, 0, len, h, thick, FORT);
+  box(0, G + h - 1, 0, len, 1, thick, ARMOUR);
+  box(0, G + h - 1, thick >> 1, len, 1, 1, T.NEON_BLUE);
   const ob = out > 0 ? thick - 1 : 0;
-  for (let i = 0; i < len; i += 3) box(i, G + h, ob, 2, 3, 1, STONE); // crenellations
-  for (let i = 8; i < len - 4; i += 16) box(i, G, out > 0 ? thick : -3, 4, h - 6, 3, DARK); // buttresses on the outside
+  for (let i = 0; i < len; i += 3) box(i, G + h, ob, 2, 3, 1, FORT); // crenellations
+  for (let i = 8; i < len - 4; i += 16) box(i, G, out > 0 ? thick : -3, 4, h - 6, 3, ARMOUR); // buttresses on the outside
   g.end();
 }
 
@@ -72,6 +77,7 @@ function wall(g, x0, z0, len, alongX, G, h, thick, out) {
 // a gatehouse with a steel gate on the side facing +z.
 function ring(g, f, a, G, h, thick, tr) {
   const c = f.c, gw = 18;
+  g.w.ramparts.push({ c, a, G, h, thick }); // the shield over this ring (rampart.js)
   for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) tower(g, c + sx * a, c + sz * a, tr, G, h + 12, sx, sz); // corner towers aim diagonally outwards
   // north and the two flanks in two halves each, with a tower between; the south side is broken by the gate
   wall(g, c - a + tr, c - a - (thick >> 1), a - tr - 6, true, G, h, thick, -1); wall(g, c + 6, c - a - (thick >> 1), a - tr - 6, true, G, h, thick, -1);
@@ -82,10 +88,10 @@ function ring(g, f, a, G, h, thick, tr) {
   }
   wall(g, c - a + tr, c + a - (thick >> 1), a - tr - gw, true, G, h, thick, 1); wall(g, c + gw, c + a - (thick >> 1), a - tr - gw, true, G, h, thick, 1);
   g.begin('gate', '🚪', { major: true }); // gatehouse: two bastions, the arch above the passage, a steel gate
-  for (const s of [-1, 1]) { g.box(c + s * 13 - 5, G, c + a - 8, 10, h + 10, 16, DARK); gun(g, c + s * 13, G + h + 10, c + a + 4, 0, 1, s > 0); }
-  g.box(c - 8, G + 22, c + a - 8, 16, h - 12, 16, STONE);
-  g.box(c - 8, G, c + a + 2, 16, 22, 1, T.STEEL_DARK);
-  for (let i = -8; i < 8; i += 2) g.box(c + i, G, c + a + 3, 1, 22, 1, T.STEEL_YELLOW);
+  for (const s of [-1, 1]) { g.box(c + s * 13 - 5, G, c + a - 8, 10, h + 10, 16, ARMOUR); gun(g, c + s * 13, G + h + 10, c + a + 4, 0, 1, s > 0); }
+  g.box(c - 8, G + 22, c + a - 8, 16, h - 12, 16, FORT);
+  g.box(c - 8, G, c + a + 2, 16, 22, 3, T.STEEL_DARK); // the gate, three plates thick: the weak point of the wall
+  for (let i = -8; i < 8; i += 2) g.box(c + i, G, c + a + 5, 1, 22, 1, T.STEEL_YELLOW);
   g.end();
 }
 
@@ -97,6 +103,7 @@ function outpost(g, x, z, G, k) {
     for (let a = 0; a < 6.283; a += 1.05) g.box(Math.round(x + Math.cos(a) * 7), G + 4, Math.round(z + Math.sin(a) * 7), 2, 1, 2, 0); // slits
     for (let a = 0; a < 6.283; a += 0.2) g.box(Math.round(x + Math.cos(a) * 11), G, Math.round(z + Math.sin(a) * 11), 2, 2, 2, T.MUDBRICK); // sandbags
     gun(g, x, G + 8, z, 0, 1);
+    g.underpin(); // the dunes are not flat
     g.end();
   } else if (k === 1) {
     g.begin('watchtower', '🗼', { major: true });
@@ -105,6 +112,7 @@ function outpost(g, x, z, G, k) {
     g.box(x - 5, G + 24, z - 5, 11, 1, 11, T.WOOD); g.shell(x - 5, G + 25, z - 5, 11, 3, 11, T.WOOD_LIGHT); g.box(x - 5, G + 31, z - 5, 11, 1, 11, T.SHEET_GREY);
     for (const [a, b] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) g.box(x + a, G + 28, z + b, 1, 3, 1, T.WOOD_DARK);
     gun(g, x, G + 25, z, 0, 1);
+    g.underpin();
     g.end();
   } else {
     g.begin('camp', '⛺', { major: true });
@@ -113,6 +121,7 @@ function outpost(g, x, z, G, k) {
     g.box(x + 4, G, z + 9, 4, 3, 4, T.WOOD_LIGHT);
     for (let y = 0; y < 18; y++) g.set(x, G + y, z - 12, T.STEEL); g.set(x, G + 18, z - 12, T.NEON_RED); // radio mast
     gun(g, x, G, z + 4, 0, 1);
+    g.underpin();
     g.end();
   }
 }
@@ -209,7 +218,7 @@ function command(g, x, G, z, H, k) {
 
 export function buildFortress(g, f, G, H, kit) {
   const { c, A, B } = f, w = g.w, S = w.sx;
-  w.turrets = []; w.depots = [];
+  w.turrets = []; w.depots = []; w.ramparts = [];
   // Outer wall, inner wall (higher).
   ring(g, f, A, G, 40, 6, 12);
   ring(g, f, B, G, 54, 7, 11);
@@ -247,7 +256,7 @@ export function buildFortress(g, f, G, H, kit) {
     const ahead = i < near / 2, x = ahead ? Math.round(c + (g.rnd() - 0.5) * A * 1.6) : g.int(0, S - 1);
     const z = ahead ? Math.round(c + f.moat[1] + 30 + g.rnd() * Math.max(10, f.spawnZ - c - f.moat[1] - 70)) : g.int(0, S - 1);
     if (Math.hypot(x - c, z - f.spawnZ) < 45 || Math.max(Math.abs(x - c), Math.abs(z - c)) < f.moat[1] + 20) continue;
-    outpost(g, x, f.height(x, z), z, i % 3);
+    outpost(g, x, z, f.height(x, z), i % 3);
     i++;
   }
   for (let i = 0; i < S / 12; i++) {

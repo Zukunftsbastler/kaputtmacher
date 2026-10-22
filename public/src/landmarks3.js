@@ -1,7 +1,7 @@
 // The home turfs of the five creatures: worlds built for what each of them does best, all of them tall
 // (well over 180 voxels) and full of weak points from which a collapse spreads.
 //   dino     the primeval necropolis: mammoth trees with tree-house villages and rope bridges, giant skeletons
-//   gorilla  Babel: ziggurats with pillared halls, a tower of Babel, aqueducts and hanging gardens
+//   gorilla  Babel: ziggurats with pillared halls, a tower of Babel, hanging gardens, aqueducts from the reservoirs
 //   robot    the neon megacity by night: towers with giant billboards, highways on stilts, arcologies
 //   tank     fortress Titan (fortress.js; flak towers and bunkers come from here)
 //   jet      the cloud shipyard: floating islands held by levitation beams and cables, moored airships, a cable car
@@ -78,8 +78,8 @@ function fossil(g, x0, G, z0, L) {
   g.box(x2 + 1, sy - 5, cz - 3, 8, 2, 6, T.TILE_WHITE); for (let i = 0; i < 8; i += 2) g.set(x2 + 1 + i, sy - 3, cz - 3, T.TILE_WHITE); // jaw and teeth
   g.end();
   g.begin('ruin', '🏛️', { major: true });
-  for (let i = 0; i < 6; i++) { const px = x0 + 6 + i * 8, pz = z0 + 6, ph = g.int(6, 22); g.box(px, G, pz, 3, ph, 3, T.STONE); if (ph > 14) g.box(px - 1, G + ph, pz - 1, 5, 2, 5, T.STONE); }
-  g.box(x0 + 5, G + 22, z0 + 5, 18, 2, 5, T.STONE); // a lintel still lying on three columns
+  for (let i = 0; i < 6; i++) { const px = x0 + 6 + i * 8, pz = z0 + 6, ph = i < 3 ? 22 : g.int(6, 22); g.box(px, G, pz, 3, ph, 3, T.STONE); if (ph > 14 && i >= 3) g.box(px - 1, G + ph, pz - 1, 5, 2, 5, T.STONE); }
+  g.box(x0 + 5, G + 22, z0 + 5, 18, 2, 5, T.STONE); // a lintel still lying on the first three columns
   g.box(x0 + 20, G, z0 + L - 12, 8, 3, 5, T.GRANITE); g.set(x0 + 23, G + 3, z0 + L - 10, T.SECRET); // altar
   g.end();
 }
@@ -95,11 +95,15 @@ export function jungle(g, x, y, z, scale = 1) {
       const r = cr - Math.abs(l - 1) * 2;
       for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) if (dx * dx + dz * dz <= r * r + g.rnd() * r) g.set(x + dx, y + th + l, z + dz, l === 2 ? T.LEAF_LIGHT : T.LEAF_DARK);
     }
-    for (let v = 0; v < 4; v++) { const a = g.rnd() * 6.28, d = cr * 0.8; const vx = Math.round(x + Math.cos(a) * d), vz = Math.round(z + Math.sin(a) * d); for (let i = 1; i < 4 + g.int(0, 6); i++) g.set(vx, y + th - i, vz, T.LEAF); }
+    for (let v = 0; v < 4; v++) { // vines hang from under the lowest layer of the crown
+      const a = g.rnd() * 6.28, d = Math.max(1, cr - 3) * 0.8; const vx = Math.round(x + Math.cos(a) * d), vz = Math.round(z + Math.sin(a) * d); for (let i = 1; i < 4 + g.int(0, 6); i++) g.set(vx, y + th - i, vz, T.LEAF); }
   } else if (k < 0.82) { // tree fern: a scaly stem and a rosette of arching fronds
     const th = Math.round((7 + g.rnd() * 6) * scale), fl = Math.round((6 + g.rnd() * 3) * scale);
     g.box(x, y, z, 1, th, 1, T.WOOD_DARK);
-    for (let a = 0; a < 6.28; a += 0.8) for (let i = 1; i <= fl; i++) g.set(Math.round(x + Math.cos(a) * i), y + th + Math.round(1.5 * Math.sin((i / fl) * 2.2)), Math.round(z + Math.sin(a) * i), i === fl ? T.LEAF : T.FERN);
+    for (let a = 0; a < 6.28; a += 0.8) for (let i = 1, px = x, py = y + th - 1, pz = z; i <= fl; i++) { // each frond in one piece from the top of the stem
+      const nx = Math.round(x + Math.cos(a) * i), ny = y + th + Math.round(1.5 * Math.sin((i / fl) * 2.2)), nz = Math.round(z + Math.sin(a) * i);
+      line(g, px, py, pz, nx, ny, nz, i === fl ? T.LEAF : T.FERN); px = nx; py = ny; pz = nz;
+    }
   } else { // cycad: a thick, short stem and stiff fronds, close to the ground
     g.box(x, y, z, 2, 3, 2, T.TRUNK);
     for (let a = 0; a < 6.28; a += 0.7) line(g, x, y + 3, z, Math.round(x + Math.cos(a) * 5 * scale), y + 6, Math.round(z + Math.sin(a) * 5 * scale), T.PALM);
@@ -113,7 +117,10 @@ function fernery(g, x0, G, z0, L) {
   g.begin('ferns', '🌿', { major: true });
   for (let k = 0; k < 7; k++) {
     const cx = x0 + g.int(6, L - 7), cz = z0 + g.int(6, L - 7), fl = g.int(7, 12);
-    for (let a = 0; a < 6.28; a += 0.45) for (let i = 1; i <= fl; i++) g.set(Math.round(cx + Math.cos(a) * i * 0.9), G + Math.round(i * 1.4 - (i * i) / fl), Math.round(cz + Math.sin(a) * i * 0.9), i > fl - 2 ? T.LEAF : T.FERN);
+    for (let a = 0; a < 6.28; a += 0.45) for (let i = 1, px = cx, py = G, pz = cz; i <= fl; i++) { // each frond in one piece from the stem
+      const nx = Math.round(cx + Math.cos(a) * i * 0.9), ny = G + Math.round(i * 1.4 - (i * i) / fl), nz = Math.round(cz + Math.sin(a) * i * 0.9);
+      line(g, px, py, pz, nx, ny, nz, i > fl - 2 ? T.LEAF : T.FERN); px = nx; py = ny; pz = nz;
+    }
   }
   g.end();
   g.begin('rocks', '🪨', { major: true });
@@ -152,13 +159,17 @@ function henge(g, x0, G, z0, L) {
   g.end();
 }
 
-// A volcano: a hollow cone of dark rock with lava in its crater and glowing streams down its side, and
-// smoke rising (world.vents, drawn by reactions.js).
+// A volcano: a cone of dark rock three voxels thick, with lava in its crater and glowing streams down its side, and
+// smoke rising (world.vents, drawn by reactions.js). It is hollow, and it hides a secret: behind a curtain of ferns
+// at its foot a passage leads into the mountain. Inside a lava lake glows, crystals grow from the walls, and on an
+// island of basalt the tribe keeps a giant golden idol among the eggs of its nest. Whoever breaks the idol (or tears
+// the mountain open) wakes the volcano: it erupts (reactions.js).
 function volcano(g, x, G, z, W, D, kit, H) {
   const cx = x + (W >> 1), cz = z + (D >> 1), R = Math.min(W, D) / 2 - 4, top = Math.min(H - G - 40, Math.round(R * 1.1)), crater = R * 0.22;
-  g.begin('volcano', '🌋', { major: true });
+  const outer = (y) => R - ((R - crater) * y) / top, isle = Math.round(R * 0.28), face = g.int(0, 3), fx = [1, 0, -1, 0][face], fz = [0, 1, 0, -1][face];
+  const st = g.begin('volcano', '🌋', { major: true });
   for (let y = 0; y < top; y++) {
-    const r = R - ((R - crater) * y) / top;
+    const r = outer(y);
     for (let dz = -Math.ceil(r); dz <= r; dz++) for (let dx = -Math.ceil(r); dx <= r; dx++) {
       const d = Math.hypot(dx, dz);
       if (d > r || d < r - 3) continue; // a shell three voxels thick
@@ -170,8 +181,50 @@ function volcano(g, x, G, z, W, D, kit, H) {
     const a = k * 1.57 + g.rnd(), len = top - 10;
     for (let i = 0; i < len; i++) { const y = top - 8 - i, r = R - ((R - crater) * y) / top + 0.5; g.set(Math.round(cx + Math.cos(a + Math.sin(i * 0.08) * 0.08) * r), G + y, Math.round(cz + Math.sin(a + Math.sin(i * 0.08) * 0.08) * r), T.LAVA); }
   }
+  // Inside: a lake of lava over the whole floor, an island in the middle and a causeway of basalt to the passage.
+  const floor = outer(0) - 4;
+  for (let dz = -Math.ceil(floor); dz <= floor; dz++) for (let dx = -Math.ceil(floor); dx <= floor; dx++) {
+    const d = Math.hypot(dx, dz), along = dx * fx + dz * fz, across = Math.abs(dx * fz - dz * fx);
+    if (d > floor) continue;
+    if (d <= isle) g.box(cx + dx, G - 1, cz + dz, 1, 3, 1, T.BASALT);
+    else if (along > 0 && across <= 3) g.box(cx + dx, G - 1, cz + dz, 1, 2, 1, T.BASALT);
+    else g.set(cx + dx, G - 1, cz + dz, T.LAVA);
+  }
+  // The passage: through the shell at the foot, hidden behind ferns.
+  for (let y = 0; y < 12; y++) {
+    const r = outer(y);
+    for (let d = r - 5; d <= r + 0.5; d += 0.5) for (let c = -4; c <= 4; c++) g.set(Math.round(cx + fx * d - fz * c), G + y, Math.round(cz + fz * d + fx * c), d > r - 1.5 && y < 11 ? T.FERN : 0);
+  }
+  // Crystals growing from the inner wall, pointing inwards and upwards.
+  for (let k = 0; k < 46; k++) {
+    const a = g.rnd() * 6.283, y = g.int(4, Math.round(top * 0.65)), ri = outer(y) - 2, ca = Math.cos(a), sa = Math.sin(a), c = g.chance(0.6) ? T.CRYSTAL : T.CRYSTAL_PINK;
+    for (let n = g.int(3, 5); n > 0; n--) {
+      const len = g.int(4, 11), tilt = g.rnd() * 0.9, sp = (g.rnd() - 0.5) * 0.7, bx = Math.round(cx + ca * ri), bz = Math.round(cz + sa * ri);
+      line(g, bx, G + y, bz, Math.round(bx - (ca - sa * sp) * len), G + y + Math.round(len * tilt), Math.round(bz - (sa + ca * sp) * len), c, n === 1 ? 2 : 1);
+    }
+  }
   g.end();
-  (g.w.vents ??= []).push([cx, G + top, cz, crater]);
+  // The idol: a golden tyrannosaur on a pedestal of basalt, looking at the passage, with a hidden treasure in its
+  // chest, glowing braziers at the corners and the eggs of the nest around it.
+  const idol = g.begin('idol', '🗿', { major: true }), sc = Math.max(0.6, Math.min(1.2, R / 90)), base = G + 6;
+  const put = (a, y, b, t) => g.set(cx + Math.round((fx * a - fz * b) * sc), base + Math.round(y * sc), cz + Math.round((fz * a + fx * b) * sc), t);
+  const blk = (a0, y0, b0, a1, y1, b1, t) => { for (let y = y0; y <= y1; y += 0.5 / sc) for (let b = b0; b <= b1; b += 0.5 / sc) for (let a = a0; a <= a1; a += 0.5 / sc) put(a, y, b, t); };
+  for (let y = G + 2; y < base; y++) for (let b = -10; b <= 10; b += 0.5) for (let a = -16; a <= 16; a += 0.5) g.set(cx + Math.round((fx * a - fz * b) * sc), y, cz + Math.round((fz * a + fx * b) * sc), T.BASALT); // the pedestal
+  for (const b of [-6, 3]) { blk(-3, 0, b, 2, 12, b + 3, T.GOLD); blk(-3, 0, b, 6, 1, b + 3, T.GOLD); } // legs and feet
+  blk(-10, 11, -6, 8, 22, 6, T.GOLD); // body
+  for (let i = 0; i <= 28; i++) { const t = i / 28, th = t < 0.6 ? 1.5 : 0.5; blk(-10 - i, 17 - 12 * t - th, -th, -10 - i, 17 - 12 * t + th, th, T.GOLD); } // tail
+  blk(6, 18, -4, 12, 28, 4, T.GOLD); // neck
+  blk(8, 27, -5, 22, 33, 5, T.GOLD); blk(10, 22, -4, 21, 24, 4, T.GOLD); // head and lower jaw, the mouth wide open
+  for (let a = 11; a <= 21; a += 2) for (const b of [-4, 4]) { put(a, 26, b, T.TILE_WHITE); put(a + 1, 25, b, T.TILE_WHITE); } // teeth
+  for (const b of [-5.5, 5.5]) put(17, 31, b, T.NEON_RED); // ruby eyes
+  for (const s of [-1, 1]) blk(8, 14, s * 6, 11, 18, s * 6, T.GOLD); // the little arms
+  put(0, 16, 0, T.SECRET);
+  for (const [a, b] of [[-15, -9], [15, -9], [-15, 9], [15, 9]]) { blk(a, -0.1, b, a + 1, 5, b + 1, T.BASALT); blk(a - 0.5, 6, b - 0.5, a + 1.5, 6, b + 1.5, T.LAVA); } // braziers
+  g.end();
+  g.begin('nest', '🥚', { major: true });
+  for (let k = 0; k < 9; k++) { const a = (k / 9) * 6.283 + 0.3, r = isle - 4; g.ball(Math.round(cx + Math.cos(a) * r), G + 3, Math.round(cz + Math.sin(a) * r), 2, [T.EGG]); g.set(Math.round(cx + Math.cos(a) * r), G + 2, Math.round(cz + Math.sin(a) * r), T.EGG); }
+  g.end();
+  (g.w.vents ??= []).push([cx, G + top, cz, crater, R, G, st.id, idol.id]);
   void kit;
 }
 
@@ -182,7 +235,11 @@ function swamp(g, x, B, z, W, D, kit) {
   for (let k = 0; k < 40; k++) { const rx = x + g.int(2, W - 3), rz = z + g.int(2, D - 3); for (let i = 0; i < 5; i++) g.box(rx + g.int(-2, 2), B, rz + g.int(-2, 2), 1, 12 + g.int(0, 6), 1, T.REED); }
   g.end();
   g.begin('lilies', '🍃', {});
-  for (let k = 0; k < 18; k++) { const lx = x + g.int(6, W - 7), lz = z + g.int(6, D - 7), r = g.int(2, 4); for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) if (dx * dx + dz * dz <= r * r && (dx || dz < 0)) g.set(lx + dx, top - 2, lz + dz, T.LEAF); }
+  for (let k = 0; k < 18; k++) { // lily pads, each on its stalk from the bottom
+    const lx = x + g.int(6, W - 7), lz = z + g.int(6, D - 7), r = g.int(2, 4);
+    for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) if (dx * dx + dz * dz <= r * r && (dx || dz < 0)) g.set(lx + dx, top - 2, lz + dz, T.LEAF);
+    g.box(lx, B, lz - 1, 1, top - 2 - B, 1, T.REED);
+  }
   g.end();
   for (let k = 0; k < 3; k++) {
     const hx = x + Math.round(W * (0.2 + 0.3 * k)), hz = z + (k & 1 ? D - 22 : 10);
@@ -246,19 +303,6 @@ function babel(g, x, G, z, W, D, kit, H) {
   void kit;
 }
 
-// An aqueduct: two storeys of arches carrying a water channel across the lot.
-function aqueduct(g, x0, G, z0, L) {
-  const cz = z0 + (L >> 1), top = G + 30;
-  g.begin('aqueduct', '🌉', { major: true });
-  for (let x = x0; x < x0 + L; x++) {
-    const p = (x - x0) % 12;
-    if (p < 3) g.box(x, G, cz - 2, 1, top - G, 5, T.STONE); // pillars
-    else { const a = Math.sin(((p - 3) / 9) * Math.PI); g.box(x, G + 13 + Math.round(a * 3), cz - 2, 1, 4 - Math.round(a * 3), 5, T.STONE); g.box(x, G + 25 + Math.round(a * 2), cz - 2, 1, 5 - Math.round(a * 2), 5, T.STONE); } // arches
-    g.box(x, top, cz - 3, 1, 3, 1, T.STONE); g.box(x, top, cz + 3, 1, 3, 1, T.STONE); g.box(x, top, cz - 2, 1, 1, 5, T.STONE); g.box(x, top + 1, cz - 2, 1, 2, 5, T.WATER); // channel
-  }
-  g.end();
-}
-
 // Hanging gardens: terraces with palms and vines spilling over their edges.
 function gardens(g, x0, G, z0, L, kit) {
   g.begin('gardens', '🌴', { major: true });
@@ -283,7 +327,8 @@ export function palm(g, x, y, z, scale = 1) {
   const st = g.begin('tree', '🌴', { grabbable: true }), th = Math.round((11 + g.rnd() * 7) * scale), lean = g.chance(0.5) ? 1 : -1;
   for (let i = 0; i < th; i++) g.set(x + (i > th * 0.6 ? lean : 0), y + i, z, i % 3 ? T.TRUNK : T.WOOD_DARK);
   const tx = x + lean, ty = y + th;
-  for (let a = 0; a < 6.28; a += 0.9) { const fl = Math.round(6 * scale); for (let i = 1; i <= fl; i++) g.set(Math.round(tx + Math.cos(a) * i), ty - Math.round((i * i) / (fl * 1.4)), Math.round(z + Math.sin(a) * i), T.PALM); }
+  g.set(tx, ty, z, T.PALM);
+  for (let a = 0; a < 6.28; a += 0.9) { const fl = Math.round(6 * scale); for (let i = 1, px = tx, py = ty, pz = z; i <= fl; i++) { const nx = Math.round(tx + Math.cos(a) * i), ny = ty - Math.round((i * i) / (fl * 1.4)), nz = Math.round(z + Math.sin(a) * i); line(g, px, py, pz, nx, ny, nz, T.PALM); px = nx; py = ny; pz = nz; } }
   g.box(tx, ty - 2, z, 1, 2, 1, T.WOOD_DARK);
   g.end();
   return st;
@@ -335,7 +380,7 @@ function obelisks(g, x0, G, z0, L) {
     const h = g.int(44, 62);
     for (let y = 0; y < h; y++) { const r = y < 3 ? 3 : 2 - Math.floor((y / h) * 1.2); g.box(ox - r + 2, G + y, z0 + 8 - r + 2, 2 * r, 1, 2 * r, y < 3 ? T.GRANITE : T.SANDSTONE); }
     g.box(ox + 1, G + h, z0 + 9, 2, 2, 2, T.GOLD); g.set(ox + 1, G + h + 2, z0 + 9, T.GOLD);
-    for (let y = 8; y < h - 6; y += 5) g.set(ox + 2, G + y, z0 + 7, T.GOLD); // hieroglyphs in gold
+    for (let y = 8; y < h - 6; y += 5) g.set(ox + 2, G + y, z0 + 7 - (2 - Math.floor((y / h) * 1.2)) + 2, T.GOLD); // hieroglyphs in gold, on the face as it narrows
   }
   g.end();
   for (let k = 0; k < 4; k++) { // the sphinxes: lion bodies lying down, heads up
@@ -447,7 +492,8 @@ function skihotel(g, x0, G, z0, L, kit, H) {
   }
   const ty = G + f * fh;
   for (let k = 0; 2 * k < d; k++) g.box(x - 1, ty + k, z + k - 1, w + 2, 1, Math.max(1, d + 2 - 2 * k), T.TILE_WHITE); // snowed-in gable roof
-  g.box(x + (w >> 1), ty + (d >> 1) + 1, z + (d >> 1), 1, 8, 1, T.STEEL); g.box(x + (w >> 1) + 1, ty + (d >> 1) + 5, z + (d >> 1), 5, 3, 1, T.FABRIC_RED); // flag
+  const py = g.w.heightBelow(x + (w >> 1), z + (d >> 1), ty + d); // the ridge
+  g.box(x + (w >> 1), py, z + (d >> 1), 1, 8, 1, T.STEEL); g.box(x + (w >> 1) + 1, py + 4, z + (d >> 1), 5, 3, 1, T.FABRIC_RED); // flag
   g.end();
   void kit;
 }
@@ -463,8 +509,9 @@ function gondola(g, x0, G, z0, L, kit, H) {
   }
   g.box(cx - 9, G + h, cz - 1, 19, 2, 3, c); // the cross arm
   for (const side of [-8, 8]) {
-    line(g, cx + side, G + h - 1, cz, cx + side, G + 12, cz + L + 40, T.STEEL_DARK); // the cable, down towards the valley
-    for (const f of [0.25, 0.6]) { const zz = Math.round(cz + (L + 40) * f), yy = Math.round(G + h - 1 - (h - 13) * f); g.box(cx + side, yy - 4, zz, 1, 4, 1, T.STEEL_DARK); g.box(cx + side - 3, yy - 11, zz - 3, 7, 7, 7, side < 0 ? T.CAR_RED : T.CAR_BLUE); g.box(cx + side - 3, yy - 9, zz - 3, 7, 2, 1, T.GLASS); }
+    line(g, cx + side, G + h - 1, cz, cx + side, G + 12, cz + L + 40, T.STEEL_DARK); // the cable, down towards the valley, to a post there
+    g.box(cx + side, G, cz + L + 40, 1, 12, 1, T.STEEL_DARK);
+    for (const f of [0.25, 0.6]) { const zz = Math.round(cz + (L + 40) * f), yy = Math.round(G + h - 1 - (h - 13) * f); g.box(cx + side, yy - 4, zz, 1, 6, 1, T.STEEL_DARK); g.box(cx + side - 3, yy - 11, zz - 3, 7, 7, 7, side < 0 ? T.CAR_RED : T.CAR_BLUE); g.box(cx + side - 3, yy - 9, zz - 3, 7, 2, 1, T.GLASS); }
   }
   g.box(cx - 10, G, cz - 6, 20, 8, 12, T.WOOD_DARK); g.box(cx - 11, G + 8, cz - 7, 22, 1, 14, T.TILE_WHITE); // the valley station
   g.end();
@@ -531,7 +578,7 @@ function shell(g, x0, G, z0, L, kit, H) {
     if (!bare || f === floors - open + 1) g.box(x, y, z, w, 1, w, T.CONCRETE); // the slab
     for (let a = 0; a < w; a += 6) for (let b = 0; b < w; b += 6) { // columns, with rebar on the topmost
       if (f === floors) { if ((a + b) % 12 === 0) g.box(x + a, y, z + b, 1, 3, 1, T.STEEL_RED); continue; }
-      g.box(x + a, y + 1, z + b, 1, fh - 1, 1, T.CONCRETE_LIGHT);
+      g.box(x + a, bare ? y : y + 1, z + b, 1, bare ? fh : fh - 1, 1, T.CONCRETE_LIGHT); // where no slab is, the column goes down onto the one below
     }
     if (f < floors - open - 1 && f % 2 === 0) for (let a = 1; a < w - 1; a++) if ((a >> 2) % 3) g.box(x + a, y + 1, z, 1, fh - 2, 1, T.BRICK_RED); // brick infill, here and there
   }
@@ -625,12 +672,14 @@ function gyro(g, x0, G, z0, L, kit, H) {
   g.cyl(cx, cz, 6, G, 3, T.CONCRETE); g.cyl(cx, cz, 3, G + 3, h - 3, T.SHEET_WHITE, true);
   for (let y = G + 10; y < G + h; y += 10) g.cyl(cx, cz, 3, y, 1, T.NEON_BLUE);
   g.cyl(cx, cz, 10, ry, 1, T.STEEL); g.cyl(cx, cz, 10, ry + 1, 4, T.GLASS, true); g.cyl(cx, cz, 9, ry + 1, 4, T.GLASS, true); g.cyl(cx, cz, 10, ry + 5, 1, T.STEEL_RED); // the cabin ring
-  for (let y = 0; y < 10; y++) g.set(cx, G + h + y, cz, y === 9 ? T.NEON_RED : T.STEEL);
+  g.cyl(cx, cz, 3, G + h, 1, T.STEEL); // a lid on the shaft, the beacon on it
+  for (let y = 1; y < 10; y++) g.set(cx, G + h + y, cz, y === 9 ? T.NEON_RED : T.STEEL);
   g.end();
   void kit;
 }
 
-// A looping: a vertical loop of track on a frame, with the run-in and run-out on the ground.
+// A looping: a vertical loop of track on a frame, with the run-in and run-out on short posts. The frame reaches
+// over the top of the loop and holds it there with a cross beam.
 function looping(g, x0, G, z0, L) {
   const cx = x0 + (L >> 1), cz = z0 + (L >> 1), R = Math.min(22, (L >> 1) - 4), cy = G + R + 4;
   g.begin('looping', '🎢', { major: true });
@@ -639,8 +688,9 @@ function looping(g, x0, G, z0, L) {
     g.set(x, y, cz + dz - 1, T.STEEL_RED); g.set(x, y, cz + dz + 1, T.STEEL_RED);
     if (Math.round(a * 50) % 6 === 0) g.box(x, y, cz + dz - 1, 1, 1, 3, T.STEEL_DARK);
   }
-  for (let i = -L / 2 + 3; i < L / 2 - 3; i++) { g.set(cx + i, G + 4, cz - 4, T.STEEL_RED); g.set(cx + i, G + 4, cz - 2, T.STEEL_RED); g.set(cx + i, G + 4, cz + 2, T.STEEL_RED); g.set(cx + i, G + 4, cz + 4, T.STEEL_RED); }
-  for (const s of [-1, 1]) { g.box(cx - 2, G, cz + s * 8, 4, cy - G, 1, T.STEEL); line(g, cx - R, G, cz + s * 8, cx, cy, cz + s * 8, T.STEEL); line(g, cx + R, G, cz + s * 8, cx, cy, cz + s * 8, T.STEEL); }
+  for (let i = -L / 2 + 3; i < L / 2 - 3; i++) for (const s of [-4, -2, 2, 4]) { g.set(cx + i, G + 4, cz + s, T.STEEL_RED); if (Math.round(i) % 4 === 0) g.box(cx + i, G, cz + s, 1, 4, 1, T.STEEL_DARK); }
+  for (const s of [-1, 1]) { g.box(cx - 2, G, cz + s * 8, 4, cy - G, 1, T.STEEL); line(g, cx - R, G, cz + s * 8, cx, cy + R + 1, cz + s * 8, T.STEEL); line(g, cx + R, G, cz + s * 8, cx, cy + R + 1, cz + s * 8, T.STEEL); }
+  g.box(cx, cy + R + 1, cz - 8, 1, 1, 17, T.STEEL); // the cross beam over the top
   g.end();
 }
 
@@ -724,7 +774,7 @@ function flak(g, x0, G, z0, L) {
     const oct = Math.abs(x) + Math.abs(z) <= r * 1.4;
     if (!oct) continue;
     const edge = Math.abs(x) > r - 3 || Math.abs(z) > r - 3 || Math.abs(x) + Math.abs(z) > r * 1.4 - 3;
-    if (edge || y % 13 === 0) g.set(cx + x, G + y, cz + z, T.CONCRETE_DARK); // walls three thick, a floor every 13
+    if (edge || y % 13 === 0 || y === h - 1) g.set(cx + x, G + y, cz + z, T.CONCRETE_DARK); // walls three thick, a floor every 13, a roof
   }
   for (const [a, b] of [[-r + 2, -r + 2], [r - 6, -r + 2], [-r + 2, r - 6], [r - 6, r - 6]]) {
     g.cyl(cx + a + 2, cz + b + 2, 3, G + h, 4, T.CONCRETE);
@@ -807,7 +857,6 @@ export const LOTS3 = {
   mammoth(g, x0, G, z0, L, kit, H) { mammoth(g, x0 + (L >> 1), G, z0 + (L >> 1), H); },
   fossil,
   ziggurat,
-  aqueduct,
   gardens,
   neontower,
   flak,

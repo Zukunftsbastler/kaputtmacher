@@ -2,7 +2,8 @@
 // usage: node --experimental-default-type=module tools/check.mjs
 //   1. Hostile and damaged save data must come out of the loader as a valid progress object.
 //   2. The achievement list must be consistent (unique ids, known counters, one per world).
-//   3. Every world must generate without an error.
+//   3. Every world must generate without an error, and almost nothing in it may float (tools/floating.mjs):
+//      what is not joined face to face with the ground hangs in the air once its surroundings are destroyed.
 
 let failed = 0;
 const fail = (msg) => { failed++; console.log('FAIL ' + msg); };
@@ -19,6 +20,7 @@ const { loadProgress } = await import('../public/src/progress.js');
 const { SPECIES } = await import('../public/src/monster.js');
 const { WORLDS } = await import('../public/src/worldgen.js');
 const { ACHIEVEMENTS, STATS } = await import('../public/src/achievements.js');
+const { floating } = await import('./floating.mjs');
 
 for (const [name, raw] of Object.entries(cases)) {
   globalThis.localStorage = { getItem: () => raw };
@@ -46,7 +48,9 @@ for (const [i, w] of WORLDS.entries()) {
     world.finalize();
     const major = world.structures.filter((s) => s.major && s.total > 0).length;
     if (!major || !world.spawn) fail(w.id + ': no buildings or no starting point');
-    console.log(w.id.padEnd(9), String(major).padStart(4), 'buildings', String(world.total).padStart(9), 'voxels', (performance.now() - t0).toFixed(0).padStart(5), 'ms', world.roads ? 'streets' : '');
+    const ms = performance.now() - t0, loose = floating(world);
+    if (loose.n > 100) fail(w.id + ': ' + loose.n + ' floating voxels: ' + Object.entries(loose.by).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => k + '=' + v).join(' '));
+    console.log(w.id.padEnd(9), String(major).padStart(4), 'buildings', String(world.total).padStart(9), 'voxels', ms.toFixed(0).padStart(5), 'ms', String(loose.n).padStart(4), 'floating', world.roads ? 'streets' : '');
   } catch (e) { fail(w.id + ': ' + e.message); }
 }
 // 4. The fallback music must schedule sensible notes at every intensity and in every world (run against a stand-in for Web Audio).

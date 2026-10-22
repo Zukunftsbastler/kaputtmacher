@@ -323,19 +323,30 @@ export class Actors {
   // army's fire it does no harm (unless "Militär stößt zurück" is on in the settings).
   updateTurrets(dt) {
     const g = this.g, w = g.world, list = w.turrets;
-    if (!list || !list.length || g.fly) return;
+    if (!list || !list.length) return;
     const m = g.monster, size = w.wrap ? w.sx : 0, rnd = g.rng, range = 150 + m.h * 3;
     for (const t of list) {
-      if (t.dead || (t.cool -= dt) > 0) continue;
+      if (t.dead) continue;
+      if (!w.get(Math.floor(t.x), Math.floor(t.y), Math.floor(t.z))) { t.dead = true; this.gunBlast(t); continue; } // the gun has been destroyed
+      if (g.fly || (t.cool -= dt) > 0) continue; // (no shooting at a free camera)
       const d = Math.hypot(wrapDelta(m.x - t.x, size), m.y - t.y, wrapDelta(m.z - t.z, size));
       if (d > range) { t.cool = 0.5 + rnd() * 0.5; continue; }
-      if (!w.get(Math.floor(t.x), Math.floor(t.y), Math.floor(t.z))) { t.dead = true; continue; } // the gun has been destroyed
       t.cool = t.rocket ? 3 + rnd() * 2.5 : 1.2 + rnd() * 1.6;
       if (this.shots.length > 70) continue;
       for (let k = 0; k < (t.rocket ? 1 : 3); k++) this.shots.push({ x: t.x + 0.5, y: t.y + 0.5, z: t.z + 0.5, speed: t.rocket ? 120 : 190 + k * 15, t: 4, rocket: t.rocket });
       g.fx.sparks(t.x + 0.5, t.y + 0.5, t.z + 0.5, 10, 4, 1, 0.85, 0.4);
       if (d < 220) { if (t.rocket) g.audio.rocket(); else g.audio.hit('metal', 0.12); }
     }
+  }
+
+  // A destroyed gun goes up with its ammunition: a big blast, a fireball, and a few more as the shells cook off.
+  // The blast may take the gun next to it along.
+  gunBlast(t) {
+    const g = this.g, rnd = g.rng, x = t.x + 0.5, y = t.y + 0.5, z = t.z + 0.5, r = t.rocket ? 10 : 8;
+    g.explode(x, y, z, r, 32);
+    g.fx.explosion(x, y + 3, z, r * 1.4);
+    g.shake(0.5); g.audio.boom(1.2);
+    for (let k = 0; k < 3; k++) g.tools.later(0.15 + k * 0.18 + rnd() * 0.1, () => g.explode(x + (rnd() - 0.5) * r, y + rnd() * r * 0.5, z + (rnd() - 0.5) * r, r * 0.45, 22));
   }
 
   count(list, kind) {

@@ -15,6 +15,8 @@
 // lift towers, lookouts, watchtowers, glass domes ... (HUBS). They stand on free ground or on the roof of a low
 // building, which is drawn into the network that way. A network may also join another one (spec.join: the sky
 // bridges of the neon city end on the decks of its highways), and piers may rest on the roofs they pass over.
+//
+// Every link keeps its course (st.span): spans.js reads it to decide what happens when the link is damaged.
 
 import { T, isTerrain } from './materials.js';
 
@@ -24,9 +26,10 @@ const PAINT = [T.CAR_RED, T.CAR_BLUE, T.CAR_YELLOW, T.CAR_WHITE, T.STEEL_YELLOW]
 // A style: how wide (hw: half width), where it needs room (clear: from y + lo to y + hi), how steep it may climb
 // (slope: height per length), how far it may reach (range), how much it sags (sag: share of its length, sagMax),
 // where it hangs on a building (at: share of the building's height; minH: buildings lower than that are left out;
-// above: lowest height over the ground), piers (pier: spacing; 0 = none), and what each slice of it looks like.
+// above: lowest height over the ground), piers (pier: spacing; 0 = none; arcade: a pillar every so many voxels with
+// arches in between, in tiers down to the ground), and what each slice of it looks like.
 // cross(g, put, t, f, k, link): draws one slice; put(s, dy, type) sets a voxel s across the path and dy above the deck.
-const STYLES = {
+export const STYLES = {
   // Elevated railway on a concrete beam, with trains on it.
   rail: { hw: 2, clear: [-2, 6], slope: 0.12, range: [30, 230], at: [0.2, 0.6], minH: 30, above: 14, pier: 26, pierW: 2, pierT: T.CONCRETE,
     cross(g, put, t, f, k, L) {
@@ -54,7 +57,7 @@ const STYLES = {
   vine: { hw: 2, clear: [0, 1], slope: 0.5, range: [10, 90], at: [0.75, 0.95], minH: 18, above: 10, sag: 0.12, sagMax: 14, pier: 0,
     cross(g, put, t, f, k) {
       for (const s of [-2, 0, 2]) put(s, Math.round(Math.sin(t * 0.4 + s) * 0.6), (Math.round(t) + s) % 7 ? T.LEAF_DARK : T.LEAF);
-      if (k % 9 === 4) { const s = ((k >> 3) % 3) - 1; for (let dy = 1; dy < 3 + (k % 5); dy++) put(s * 2, -dy, T.LEAF); }
+      if (k % 9 === 4) { const s = ((k >> 3) % 3) - 1, top = Math.round(Math.sin(t * 0.4 + s * 2) * 0.6); for (let dy = 1; dy < 3 + (k % 5); dy++) put(s * 2, top - dy, T.LEAF); } // tufts hang from their strand
     } },
   // A rope bridge: planks that sag in the middle, ropes at the sides on posts.
   rope: { hw: 2, clear: [0, 3], slope: 0.25, range: [16, 170], at: [0.4, 0.85], minH: 40, above: 16, sag: 0.08, sagMax: 9, pier: 0,
@@ -74,6 +77,14 @@ const STYLES = {
     cross(g, put, t) {
       for (let s = -2; s <= 2; s++) { put(s, 0, T.SANDSTONE); put(s, -1, T.SANDSTONE); }
       for (const s of [-2, 2]) { put(s, 1, T.SANDSTONE); if ((Math.round(t) % 5) === 0) put(s, 2, (Math.round(t) % 10) ? T.LEAF : T.FLOWER_RED); }
+    } },
+  // Aqueducts: an open channel of water on tiers of arches, nearly level, from a reservoir to the fountain towers
+  // and gardens of the city.
+  aqueduct: { hw: 3, clear: [-1, 3], slope: 0.05, range: [30, 260], at: [0.3, 0.8], minH: 14, above: 16, pier: 0, arcade: 12, pierT: T.SANDSTONE,
+    cross(g, put, t) {
+      for (let s = -3; s <= 3; s++) put(s, -1, Math.round(t) % 6 ? T.SANDSTONE : T.BRICK_YELLOW);
+      for (const s of [-3, 3]) { put(s, 0, T.SANDSTONE); put(s, 1, T.SANDSTONE); }
+      for (let s = -2; s <= 2; s++) { put(s, 0, T.STONE); put(s, 1, T.WATER); }
     } },
   // Wall walks between castles: a stone deck with battlements on both sides, on piers.
   stone: { hw: 2, clear: [-1, 4], slope: 0.2, range: [30, 200], at: [0.3, 0.7], minH: 14, above: 10, pier: 16, pierW: 3, pierT: T.STONE,
@@ -114,11 +125,12 @@ const STYLES = {
       for (let s = -1; s <= 1; s++) put(s, 0, T.STEEL_DARK);
       for (const s of [-1, 1]) { put(s, 2, T.STEEL); if (Math.round(t) % 3 === 0) put(s, 1, T.STEEL); }
     } },
-  // Cable cars between tall buildings: two cables with cabins hanging from them.
+  // Cable cars between tall buildings: two cables with cabins hanging from them (on hangers that reach their roofs).
   cable: { hw: 3, clear: [-8, 1], slope: 0.4, range: [40, 280], at: [0.6, 1], minH: 30, above: 20, sag: 0.04, sagMax: 10, pier: 0,
     cross(g, put, t, f, k, L) {
       put(-3, 0, T.STEEL_DARK); put(3, 0, T.STEEL_DARK);
-      for (const c of L.cabins) if (t >= c.t && t < c.t + 5) { const s0 = c.side * 3; put(s0, -1, T.STEEL_DARK); for (let s = s0 - 2; s <= s0 + 2; s++) for (let dy = -7; dy <= -3; dy++) put(s, dy, dy === -5 ? T.GLASS : c.paint); }
+      if (t < 1 || t > t / Math.max(f, 1e-6) - 1 || Math.round(t) % 24 === 0) for (let s = -2; s <= 2; s++) put(s, 0, T.STEEL_DARK); // yokes: at the ends they tie both cables to the building
+      for (const c of L.cabins) if (t >= c.t && t < c.t + 5) { const s0 = c.side * 3; put(s0, -1, T.STEEL_DARK); put(s0, -2, T.STEEL_DARK); for (let s = s0 - 2; s <= s0 + 2; s++) for (let dy = -7; dy <= -3; dy++) put(s, dy, dy === -5 ? T.GLASS : c.paint); }
     } },
 };
 
@@ -242,6 +254,30 @@ const HUBS = {
     const h = Math.min(H - 30 - y, g.int(30, 90));
     return towerHub(g, x, y, z, { size: 6, h, post: T.STEEL_YELLOW, beam: T.STEEL, brace: 5, plat: 8, platT: T.STEEL_DARK, rim: T.STEEL, from: 15, step: 15 });
   } },
+  // A reservoir high above the city: a square basin full of water on a block of vaulted masonry, with corner turrets
+  // and a stair. The aqueducts leave it at the water line. It looks for the highest ground it can find.
+  reservoir: { r: 14, icon: '💧', high: true, build(g, x, y, z, H) {
+    const R = 13, h = Math.min(H - 50 - y, g.int(26, 40)), top = y + h;
+    for (let yy = y; yy < top; yy++) g.shell(x - R, yy, z - R, 2 * R + 1, 1, 2 * R + 1, (yy - y) % 9 === 8 ? T.BRICK_YELLOW : T.SANDSTONE);
+    for (let a = -R + 5; a <= R - 5; a += 6) for (let b = -R + 5; b <= R - 5; b += 6) g.box(x + a, y, z + b, 2, h, 2, T.STONE); // the vaults inside
+    for (let i = -R + 3; i <= R - 7; i += 8) for (const [ax, az, w, d] of [[x + i, z - R, 4, 1], [x + i, z + R, 4, 1], [x - R, z + i, 1, 4], [x + R, z + i, 1, 4]]) g.box(ax, y, az, w, Math.round(h * 0.35), d, 0); // arched openings
+    g.box(x - R, top, z - R, 2 * R + 1, 1, 2 * R + 1, T.STONE);
+    g.shell(x - R, top + 1, z - R, 2 * R + 1, 4, 2 * R + 1, T.SANDSTONE);
+    g.box(x - R + 1, top + 1, z - R + 1, 2 * R - 1, 3, 2 * R - 1, T.WATER);
+    for (const [a, b] of [[-R, -R], [R - 2, -R], [-R, R - 2], [R - 2, R - 2]]) { g.box(x + a, top + 1, z + b, 3, 9, 3, T.BRICK_YELLOW); g.box(x + a, top + 10, z + b, 3, 1, 3, T.LEAF); }
+    for (let i = 0; i < h; i++) g.box(x - R - 3, y + i, z - R + 2 + i % (2 * R - 4), 3, 1, 2, T.SANDSTONE); // a stair zigzagging up one side
+    return [top + 1];
+  } },
+  // A fountain tower: a round tower with a basin on top from which the water is shared out, spouts on four sides and
+  // a round pool at its foot.
+  castellum: { r: 9, icon: '⛲', build(g, x, y, z) {
+    const h = g.int(22, 34), top = y + h;
+    g.cyl(x, z, 8, y, 2, T.STONE, true); g.cyl(x, z, 7, y, 1, T.WATER); g.cyl(x, z, 5, y, 1, T.STONE); // the pool
+    for (let yy = y; yy < top; yy++) g.cyl(x, z, 5, yy, 1, (yy - y) % 7 === 6 ? T.BRICK_YELLOW : T.SANDSTONE, true);
+    g.cyl(x, z, 7, top, 1, T.STONE); g.cyl(x, z, 7, top + 1, 3, T.SANDSTONE, true); g.cyl(x, z, 6, top + 1, 2, T.WATER);
+    for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { g.set(x + a * 8, top + 1, z + b * 8, T.STEEL_YELLOW); g.box(x + a * 6 - 1, y + 10, z + b * 6 - 1, 3, 6, 3, 0); } // golden spouts, doors
+    return [top + 1];
+  } },
   // A cable car pylon with a station platform under a roof at the top.
   pylon: { r: 7, icon: '🚡', build(g, x, y, z, H) {
     const h = Math.min(H - 30 - y, g.int(40, 90));
@@ -278,11 +314,13 @@ function hubSpot(g, r, roofOk, G, roadOk) {
   return null;
 }
 
-// Puts up `n` hubs of one kind; they become nodes of the network like the buildings.
+// Puts up `n` hubs of one kind; they become nodes of the network like the buildings. A hub that wants to stand high
+// (a reservoir) takes the highest of a few free places.
 function placeHubs(g, kind, n, S, G) {
   const def = HUBS[kind], w = g.w;
   for (let i = 0; i < n; i++) {
-    const at = hubSpot(g, def.r, !!def.roof && g.chance(0.5), G, !!def.road);
+    let at = hubSpot(g, def.r, !!def.roof && g.chance(0.5), G, !!def.road);
+    for (let k = 0; def.high && at && k < 5; k++) { const o = hubSpot(g, def.r, false, G, false); if (o && o[1] > at[1]) at = o; }
     if (!at) continue;
     const st = g.begin('hub', def.icon, { major: false });
     st.hub = kind;
@@ -295,14 +333,16 @@ function placeHubs(g, kind, n, S, G) {
 // Connects the buildings of a world, one network per entry of `specs` ({ style, kinds, count, extra, neon, ... }).
 // count: share of the fitting buildings that take part (0..1); extra: chance of a second link per pair beyond the tree.
 // hubs: how many hubs of kind `hub` to put up (per 512 x 512 voxels of world); hubs of that kind built by an earlier
-// network join in as well. join: styles of earlier networks whose links may be joined (a sky bridge onto a highway).
+// network join in as well. hub and hubs may be lists (several kinds of hub). join: styles of earlier networks whose
+// links may be joined (a sky bridge onto a highway). needHub: every link starts or ends at a hub (water runs from
+// the reservoir).
 export function linkUp(g, specs, G) {
   const w = g.w;
   for (const spec of specs) {
-    const S = { ...STYLES[spec.style], ...spec };
-    if (S.hub && S.hubs) placeHubs(g, S.hub, Math.round(S.hubs * (w.sx / 512) ** 2), S, G);
+    const S = { ...STYLES[spec.style], ...spec }, kinds = [].concat(S.hub ?? []), counts = [].concat(S.hubs ?? []);
+    kinds.forEach((kind, i) => { if (counts[i]) placeHubs(g, kind, Math.round(counts[i] * (w.sx / 512) ** 2), S, G); });
     const fits = (st) => {
-      if (st.hub) return (S.hubKinds ?? [S.hub]).includes(st.hub) && st.levels.length > 0; // hubKinds: other networks' hubs it may use too
+      if (st.hub) return (S.hubKinds ?? kinds).includes(st.hub) && st.levels.length > 0; // hubKinds: other networks' hubs it may use too
       if (st.link) return !!S.join && S.join.includes(st.linkStyle);
       return (S.kinds ? S.kinds.includes(st.kind) : st.major) && st.btop - st.by0 >= S.minH;
     };
@@ -313,6 +353,7 @@ export function linkUp(g, specs, G) {
       const d = Math.hypot(cx(nodes[i]) - cx(nodes[j]), cz(nodes[i]) - cz(nodes[j]));
       // Hubs are where a network starts and ends: their pairs come first (as if they were nearer than they are).
       const hub = nodes[i].hub || nodes[j].hub; // a hub may also be joined from close by
+      if (S.needHub && !hub) continue;
       if (d >= S.range[0] * (hub ? 0.35 : 1) && d <= S.range[1] * 1.3) pairs.push([d * (hub ? 0.5 : 1), i, j]);
     }
     pairs.sort((a, b) => a[0] - b[0]);
@@ -399,6 +440,10 @@ function link(g, a, b, S, G) {
     const st = g.begin('link', S.icon ?? '🌉', { major: false });
     st.link = true; st.linkStyle = S.style; st.levels = [yAt(L / 2)]; // later networks may end on its middle
     st.ends = [a.id, b.id];
+    // The course, for spans.js: start, direction, heights and curve as above, the piers, and the voxel types it is made of.
+    const piers = [], types = new Set(), cols = new Map(); // cols: column -> lowest and highest voxel of this link in it
+    const claim = (px, py, pz) => { const c = w.wrap ? (px & w.mx) + w.sx * (pz & w.mz) : px < 0 || pz < 0 || px >= w.sx || pz >= w.sz ? -1 : px + w.sx * pz, r = cols.get(c); if (c < 0) return; if (!r) cols.set(c, [py, py]); else { if (py < r[0]) r[0] = py; if (py > r[1]) r[1] = py; } };
+    st.span = { style: S.style, x: pa[0], z: pa[1], ux, uz, nx, nz, ya, yb, L, sag, wave, humps, floor: G + 4, piers, types: null };
     const look = { neon: S.neon ? g.pick(NEON) : null, paint: g.pick(S.paints ?? PAINT), trains: [], cars: [], cabins: [], train: L * (0.3 + g.rnd() * 0.4) };
     if (L > 50) for (let t = 10 + g.rnd() * 20; t < L - 40; t += 60 + g.rnd() * 60) look.trains.push(t);
     for (let t = 8 + g.rnd() * 10; t < L - 8; t += 18 + g.rnd() * 25) look.cars.push({ t, lane: g.chance(0.5) ? -3 : 3, paint: g.pick(PAINT) });
@@ -406,8 +451,9 @@ function link(g, a, b, S, G) {
     let k = 0, nextPier = S.pier ? S.pier * 0.5 : Infinity;
     for (let t = -1.5; t <= L + 1.5; t += 0.5, k++) { // half a step, so that diagonal links have no gaps; the ends reach into the facades
       const x = pa[0] + ux * t, z = pa[1] + uz * t, y = yAt(Math.min(L, Math.max(0, t)));
-      const put = (s, dy, ty) => g.set(Math.round(x + nx * s), y + dy, Math.round(z + nz * s), ty);
+      const put = (s, dy, ty) => { const px = Math.round(x + nx * s), pz = Math.round(z + nz * s); g.set(px, y + dy, pz, ty); types.add(ty); claim(px, y + dy, pz); };
       S.cross(g, put, t, t / L, k, look);
+      if (S.arcade && t > 1 && t < L - 1) arcade(g, S, x, y, z, nx, nz, t, piers, claim);
       if (t >= nextPier && t < L - 4) { // a pier down to the ground, unless it would land on a street
         const px = Math.round(x), pz = Math.round(z);
         let gy = y - 3;
@@ -418,15 +464,39 @@ function link(g, a, b, S, G) {
         if (ground === T.ROAD || ground === T.ROADLINE || (!isTerrain(ground) && !roof)) { nextPier = t + 3; continue; }
         const pw = S.pierW;
         for (let yy = gy + 1; yy < y - 2; yy++) {
-          if (S.lattice) { g.set(px + Math.round(nx), yy, pz + Math.round(nz), S.pierT); g.set(px - Math.round(nx), yy, pz - Math.round(nz), S.pierT); if (yy % 5 === 0) put(0, yy - y, S.pierT); }
-          else g.box(px - (pw >> 1), yy, pz - (pw >> 1), pw, 1, pw, S.pierT);
+          if (S.lattice) { g.set(px + Math.round(nx), yy, pz + Math.round(nz), S.pierT); g.set(px - Math.round(nx), yy, pz - Math.round(nz), S.pierT); claim(px + Math.round(nx), yy, pz + Math.round(nz)); claim(px - Math.round(nx), yy, pz - Math.round(nz)); if (yy % 5 === 0) put(0, yy - y, S.pierT); }
+          else { g.box(px - (pw >> 1), yy, pz - (pw >> 1), pw, 1, pw, S.pierT); for (let b = 0; b < pw; b++) for (let a = 0; a < pw; a++) claim(px - (pw >> 1) + a, yy, pz - (pw >> 1) + b); }
         }
+        piers.push([t, px, pz, gy, y - 3]);
         nextPier = t + S.pier;
       }
     }
     g.end();
     st.major = true;
+    if (S.pierT) types.add(S.pierT);
+    st.span.types = [...types].filter((t) => t);
+    w.linkCols ??= new Map(); // world.finalize turns these into the lookup behind world.isLink
+    for (const [c, r] of cols) { const all = w.linkCols.get(c); if (all) all.push(r[0], r[1]); else w.linkCols.set(c, [r[0], r[1]]); }
     return true;
   }
   return false;
+}
+
+// One slice of an arcade under a link (an aqueduct): a pillar for the first three voxels of every `arcade`, down to
+// whatever it stands on (but never on a street), else arches in tiers of 14, thick by the pillars and thin in the
+// middle. Arches only fill what is free: they pass over the buildings below. Pillars are noted as piers.
+function arcade(g, S, x, y, z, nx, nz, t, piers, claim) {
+  const w = g.w, A = S.arcade, p = ((t % A) + A) % A, a = Math.sin((Math.max(0, p - 3) / (A - 3)) * Math.PI);
+  let pillar = null;
+  for (let s = -S.hw; s <= S.hw; s++) {
+    const px = Math.round(x + nx * s), pz = Math.round(z + nz * s);
+    let gy = y - 2;
+    while (gy > 1 && !w.get(px, gy, pz)) gy--;
+    const ground = w.get(px, gy, pz), road = ground === T.ROAD || ground === T.ROADLINE;
+    if (p < 3 && !road) {
+      for (let yy = gy + 1; yy < y - 1; yy++) { g.set(px, yy, pz, S.pierT); claim(px, yy, pz); }
+      if (s === 0 && p === 1.5) pillar = [t, px, pz, gy, y - 2];
+    } else for (let ty = y - 2; ty - gy > 7; ty -= 14) for (let k = 0; k <= 1 + Math.round((1 - a) * 4); k++) if (!w.get(px, ty - k, pz)) { g.set(px, ty - k, pz, S.pierT); claim(px, ty - k, pz); }
+  }
+  if (pillar) piers.push(pillar);
 }

@@ -151,10 +151,10 @@ function rooftop(g, cx, y, cz, room, skin, tall) {
     g.box(cx - (sw >> 1), y + 5, cz, sw + 1, 6, 1, c);
     g.box(cx - (sw >> 1) + 1, y + 6, cz, sw - 1, 4, 1, T.TILE_WHITE);
   } else if (kind === 'antenna') {
-    for (let i = 0; i < 3; i++) g.box(cx + g.int(-room + 2, room - 2), y + 1, cz + g.int(-room + 2, room - 2), 1, g.int(6, 18), 1, T.STEEL_DARK);
+    for (let i = 0; i < 3; i++) { const ax = cx + g.int(-room + 2, room - 2), az = cz + g.int(-room + 2, room - 2); g.box(ax, g.w.heightBelow(ax, az, y + 1), az, 1, g.int(6, 18), 1, T.STEEL_DARK); } // on whatever roof is there
     g.box(cx, y + 1, cz, 1, 22, 1, T.STEEL); g.box(cx, y + 23, cz, 1, 1, 1, T.NEON_RED);
   } else { // plant: air conditioning and a stair head
-    for (let i = 0; i < 4; i++) g.box(cx + g.int(-room + 2, room - 4), y + 1, cz + g.int(-room + 2, room - 4), g.int(2, 4), g.int(2, 3), g.int(2, 4), T.SHEET_GREY);
+    for (let i = 0; i < 4; i++) { const px = cx + g.int(-room + 2, room - 4), pz = cz + g.int(-room + 2, room - 4); g.box(px, g.w.heightBelow(px, pz, y + 1), pz, g.int(2, 4), g.int(2, 3), g.int(2, 4), T.SHEET_GREY); }
     g.box(cx - 2, y + 1, cz - 2, 5, 5, 5, skin.wall);
   }
 }

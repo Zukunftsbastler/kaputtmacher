@@ -101,6 +101,7 @@ export class Destruction {
       g.onDamage(cx, cy, cz, r, removed, best);
     }
     if (removed > 2) g.frail.note(cx, cy, cz, r); // is what remains still standing properly?
+    if (removed) g.spans.note(cx, cy, cz, r); // and the bridges and railways around it?
     return removed;
   }
 
@@ -113,6 +114,12 @@ export class Destruction {
       removed += this.sphere(ax + (bx - ax) * t, ay + (by - ay) * t, az + (bz - az) * t, r, power, o);
     }
     return removed;
+  }
+
+  // Asks the support search to look at the voxel itself (something was just put there, e.g. a fragment that came to rest).
+  seed(x, y, z) {
+    if (this.nSeeds + 1 > this.seeds.length) { const n = new Int32Array(this.seeds.length * 2); n.set(this.seeds); this.seeds = n; }
+    this.seeds[this.nSeeds++] = this.g.world.index(x, y, z);
   }
 
   // Remembers the solid neighbours of a removed voxel; they may have lost their support.
@@ -145,7 +152,7 @@ export class Destruction {
   flush() {
     if (!this.nSeeds) return;
     const g = this.g, w = g.world, sx = w.sx, sz = w.sz, layer = sx * sz;
-    const { safe, seen, stack, list } = this;
+    const { safe, seen, stack, list } = this, head = w.linkHead, wrap = w.wrap, mx = w.mx, mz = w.mz; // head: columns with superstructures (world.isLink)
     let budget = VISIT_BUDGET, s = 0;
     for (; s < this.nSeeds && budget > 0; s++) {
       const seed = this.seeds[s];
@@ -154,18 +161,20 @@ export class Destruction {
       const t0 = w.get(x, y, z);
       if (!t0 || TYPE_FLAGS[t0] & F_TERRAIN) continue;
       let sp = 0, n = 0, supported = false;
+      const fromLink = head[rem] >= 0 && w.isLink(x, y, z); // a search that starts on a superstructure may pass into the buildings it hangs on
       stack[sp++] = seed; list[n++] = seed;
       this.mark(seen, seed);
       search: while (sp) {
         const j = stack[--sp];
         y = (j / layer) | 0; rem = j - y * layer; z = (rem / sx) | 0; x = rem - z * sx;
+        const inLink = head[rem] >= 0 && w.isLink(x, y, z); // from a building the search does not step onto a superstructure (see world.isLink)
         // Down is pushed last, so it is explored first.
         for (let k = 0; k < 6; k++) {
           let nx = x, ny = y, nz = z;
           if (k === 0) ny++; else if (k === 1) nx++; else if (k === 2) nx--; else if (k === 3) nz++; else if (k === 4) nz--; else ny--;
           if (ny < 0) { supported = true; break search; }
           const nt = w.get(nx, ny, nz);
-          if (!nt) continue;
+          if (!nt || (!inLink && head[wrap ? (nx & mx) + sx * (nz & mz) : nx + sx * nz] >= 0 && w.isLink(nx, ny, nz))) continue;
           const ni = w.index(nx, ny, nz);
           if (TYPE_FLAGS[nt] & F_TERRAIN || n >= MAX_COMPONENT || this.has(safe, ni)) { supported = true; break search; }
           if (this.has(seen, ni)) continue;
@@ -176,7 +185,12 @@ export class Destruction {
       budget -= n;
       for (let k = 0; k < n; k++) this.unmark(seen, list[k]);
       if (supported) {
-        for (let k = 0; k < n; k++) { this.mark(safe, list[k]); this.touch(list[k]); }
+        // Only what the search could rely on is known to stand: coming from a superstructure, a building it passed
+        // through may still be hanging on it alone, so only the superstructure's own voxels are marked.
+        for (let k = 0; k < n; k++) {
+          if (fromLink) { const i = list[k], yy = (i / layer) | 0, r = i - yy * layer, zz = (r / sx) | 0; if (!w.isLink(r - zz * sx, yy, zz)) continue; }
+          this.mark(safe, list[k]); this.touch(list[k]);
+        }
       } else g.bodies.detach(list, n);
     }
     for (let k = 0; k < this.nTouched; k++) this.unmark(safe, this.touched[k]);

@@ -4,9 +4,10 @@ Dieser Ordner wird nicht veröffentlicht (Netlify liefert nur `public/` aus). Al
 
 | Befehl | Was es prüft |
 |---|---|
-| `node --experimental-default-type=module tools/check.mjs` | Ohne Browser: beschädigte und manipulierte Spielstände, Stimmigkeit der Erfolgsliste, Erzeugung aller Welten, die Musikbeschreibung (Zustände, Tempi, Speicher) und der Rückfall auf die alte Musik |
+| `node --experimental-default-type=module tools/check.mjs` | Ohne Browser: beschädigte und manipulierte Spielstände, Stimmigkeit der Erfolgsliste, Erzeugung aller Welten (und dass darin fast nichts schwebt), die Musikbeschreibung (Zustände, Tempi, Speicher) und der Rückfall auf die alte Musik |
 | `node tools/vendor-music.mjs [Pfad]` | Kopiert die benötigten Dateien der Musik-Generator-Suite nach `public/src/vendor/musik-generator/` (Standardpfad `../../Musik-Generator`) |
-| `node tools/smoke.mjs` | Mit Browser: spielt in jeder Welt ein kurzes Szenario und einige längere (Selbstspiel, Verkehr, alle Angriffe, Handy-Format, niedrigste Detailstufe) und meldet Skriptfehler. Dauert rund sechs Minuten; `quick` nur die Welten |
+| `node --experimental-default-type=module tools/floating.mjs [welt …]` | Ohne Browser: zählt je Welt, was in der frisch erzeugten Welt schwebt (nicht über Flächen mit dem Boden verbunden), nach Bauwerk und Würfelart; mit `KIND=<art>` Beispielpositionen. `check.mjs` schlägt ab 100 solcher Würfel in einer Welt fehl |
+| `node tools/smoke.mjs` | Mit Browser: spielt in jeder Welt ein kurzes Szenario und einige längere (Selbstspiel, Verkehr, alle Angriffe, Handy-Format, niedrigste Detailstufe) und meldet Skriptfehler. Dauert rund sieben Minuten; `quick` nur die Welten |
 | `node tools/serve.mjs` | Startet das Spiel auf `http://127.0.0.1:8766` mit denselben Sicherheits-Headern wie auf Netlify |
 | `node tools/browser.mjs <name> "<adress-parameter>" <szenario> [ms] [breite] [höhe]` | Ein einzelnes Szenario; gibt den Zustand des Spiels als JSON aus und legt ein Bildschirmfoto in `tools/out/` ab. Braucht den laufenden Server |
 
@@ -16,7 +17,11 @@ Die Szenarien stehen in `web/test.js`: je eine Zeile, die Eingaben auslöst und 
 node tools/browser.mjs jahrmarkt "world=funfair&stage=5" walk 5000
 node tools/browser.mjs einnahmen "world=skyline&stage=6&idle=1&run=55000" income 58000
 node tools/browser.mjs sprung "world=skyline&stage=2" leapfar 12000
+node tools/browser.mjs seil "world=primeval&stage=1&quality=4&style=rope&mode=cut&lt=0.15&d=0.35&dmin=40&run=9000" span 13500
+node tools/browser.mjs vulkan "world=primeval&quality=4&d=80&up=0.18&aimy=12" volcano 7500
 ```
+
+`span` durchtrennt eine Superstruktur (`style=` Stil aus `links.js`, `mode=cut|anchor|pier|load`, `t=` wo, `lt=` wohin die Kamera schaut, `solid=1` nur Verbindungen zwischen zwei Gebäuden, `touch=1` meldet, woran der Rest noch hängt) und protokolliert alle 250 ms Ketten, ausstehende Brüche, Bruchstücke und verbliebene Würfel. `volcano` schneidet ein Schaufenster in den Vulkan (ohne Physik; `cut=0` lässt es) und löst mit `erupt=ms` einen Ausbruch aus. `floaters` kappt Bauten einer Art am Fuß (`kind=wheel`, `cut=` Anteil der Höhe) und zählt dann, was die Haltsuche noch fallen lässt – was also in der Luft hing. `fortress` prüft den Schirm über den Mauern (`mode=jump`, `breach`, `siege` mit `off=0` fürs Tor, `gun` für ein explodierendes Geschütz). `hubview` zeigt einen Knotenpunkt (`hub=reservoir`) oder ein Bauwerk einer Art, `spantime` misst, was `spans.js` beim Laden und je Schritt kostet.
 
 Der Browser wird mit einem eigenen Profil im Temp-Ordner gestartet; der Browser, den man selbst benutzt, bleibt unberührt. Gesucht wird Chrome, Brave oder Chromium; mit `BROWSER=/pfad` lässt sich ein anderer angeben.
 

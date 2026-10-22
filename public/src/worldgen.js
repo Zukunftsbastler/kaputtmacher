@@ -52,6 +52,16 @@ class Gen {
     // The first structure owns a column; buildings take columns over from props.
     if (!w.footprint[i] || this.major) w.footprint[i] = this.cur;
   }
+  // A foundation for what stands on uneven ground: under every voxel of the current structure's lowest row that has
+  // air below it, the same type is filled down to the ground (at most `depth` voxels).
+  underpin(depth = 14) {
+    const st = this.st, w = this.w;
+    for (let z = st.bz0; z <= st.bz1; z++) for (let x = st.bx0; x <= st.bx1; x++) {
+      const t = w.get(x, st.by0, z);
+      if (!t || isTerrain(t)) continue;
+      for (let y = st.by0 - 1, n = 0; y > 0 && n < depth && !w.get(x, y, z); y--, n++) this.set(x, y, z, t);
+    }
+  }
   box(x, y, z, w, h, d, t) {
     for (let yy = y; yy < y + h; yy++) for (let zz = z; zz < z + d; zz++) for (let xx = x; xx < x + w; xx++) this.set(xx, yy, zz, t);
   }
@@ -116,7 +126,7 @@ function furniture(g, x, y, z, w, d) {
     g.box(x, y + g.m(0.7), z, fw, 1, fd, T.WOOD_LIGHT);
     g.box(x, y, z, 1, g.m(0.7), fd, T.WOOD_DARK); g.box(x + fw - 1, y, z, 1, g.m(0.7), fd, T.WOOD_DARK);
     g.set(x + (fw >> 1), y + g.m(0.7) + 1, z, T.STEEL_DARK); g.set(x + (fw >> 1), y + g.m(0.7) + 2, z, T.NEON_GREEN);
-    g.box(x + (fw >> 1), y, z + fd + 1, 1, g.m(0.5), 1, T.FABRIC_BLUE);
+    if (g.w.get(x + (fw >> 1), y - 1, z + fd + 1)) g.box(x + (fw >> 1), y, z + fd + 1, 1, g.m(0.5), 1, T.FABRIC_BLUE); // the chair, where there is floor for it
   } else if (kind === 8) { // wardrobe
     g.box(x, y, z, fw, g.m(2), 1, T.WOOD_DARK);
     if (fw > 2) g.box(x + 1, y + 1, z + 1, fw - 2, g.m(2) - 2, 0, T.WOOD_LIGHT);
@@ -795,7 +805,7 @@ export const WORLDS = [
   // The primeval forest has no streets, no cars and no police: a tribe living in the trees, small dinosaurs, flying reptiles.
   { id: 'primeval', seed: 17, icon: '🦕', home: 'dino', stage: 6, make: (seed, q) => town(seed, { links: [{ style: 'vine', kinds: ['tree', 'mammoth'], count: 0.7, limit: 117, extra: 0.35 }, { style: 'rope', kinds: ['mammoth'], hub: 'lookout', hubs: 4, limit: 78, extra: 0.4 }], big: { treevillage: 1, volcano: 0.5, swamp: 0.5 }, size: q.planet, sy: 288, soil: 'jungle', flora: 'jungle', folk: 'tribe', fauna: 'dinos', noRoads: true, quiet: true, sky: [[0.5, 0.68, 0.6], [0.86, 0.9, 0.78]], weights: { mammoth: 3, fossil: 1.3, forest: 3, fernery: 1.6, nest: 0.9, henge: 0.7, park: 1 }, unique: {}, height: 0.5, cars: 0, hills: 1.2, green: 1, people: 0.45 }) },
   // Babel: flagstone streets with fire bowls, mud-brick houses, a bazaar; people in robes, no cars and no police.
-  { id: 'babel', seed: 18, icon: '🏛️', home: 'gorilla', stage: 7, make: (seed, q) => town(seed, { links: [{ style: 'arch', kinds: ['ziggurat', 'babel', 'gardens', 'aqueduct', 'gate'], hub: 'stairtower', hubs: 3, limit: 72, extra: 0.3 }], big: { babel: 0.5 }, size: q.planet, sy: 320, soil: 'sand', flora: 'palms', folk: 'robes', streets: 'flagstone', quiet: true, sky: [[0.5, 0.68, 0.95], [0.98, 0.9, 0.74]], weights: { ziggurat: 3, aqueduct: 1.2, gardens: 1.6, adobe: 3.2, bazaar: 1.2, obelisks: 0.8, park: 0.7 }, unique: { gate: 1, well: 1 }, height: 0.4, cars: 0, hills: 0.3, green: 0.6, people: 0.7 }) },
+  { id: 'babel', seed: 18, icon: '🏛️', home: 'gorilla', stage: 7, make: (seed, q) => town(seed, { links: [{ style: 'aqueduct', kinds: ['gardens', 'ziggurat', 'bazaar', 'babel'], hub: ['reservoir', 'castellum'], hubs: [1, 3], needHub: true, limit: 40, extra: 0.25 }, { style: 'arch', kinds: ['ziggurat', 'babel', 'gardens', 'gate'], hub: 'stairtower', hubs: 3, limit: 72, extra: 0.3 }], big: { babel: 0.5 }, size: q.planet, sy: 320, soil: 'sand', flora: 'palms', folk: 'robes', streets: 'flagstone', quiet: true, sky: [[0.5, 0.68, 0.95], [0.98, 0.9, 0.74]], weights: { ziggurat: 3, gardens: 1.8, adobe: 3.2, bazaar: 1.2, obelisks: 0.8, park: 0.7 }, unique: { gate: 1, well: 1 }, height: 0.4, cars: 0, hills: 0.3, green: 0.6, people: 0.7 }) },
   { id: 'neon', seed: 19, icon: '🌃', home: 'robot', stage: 8, make: (seed, q) => town(seed, { links: [{ style: 'highway', kinds: ['tower', 'arcology', 'highway'], neon: true, hub: 'helix', hubs: 3, count: 0.7, limit: 60, extra: 0.3 }, { style: 'skybridge', kinds: ['tower', 'arcology'], neon: true, hub: 'skyhub', hubKinds: ['skyhub', 'helix'], hubs: 12, join: ['highway'], at: [0.08, 0.35], count: 1, limit: 110, extra: 0.45 }, { style: 'skybridge', kinds: ['tower', 'arcology'], neon: true, hub: 'skyhub', hubKinds: ['skyhub', 'helix'], join: ['highway', 'skybridge'], at: [0.35, 0.65], count: 1, limit: 110, extra: 0.45 }, { style: 'skybridge', kinds: ['tower', 'arcology'], neon: true, hub: 'skyhub', hubKinds: ['skyhub', 'helix'], join: ['skybridge'], at: [0.65, 0.97], count: 1, limit: 80, extra: 0.35 }, { style: 'rail', kinds: ['tower', 'shops', 'carpark'], hub: 'station', hubs: 3, top: 36, count: 0.6, limit: 40 }], big: { highway: 1, arcology: 0.5 }, size: q.planet, sy: 352, skew: 1.2, metro: true, night: true, start: 'crossing', sky: [[0.02, 0.01, 0.06], [0.16, 0.05, 0.24]], weights: { neontower: 8, twin: 0.6, lowrise: 1.6, garage: 1, square: 0.4, apartment: 0.5 }, unique: { crane: 1 }, height: 1, cars: 0.8, hills: 0, green: 0.2, people: 0.7 }) },
   { id: 'fortress', seed: 20, icon: '🏰', home: 'tank', stage: 7, make: (seed, q) => fortressWorld(seed, q) },
   { id: 'skyyard', seed: 21, icon: '☁️', home: 'jet', stage: 6, make: (seed, q) => town(seed, { links: [{ style: 'rope', kinds: ['island', 'spire'], at: [0.9, 1], minH: 30, limit: 50, extra: 0.3 }, { style: 'cable', kinds: ['island', 'spire', 'mast'], limit: 16, icon: '🚡' }], big: { skyharbor: 1 }, size: q.planet, sy: 256, soil: 'sea', noRoads: true, quiet: true, sky: [[0.35, 0.6, 0.97], [0.86, 0.93, 1]], weights: { island: 3.5, spire: 1, zeppelin: 1.2, park: 2.5 }, unique: {}, height: 0.6, cars: 0, hills: 0, green: 0.5, people: 0 }) },

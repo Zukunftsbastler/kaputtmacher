@@ -175,12 +175,18 @@ export class Bodies {
       // Small bits do not get to rattle around for long.
       if (b.rest > 0.4 || b.age > (b.count < 60 ? 2.5 : b.count < 600 ? 7 : 14)) { if (!this.giveWay(b)) this.bake(b); }
     }
-    // Too many pieces at once: the smallest ones stop being simulated.
+    // Too many pieces at once: the smallest ones stop being simulated. Of the big ones, a piece that has (nearly)
+    // come to rest is laid down; one still in flight would hang in the air, laid down there.
     while (this.list.length > MAX_BODIES) {
-      let small = null;
-      for (const b of this.list) if (!b.kinematic && (!small || b.count < small.count)) small = b;
+      let small = null, calm = null;
+      for (const b of this.list) {
+        if (b.kinematic) continue;
+        if (!small || b.count < small.count) small = b;
+        const sp = Math.hypot(b.v[0], b.v[1], b.v[2]);
+        if ((b.rest > 0 || (sp < 3 && b.age > 1)) && (!calm || b.count < calm.count)) calm = b;
+      }
       if (!small) break;
-      if (small.count < 400) this.toDebris(small); else this.bake(small);
+      if (small.count < 400 || !calm) this.toDebris(small); else this.bake(calm); // (nothing at rest: the smallest bursts into loose cubes)
     }
   }
 
@@ -425,9 +431,10 @@ export class Bodies {
       if (!vox[i]) continue;
       this.toWorld(b, x + 0.5, y + 0.5, z + 0.5, tmp);
       const wx = Math.floor(tmp[0]), wy = Math.floor(tmp[1]), wz = Math.floor(tmp[2]);
-      if (wy >= 0 && !w.get(wx, wy, wz)) { w.set(wx, wy, wz, vox[i] | RUBBLE); if (small) this.g.sweeper.add(wx, wy, wz); }
+      if (wy >= 0 && !w.get(wx, wy, wz)) { w.set(wx, wy, wz, vox[i] | RUBBLE); this.g.destruction.seed(wx, wy, wz); if (small) this.g.sweeper.add(wx, wy, wz); }
     }
     this.remove(b);
+    // (seeded: what was laid down where nothing holds it – in mid-air, or leaning on what has gone meanwhile – falls on)
   }
 
   // Returns the fragment that is solid at a world point, or null.

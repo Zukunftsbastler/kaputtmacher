@@ -6,6 +6,12 @@ import { VOXEL_STRENGTH, VOXEL_MASS, tauOf } from './stability.js';
 
 export const CS = 32;
 const CB = 5, CM = 31, CVOL = CS * CS * CS;
+// The twenty neighbours that share only an edge or a corner with a voxel, as x, y, z triples (for World.weld).
+const DIAG = [];
+for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let d = -1; d <= 1; d++) if (Math.abs(a) + Math.abs(b) + Math.abs(d) >= 2) DIAG.push(a, b, d);
+// A neighbour of a voxel during weld: inner is its index in chunk c when it lies away from the chunk's border, else -1.
+const faces = (a, b, c, d, e, f) => (a ? 1 : 0) + (b ? 1 : 0) + (c ? 1 : 0) + (d ? 1 : 0) + (e ? 1 : 0) + (f ? 1 : 0);
+const nb = (w, c, inner, x, y, z, a, b, d) => (inner >= 0 ? c[inner + a + (d << CB) + (b << (CB * 2))] : w.get(x + a, y + b, z + d));
 
 export class World {
   // sx/sy/sz must be multiples of 32; wrapping worlds need power-of-two sx/sz.
@@ -17,6 +23,7 @@ export class World {
     const n = this.ncx * this.ncy * this.ncz;
     this.chunks = new Array(n).fill(null);
     this.uniform = new Uint8Array(n);
+    this.builtList = new Int32Array(1 << 20); this.builtN = 0; // where something was built, while the world is generated (for weld)
     this.dirty = new Set();
     this.touched = []; // buildings that lost voxels since the last stability check
     this.footprint = new Uint16Array(sx * sz); // column -> structure id
@@ -58,7 +65,7 @@ export class World {
       if (this.uniform[ci]) c.fill(this.uniform[ci]);
     }
     c[li] = t;
-    if (this.generating) return;
+    if (this.generating) { if (t && !(TYPE_FLAGS[t] & F_TERRAIN) && (!old || TYPE_FLAGS[old] & F_TERRAIN)) this.noteBuilt((x | 0) + this.sx * ((z | 0) + this.sz * (y | 0))); return; } // (builders may pass fractions; the grid cuts them off)
 
     this.dirty.add(ci);
     const lx = x & CM, ly = y & CM, lz = z & CM;
@@ -72,13 +79,22 @@ export class World {
         st = this.structures[this.footprint[x + this.sx * z]];
         st.remaining--;
         if (st.counted) this.remaining--;
-        if (st.S) { // keep the storey's load-bearing strength and weight up to date
+        if (st.S && !this.isLink(x, y, z)) { // keep the storey's load-bearing strength and weight up to date
           st.S[y] -= VOXEL_STRENGTH[old]; st.M[y] -= VOXEL_MASS[old];
           if (!st.dirty) { st.dirty = true; this.touched.push(st); }
         }
       }
       if (this.onDestroyed) this.onDestroyed(old, x, y, z, st);
     }
+  }
+
+  thin(x, y, z) {
+    return faces(this.get(x + 1, y, z), this.get(x - 1, y, z), this.get(x, y + 1, z), this.get(x, y - 1, z), this.get(x, y, z + 1), this.get(x, y, z - 1)) < 4;
+  }
+
+  noteBuilt(i) {
+    if (this.builtN === this.builtList.length) { const l = new Int32Array(this.builtN * 2); l.set(this.builtList); this.builtList = l; }
+    this.builtList[this.builtN++] = i;
   }
 
   markChunk(cx, cy, cz) {
@@ -94,6 +110,13 @@ export class World {
     if (this.wrap) { x &= this.mx; z &= this.mz; } else if (x < 0 || z < 0 || x >= this.sx || z >= this.sz) return null;
     const id = this.footprint[x + this.sx * z];
     return id ? this.structures[id] : null;
+  }
+
+  // Is (x, y, z) part of a superstructure? (x and z inside the world or wrapped.)
+  isLink(x, y, z) {
+    if (this.wrap) { x &= this.mx; z &= this.mz; } else if (x < 0 || z < 0 || x >= this.sx || z >= this.sz) return false;
+    for (let i = this.linkHead[x + this.sx * z]; i >= 0; i = this.linkNext[i]) if (y >= this.linkLo[i] && y <= this.linkHi[i]) return true;
+    return false;
   }
 
   // Flat voxel index, used by the support search.
@@ -122,7 +145,17 @@ export class World {
 
   // Ends generation: counts every structure, collapses single-value chunks, marks everything for meshing.
   finalize() {
+    this.weld();
     const fp = this.footprint, sts = this.structures;
+    // Where the superstructures are: per column a chain of height ranges (links.js notes them in linkCols while it
+    // builds). Load passes from a building into a superstructure, never back: a bridge does not hold up the tower it
+    // hangs on (destruction.js, frail.js).
+    const n = [...(this.linkCols?.values() ?? [])].reduce((a, r) => a + r.length / 2, 0);
+    this.linkHead = new Int32Array(this.sx * this.sz).fill(-1);
+    this.linkNext = new Int32Array(n); this.linkLo = new Int16Array(n); this.linkHi = new Int16Array(n);
+    let k = 0;
+    for (const [c, r] of this.linkCols ?? []) for (let i = 0; i < r.length; i += 2, k++) { this.linkLo[k] = r[i]; this.linkHi[k] = r[i + 1]; this.linkNext[k] = this.linkHead[c]; this.linkHead[c] = k; }
+    this.linkCols = null;
     for (let ci = 0; ci < this.chunks.length; ci++) {
       const c = this.chunks[ci];
       if (!c) { if (this.uniform[ci]) this.dirty.add(ci); continue; }
@@ -141,7 +174,7 @@ export class World {
           if (z < st.z0) st.z0 = z; if (z > st.z1) st.z1 = z;
           if (y > st.top) st.top = y;
           if (y < st.y0) st.y0 = y;
-          if (st.major) {
+          if (st.major && !st.link && !this.isLink(x, y, z)) { // superstructures have no storeys (spans.js decides how they fail), and a bridge passing over a building is no part of its storeys
             if (!st.S) { st.S = new Float32Array(this.sy); st.M = new Float32Array(this.sy); st.matW = new Float32Array(16); }
             st.S[y] += VOXEL_STRENGTH[t]; st.M[y] += VOXEL_MASS[t];
             if (TYPE_MAT[t] !== MAT.GLASS) st.matW[TYPE_MAT[t]] += VOXEL_STRENGTH[t];
@@ -167,6 +200,45 @@ export class World {
     }
     this.remaining = this.total;
     this.generating = false;
+  }
+
+  // Thin parts drawn on a slant (spokes, chains, struts, booms, rings) touch their neighbours only along an edge or
+  // at a corner. The support search (destruction.js) walks through faces only: when what holds such a part goes, only
+  // its first voxel is looked at, and the rest stays hanging in the air. So wherever two voxels touch only
+  // diagonally, the cell (or the two cells) between them is filled at the height of the lower one, with the type of
+  // the built one: what looks joined is joined. Runs once, before the world is counted.
+  weld() {
+    const fills = [], S2 = CB * 2, list = this.builtList, layer = this.sx * this.sz;
+    for (let k = 0; k < this.builtN; k++) {
+      const i = list[k], y = (i / layer) | 0, r = i - y * layer, z = (r / this.sx) | 0, x = r - z * this.sx;
+      const ci = (x >> CB) + this.ncx * ((z >> CB) + this.ncz * (y >> CB)), c = this.chunks[ci], li = (x & CM) | ((z & CM) << CB) | ((y & CM) << S2), t = c[li];
+      if (!t || TYPE_FLAGS[t] & F_TERRAIN) continue;
+      const lx = x & CM, ly = y & CM, lz = z & CM;
+      // Neighbours straight from the chunk away from its border, through get() at the border (see nb).
+      const inner = lx > 0 && lx < CM && ly > 0 && ly < CM && lz > 0 && lz < CM ? li : -1;
+      const px = nb(this, c, inner, x, y, z, 1, 0, 0), nx = nb(this, c, inner, x, y, z, -1, 0, 0), py = nb(this, c, inner, x, y, z, 0, 1, 0);
+      const ny = nb(this, c, inner, x, y, z, 0, -1, 0), pz = nb(this, c, inner, x, y, z, 0, 0, 1), nz = nb(this, c, inner, x, y, z, 0, 0, -1);
+      if (faces(px, nx, py, ny, pz, nz) >= 4) continue; // in a wall or inside: a thin part touching it diagonally looks after itself
+      for (let q = 0; q < DIAG.length; q += 3) {
+        const a = DIAG[q], b = DIAG[q + 1], d = DIAG[q + 2];
+        // The cells between are faces of this voxel: where one of them is solid, the pair is joined already.
+        const ca = a > 0 ? px : a < 0 ? nx : 0, cb = b > 0 ? py : b < 0 ? ny : 0, cd = d > 0 ? pz : d < 0 ? nz : 0;
+        const corner = a !== 0 && b !== 0 && d !== 0;
+        if (!corner && (ca || cb || cd)) continue;
+        const u = nb(this, c, inner, x, y, z, a, b, d);
+        if (!u || (!(TYPE_FLAGS[u] & F_TERRAIN) && a * 9 + b * 3 + d < 0 && this.thin(x + a, y + b, z + d))) continue; // a pair of thin voxels is looked at once
+        if (!corner) { if (b < 0) fills.push(x, y + b, z, t); else fills.push(a ? x + a : x, y, a ? z : z + d, t); continue; }
+        if (ca || cb || cd) { // at a corner: a path over two cells
+          const cab = nb(this, c, inner, x, y, z, a, b, 0), cad = nb(this, c, inner, x, y, z, a, 0, d), cbd = nb(this, c, inner, x, y, z, 0, b, d);
+          if ((ca && (cab || cad)) || (cb && (cab || cbd)) || (cd && (cad || cbd))) continue;
+        }
+        if (b < 0) fills.push(x, y + b, z, t, x + a, y + b, z, t); else fills.push(x + a, y, z, t, x + a, y, z + d, t);
+      }
+    }
+    let n = 0;
+    for (let i = 0; i < fills.length; i += 4) if (!this.get(fills[i], fills[i + 1], fills[i + 2])) { this.set(fills[i], fills[i + 1], fills[i + 2], fills[i + 3]); n++; }
+    this.welded = n;
+    this.builtList = null;
   }
 
   memoryBytes() {

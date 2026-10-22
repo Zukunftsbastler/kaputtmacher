@@ -136,7 +136,7 @@ export const LOTS = {
     const ry = G + 2 + Math.round(h * 0.7);
     g.shell(cx - 5, ry, cz - 5, 11, 3, 11, g.pick(TOYS));
     for (const [a, b] of [[-4, 0], [4, 0], [0, -4], [0, 4]]) g.box(cx + a, ry + 1, cz + b, 1, 1, 1, T.STEEL); // the ring hangs on the mast
-    g.box(cx - 3, ry + 1, cz, 7, 1, 1, T.STEEL); g.box(cx, ry + 1, cz - 3, 1, 1, 7, T.STEEL);
+    g.box(cx - 3, ry + 1, cz, 7, 1, 1, T.STEEL); g.box(cx, ry + 1, cz - 3, 1, 1, 7, T.STEEL); g.shell(cx - 2, ry + 1, cz - 2, 5, 1, 5, T.STEEL); // the arms grip the mast
     g.box(cx - 3, G + 2 + h, cz - 3, 7, 2, 7, T.STEEL_RED); g.box(cx, G + 4 + h, cz, 1, 5, 1, T.STEEL); g.set(cx, G + 9 + h, cz, T.NEON_RED);
     g.end();
   },
@@ -185,6 +185,7 @@ export const LOTS = {
     }
     g.begin('pipes', '🔧', {});
     g.box(x0 + Math.round(L * 0.27), G + 3, z0 + (L >> 1), Math.round(L * 0.46), 1, 1, T.STEEL); g.box(x0 + (L >> 1), G + 3, z0 + Math.round(L * 0.27), 1, 1, Math.round(L * 0.46), T.STEEL);
+    for (let i = 0; i <= Math.round(L * 0.46); i += 6) { g.box(x0 + Math.round(L * 0.27) + i, G, z0 + (L >> 1), 1, 3, 1, T.STEEL_DARK); g.box(x0 + (L >> 1), G, z0 + Math.round(L * 0.27) + i, 1, 3, 1, T.STEEL_DARK); } // on posts
     g.end();
   },
 
@@ -234,7 +235,7 @@ export const LOTS = {
     g.begin('pyramid', '🔺', { major: true });
     for (let k = 0; k * 2 < (L >> 1) - 1; k++) {
       const s = L - k * 4;
-      if (k % 4 === 3) g.shell(x0 + k * 2, G + k * 3, z0 + k * 2, s, 3, s, stone); // hollow every fourth step: it breaks in layers
+      if (k % 4 === 3) { g.shell(x0 + k * 2, G + k * 3, z0 + k * 2, s, 2, s, stone); g.box(x0 + k * 2, G + k * 3 + 2, z0 + k * 2, s, 1, s, stone); } // hollow every fourth step, under a slab the steps above stand on: it breaks in layers
       else g.box(x0 + k * 2, G + k * 3, z0 + k * 2, s, 3, s, stone);
     }
     const top = G + Math.ceil(((L >> 1) - 1) / 2) * 3, m = x0 + (L >> 1), mz = z0 + (L >> 1);
@@ -270,6 +271,7 @@ export const LOTS = {
       const r = k < 5 ? 5 + k * 2 : k < 9 ? 13 : 13 - (k - 8) * 2;
       g.cyl(cx, cz, r, py + k, 1, k >= 5 && k < 8 ? T.GLASS_DARK : k === 8 ? T.NEON_RED : T.CONCRETE, k >= 5 && k < 9); // the glass band is a ring, the rest solid
     }
+    g.cyl(cx, cz, 4, G + H - 1, 1, T.CONCRETE); // a lid on the shaft for the mast
     for (let y = 0; y < 34; y++) g.box(cx - (y < 16 ? 1 : 0), G + H + y, cz - (y < 16 ? 1 : 0), y < 16 ? 2 : 1, 1, y < 16 ? 2 : 1, y % 8 < 4 ? T.STEEL_RED : T.TILE_WHITE);
     g.set(cx, G + H + 34, cz, T.NEON_RED);
     g.end();

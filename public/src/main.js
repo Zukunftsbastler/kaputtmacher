@@ -17,6 +17,8 @@ import { Autopilot } from './autopilot.js';
 import { Reactions } from './reactions.js';
 import { Traffic } from './traffic.js';
 import { Frail } from './frail.js';
+import { Spans } from './spans.js';
+import { Ramparts } from './rampart.js';
 import { Music } from './music.js';
 import { Tools, movesFor } from './tools.js';
 import { WORLDS } from './worldgen.js';
@@ -49,7 +51,7 @@ const DETAIL = [null,
   { planet: 1024, tall: 1024, cap: 430, debris: 14000, fx: 5000, people: 1.3, units: 1.4, thin: 1.3, fire: 1500, pixel: 1 },
 ];
 // Dust colour per material.
-const DUST = { [MAT.EARTH]: [0.55, 0.42, 0.3], [MAT.GLASS]: [0.85, 0.95, 1], [MAT.LEAF]: [0.4, 0.7, 0.3], [MAT.WOOD]: [0.75, 0.6, 0.4], [MAT.BRICK]: [0.8, 0.5, 0.4], [MAT.CONCRETE]: [0.75, 0.75, 0.73], [MAT.STEEL]: [0.6, 0.62, 0.66], [MAT.SHEET]: [0.7, 0.72, 0.75], [MAT.EXPLOSIVE]: [0.3, 0.3, 0.3], [MAT.FABRIC]: [0.9, 0.9, 0.85] };
+const DUST = { [MAT.EARTH]: [0.55, 0.42, 0.3], [MAT.GLASS]: [0.85, 0.95, 1], [MAT.LEAF]: [0.4, 0.7, 0.3], [MAT.WOOD]: [0.75, 0.6, 0.4], [MAT.BRICK]: [0.8, 0.5, 0.4], [MAT.CONCRETE]: [0.75, 0.75, 0.73], [MAT.STEEL]: [0.6, 0.62, 0.66], [MAT.SHEET]: [0.7, 0.72, 0.75], [MAT.EXPLOSIVE]: [0.3, 0.3, 0.3], [MAT.FABRIC]: [0.9, 0.9, 0.85], [MAT.FORT]: [0.78, 0.72, 0.6] };
 
 const params = new URLSearchParams(location.search);
 const v3 = [0, 0, 0], mat = m4.create(), base = m4.create();
@@ -92,6 +94,8 @@ class Game {
     this.sweeper = new Sweeper(this);
     this.reactions = new Reactions(this);
     this.frail = new Frail(this);
+    this.spans = new Spans(this);
+    this.ramparts = new Ramparts(this);
     this.gainScale = 1; // below 1 while a collapse is being processed: falling voxels are worth less
     this.speciesGain = 1; // some creatures destroy so easily that it is worth less (see SPECIES in monster.js); kept up to date in checkStats
     this.chainLoad = 0; // how many collapses the running chain reaction has behind it
@@ -101,7 +105,7 @@ class Game {
     this.alarm = 0; // the same as a fraction: rises while things break, ebbs away in peace
     this.lastGainT = -99; // when something was last destroyed
     this.absorb = 0; // 0..1: glow of the creature while power flows into it
-    this.matCount = new Float64Array(12); // destroyed voxels per material since the last tally
+    this.matCount = new Float64Array(MATS.length); // destroyed voxels per material since the last tally
     this.doneTimes = []; // when the last buildings were finished, for "several at once"
     this.checkT = 0; this.saveT = 0; this.auraT = 0; this.cineT = -99;
     this.slowT = 0; // seconds of slow motion left after a heavy blow
@@ -188,6 +192,8 @@ class Game {
     this.audio.muffle(world.under);
     this.music.setWorld(p.world);
     this.world = world;
+    this.spans.reset(world);
+    this.ramparts.reset(world);
     this.rng = makeRng(seed + 5);
     this.minimap.reset(world);
     // In a night world glass carries a marker that the shader turns into lit and dark windows (renderer.js, NIGHT).
@@ -371,8 +377,8 @@ class Game {
     st.time += dt;
     if (p.playStage === p.stage) p.t += dt; // seconds spent on the current stage, for the play log
     if (this.idle) { st.idle += dt; c.fill(0); this.fire.lit = 0; }
-    st.vox += c[MAT.GLASS] + c[MAT.LEAF] + c[MAT.WOOD] + c[MAT.BRICK] + c[MAT.CONCRETE] + c[MAT.STEEL] + c[MAT.SHEET] + c[MAT.EXPLOSIVE] + c[MAT.FABRIC];
-    st.glass += c[MAT.GLASS]; st.wood += c[MAT.WOOD]; st.leaf += c[MAT.LEAF]; st.stone += c[MAT.BRICK] + c[MAT.CONCRETE]; st.steel += c[MAT.STEEL] + c[MAT.SHEET];
+    st.vox += c[MAT.GLASS] + c[MAT.LEAF] + c[MAT.WOOD] + c[MAT.BRICK] + c[MAT.CONCRETE] + c[MAT.STEEL] + c[MAT.SHEET] + c[MAT.EXPLOSIVE] + c[MAT.FABRIC] + c[MAT.FORT];
+    st.glass += c[MAT.GLASS]; st.wood += c[MAT.WOOD]; st.leaf += c[MAT.LEAF]; st.stone += c[MAT.BRICK] + c[MAT.CONCRETE] + c[MAT.FORT]; st.steel += c[MAT.STEEL] + c[MAT.SHEET];
     c.fill(0);
     st.fires += this.fire.lit; this.fire.lit = 0;
     const fresh = checkAchievements(p);
@@ -388,6 +394,7 @@ class Game {
     this.reactions.onVoxel(type, x, y, z);
     this.gainPos[0] = x; this.gainPos[1] = y; this.gainPos[2] = z;
     if (!st || !st.id) return;
+    this.spans.touch(st);
     this.minimap.hit(x, z);
     this.matCount[TYPE_MAT[type]]++;
     if (st.major) { this.activeSt = st; this.activeT = this.time; }
@@ -406,7 +413,7 @@ class Game {
     const t = body.tally, size = Math.min(1, body.count / 12000) * Math.min(1, speed / 30);
     this.shake(clamp((Math.cbrt(body.mass) * speed) / 900, 0, 0.6));
     if (body.count < 40) return;
-    if (t[MAT.CONCRETE] + t[MAT.BRICK] > body.count * 0.3) this.audio.crumble(size);
+    if (t[MAT.CONCRETE] + t[MAT.BRICK] + t[MAT.FORT] > body.count * 0.3) this.audio.crumble(size);
     if (t[MAT.GLASS] > 40) this.audio.glassfall(Math.min(1, t[MAT.GLASS] / 3000));
     if (t[MAT.STEEL] + t[MAT.SHEET] > 30) this.audio.hit('metal', size + 0.2);
     if (t[MAT.WOOD] > body.count * 0.3) this.audio.hit('wood', size + 0.3);
@@ -434,7 +441,7 @@ class Game {
   // Something large has come loose: concrete cracks, steel starts to groan.
   onCollapse(body) {
     const t = body.tally, size = Math.min(1, body.count / 20000);
-    if (t[MAT.CONCRETE] + t[MAT.BRICK] > 200) this.audio.crack(size);
+    if (t[MAT.CONCRETE] + t[MAT.BRICK] + t[MAT.FORT] > 200) this.audio.crack(size);
     if (t[MAT.STEEL] + t[MAT.SHEET] > 30 || body.count > 4000) this.audio.groan(size);
     if (t[MAT.WOOD] > body.count * 0.4) this.audio.hit('wood', 0.8);
     this.audio.rumble(size);
@@ -533,6 +540,7 @@ class Game {
       if (this.idle && st.remaining > 8000 && this.time - this.cineT > 9) { this.cineT = this.time; this.slowT = 0.9; }
     }
     this.fx.dust(cx, y, cz, size * 0.45, 0.76, 0.74, 0.7, 14);
+    this.spans.collapsed(st, y); // the bridges hanging on it lose their hold
     for (let i = 0; i < 3; i++) this.fire.spot(st.x0 + this.rng() * (st.x1 - st.x0), y, st.z0 + this.rng() * (st.z1 - st.z0), clamp(size * 0.2, 3, 12), 2 + this.rng() * 2, false, true);
     this.cascade(st, cx, cz, size);
   }
@@ -698,7 +706,7 @@ class Game {
     this.doneTimes.push(this.time);
     while (this.time - this.doneTimes[0] > 10) this.doneTimes.shift();
     this.statMax('multi', this.doneTimes.length);
-    this.cascade(st, (st.x0 + st.x1) / 2, (st.z0 + st.z1) / 2, Math.max(st.x1 - st.x0, st.z1 - st.z0));
+    if (!st.link) this.cascade(st, (st.x0 + st.x1) / 2, (st.z0 + st.z1) / 2, Math.max(st.x1 - st.x0, st.z1 - st.z0)); // a fallen bridge shakes no neighbours (it is long, its shock would reach far)
     this.audio.fanfare();
     if (this.project((st.x0 + st.x1) / 2, st.top * 0.5 + 6, (st.z0 + st.z1) / 2, v3)) this.hud.stamp(st, v3[0], v3[1]);
     if (!p.stickers.includes(st.icon)) p.stickers.push(st.icon);
@@ -765,6 +773,7 @@ class Game {
     m.jumpHeld = inp.jumpHeld;
     m.sprint = inp.sprint;
     m.update(dt, mx, mz, this.aim.x, this.aim.z);
+    this.ramparts.limit(m, px, pz); // fortress Titan: no way over its walls, only through
     const moved = Math.hypot(wrapDelta(m.x - px, this.cam.wrap), wrapDelta(m.z - pz, this.cam.wrap));
     this.walked += moved;
     if (!this.fly) this.stat('dist', moved);
@@ -781,6 +790,8 @@ class Game {
     this.sweeper.update();
     this.reactions.update(dt);
     this.frail.update();
+    this.spans.update(dt);
+    this.ramparts.update();
     this.chainLoad = Math.max(0, this.chainLoad - dt * 0.25);
     // Under the sea, bubbles rise all around.
     if (this.world.under && this.rng() < 0.6 * this.fx.thin) {
@@ -1125,6 +1136,7 @@ class Game {
     o = this.tools.write(this.cubeBuf, o, this.time);
     o = this.actors.write(this.cubeBuf, o, this.cubeBuf.length);
     o = this.traffic.write(this.cubeBuf, o, this.cubeBuf.length);
+    o = this.spans.write(this.cubeBuf, o, this.cubeBuf.length);
     r.drawCubes(this.cubeBuf, o / 12);
 
     this.drawGhost();

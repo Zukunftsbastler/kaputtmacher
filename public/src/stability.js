@@ -9,7 +9,7 @@ import { TYPE_MAT, MATS, MAT, isTerrain } from './materials.js';
 import { FALL_GAIN } from './bodies.js';
 
 // Share of a storey's original strength that must remain, per material the building mostly consists of.
-const TAU = { [MAT.LEAF]: 0.7, [MAT.FABRIC]: 0.7, [MAT.GLASS]: 0.6, [MAT.WOOD]: 0.62, [MAT.EXPLOSIVE]: 0.6, [MAT.SHEET]: 0.58, [MAT.BRICK]: 0.5, [MAT.CONCRETE]: 0.42, [MAT.STEEL]: 0.3 };
+const TAU = { [MAT.LEAF]: 0.7, [MAT.FABRIC]: 0.7, [MAT.GLASS]: 0.6, [MAT.WOOD]: 0.62, [MAT.EXPLOSIVE]: 0.6, [MAT.SHEET]: 0.58, [MAT.BRICK]: 0.5, [MAT.CONCRETE]: 0.42, [MAT.STEEL]: 0.3, [MAT.FORT]: 0.3 };
 export const tauOf = (mat) => TAU[mat] ?? 0.5;
 // Load-bearing strength and weight of one voxel, by type.
 export const VOXEL_STRENGTH = new Float32Array(256), VOXEL_MASS = new Float32Array(256);
