@@ -64,13 +64,13 @@ async function run() {
   if (sc === 'spantime') { const t0 = performance.now(); g.spans.reset(g.world); const t1 = performance.now(); let n = 0; const t2 = performance.now(); for (let i = 0; i < 200; i++) { g.spans.update(1 / 60); n++; } const t3 = performance.now(); window.__extra = { links: g.spans.list.length, resetMs: +(t1 - t0).toFixed(1), updateMs: +((t3 - t2) / n).toFixed(3), anchors: g.spans.list.reduce((a, k) => a + k.anchors[0].length / 3 + k.anchors[1].length / 3, 0), pierRows: g.spans.list.reduce((a, k) => a + k.piers.reduce((b, p) => b + p.rows.length, 0), 0) }; }
   if (sc === 'hubview') { const q = new URLSearchParams(location.search), kind = q.get('hub'), list = g.world.structures.filter((s) => s.hub === kind || s.kind === kind), st = list[Number(q.get('k') ?? 0)]; if (st) { const cx = (st.x0 + st.x1) / 2, cz = (st.z0 + st.z1) / 2, cy = (st.y0 + st.top) / 2, d = Number(q.get('d') ?? 120), a = Number(q.get('a') ?? 0.6), up = Number(q.get('up') ?? 0.5); g.fly = true; for (let i = 0; i < 40; i++) { g.flyPos = [cx - Math.sin(a) * d, cy + d * up, cz - Math.cos(a) * d]; g.camYaw = a; g.flyPitch = -Math.atan2(d * up, d) + Number(q.get('tilt') ?? 0); await wait(60); } } window.__extra = { n: list.length, at: st ? [st.x0, st.y0, st.z0, st.top] : null }; }
   if (sc === 'volcano') { // a cutaway: the shell in front of the camera is lifted away (no physics), then the camera looks in
-    const q = new URLSearchParams(location.search), w = g.world, v = w.vents?.[0], out = {}; window.__extra = out;
+    const q = new URLSearchParams(location.search), w = g.world, pk = q.get('peak') ? w.peaks?.[0] : null, v = pk ? [pk.x, pk.y, pk.z, 8, pk.r, pk.g, pk.id] : w.vents?.[0], out = {}; window.__extra = out;
     if (v) {
       const [cx, top, cz, crater, R, G] = v, a = Number(q.get('a') ?? 0.6), d = Number(q.get('d') ?? R * 1.6), up = Number(q.get('up') ?? 0.25), fx = -Math.sin(a), fz = -Math.cos(a);
-      if (q.get('cut') !== '0') { w.generating = true; for (let y = G - 1; y < top + 2; y++) for (let dz = -R - 2; dz <= R + 2; dz++) for (let dx = -R - 2; dx <= R + 2; dx++) { const t = w.get(cx + dx, y, cz + dz); if (!t) continue; const along = (dx * fx + dz * fz) / (Math.hypot(dx, dz) || 1); if (along > 0.55 && Math.hypot(dx, dz) > R * 0.5 && y >= G) { w.set(cx + dx, y, cz + dz, 0); w.markChunk((cx + dx) >> 5, y >> 5, (cz + dz) >> 5); } } w.generating = false; }
+      if (q.get('cut') !== '0') { w.generating = true; for (let y = G - 1; y < top + 2; y++) for (let dz = -R - 2; dz <= R + 2; dz++) for (let dx = -R - 2; dx <= R + 2; dx++) { const t = w.get(cx + dx, y, cz + dz); if (!t) continue; const along = (dx * fx + dz * fz) / (Math.hypot(dx, dz) || 1); if (along > 0.55 && Math.hypot(dx, dz) > R * Number(q.get('cutr') ?? 0.5) && y >= G) { w.set(cx + dx, y, cz + dz, 0); w.markChunk((cx + dx) >> 5, y >> 5, (cz + dz) >> 5); } } w.generating = false; }
       g.fly = true; for (let i = 0; i < 50; i++) { g.flyPos = [cx + fx * d, G + d * up, cz + fz * d]; g.camYaw = a; g.flyPitch = -Math.atan2(d * up - Number(q.get('aimy') ?? 20), d); await wait(60); }
-      if (q.get('erupt')) { const st = w.structures.find((s) => s.kind === 'idol'); const t0 = g.time; g.reactions.wake(v); for (let i = 0; i < Number(q.get('erupt')) / 60; i++) { g.flyPos = [cx + fx * d, G + d * up, cz + fz * d]; await wait(60); } out.bombs = g.reactions.bombs.length; out.secs = +(g.time - t0).toFixed(1); out.idol = st && +(st.remaining / st.total).toFixed(2); }
-      if (q.get('wake') === 'idol') { const { T } = await import('./src/materials.js'); const st = w.structures.find((s) => s.kind === 'idol'); let hit = null; for (let y = st.y0; y <= st.top && !hit; y++) for (let z = st.z0; z <= st.z1 && !hit; z++) for (let x = st.x0; x <= st.x1; x++) if (w.get(x, y, z) === T.SECRET) { hit = [x, y, z]; break; } out.secret = hit; if (hit) g.destruction.sphere(hit[0] + 0.5, hit[1] + 0.5, hit[2] + 0.5, 3, 200, {}); await wait(3500); out.woke = v.woke !== undefined; out.eggs = g.progress.stats.eggs; }
+      if (q.get('erupt')) { const st = w.structures.find((s) => s.kind === 'idol'); const t0 = g.time; if (pk) g.reactions.avalanche(pk); else g.reactions.wake(v); for (let i = 0; i < Number(q.get('erupt')) / 60; i++) { g.flyPos = [cx + fx * d, G + d * up, cz + fz * d]; await wait(60); } out.bombs = g.reactions.bombs.length; out.secs = +(g.time - t0).toFixed(1); out.idol = st && +(st.remaining / st.total).toFixed(2); }
+      if (q.get('wake') === 'idol') { const { T } = await import('./src/materials.js'); const st = w.structures.find((s) => s.kind === (pk ? 'hoard' : 'idol')); let hit = null; for (let y = st.y0; y <= st.top && !hit; y++) for (let z = st.z0; z <= st.z1 && !hit; z++) for (let x = st.x0; x <= st.x1; x++) if (w.get(x, y, z) === T.SECRET) { hit = [x, y, z]; break; } out.secret = hit; if (hit) g.destruction.sphere(hit[0] + 0.5, hit[1] + 0.5, hit[2] + 0.5, 3, 200, {}); await wait(3500); out.woke = (pk ?? v).woke !== undefined; out.eggs = g.progress.stats.eggs; out.avalanches = g.progress.stats.avalanches; }
       if (q.get('wake') === 'tear') { const st = w.structures[v[6]]; st.remaining = Math.floor(st.total * 0.65); await wait(3500); out.woke = v.woke !== undefined; }
       Object.assign(out, { R: Math.round(R), top, eruptions: g.progress.stats.eruptions, fires: g.fire.n });
     }
@@ -89,6 +89,7 @@ async function run() {
     await wait(2500);
     let gone = 0, built = 0; const why = {}; for (const [, [x, y, z, t]] of held) if (w.get(x, y, z) !== t) { gone++; if (t < 128) built++; const k = (t >= 128 ? 'rubble' : 'built') + (w.isLink?.(x, y, z) ? ':link' : '') + ':' + (t & 127); why[k] = (why[k] ?? 0) + 1; }
     out.why = Object.entries(why).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (q.get('owner')) { const own = {}; for (const [, [x, y, z, t]] of held) if (w.get(x, y, z) !== t) { const st = w.structures[w.footprint[(x & w.mx) + w.sx * (z & w.mz)]]; const k = st.kind + (st.hub ? ':' + st.hub : '') + (st.linkStyle ? ':' + st.linkStyle : ''); own[k] = (own[k] ?? 0) + 1; } out.owner = own; }
     const cnt = (st) => { let c = 0; for (const [, [x, y, z, t]] of held) if (w.get(x, y, z) !== t && x >= st.x0 - 3 && x <= st.x1 + 3 && z >= st.z0 - 3 && z <= st.z1 + 3) c++; return c; }, s0 = sts.slice().sort((a, b) => cnt(b) - cnt(a))[0], pts = []; for (const [, [x, y, z, t]] of held) if (w.get(x, y, z) !== t && x >= s0.x0 - 3 && x <= s0.x1 + 3 && z >= s0.z0 - 3 && z <= s0.z1 + 3) pts.push([x - s0.x0, y - s0.y0, z - s0.z0, t]); out.pts = pts.filter((p, i) => i % Math.max(1, Math.floor(pts.length / 40)) === 0).slice(0, 40).map((p) => p.join(',')).join(' '); out.box = [s0.x1 - s0.x0, s0.top - s0.y0, s0.z1 - s0.z0]; if (out.removed) { const p0 = pts.find((p) => p[3] === 45); if (p0) { const [rx, ry, rz] = p0, X = rx + s0.x0, Y = ry + s0.y0, Z = rz + s0.z0; out.p0 = [X, Y, Z]; out.under = out.removed.filter((r) => r[0] === X && r[2] === Z && r[1] < Y && r[1] >= Y - 14).map((r) => r[1] + ':' + r[3]).slice(0, 8); } out.removed = out.removed.length; }
     Object.assign(out, { left: held.size, floating: gone, builtFloating: built, welded: w.welded });
   }
@@ -117,6 +118,27 @@ async function run() {
         g.input.keys.clear(); out.minD = Math.round(minD); out.a = r.a; out.inside = minD < r.a - 2; void z0;
       }
       out.h = +m.h.toFixed(1);
+    }
+  }
+  if (sc === 'musicswitch') { // the piece follows the world, the setting overrides it
+    const mu = g.music, out = { log: [] }; window.__extra = out; g.audio.unlock();
+    const until = async (what) => { const t0 = performance.now(); while (performance.now() - t0 < 20000) { await wait(100); if (mu.started && mu.player) break; } out.log.push(`${what}:${mu.track}:${mu.mode}:${mu.started ? ((performance.now() - t0) / 1000).toFixed(1) + 's' : 'not started'}`); };
+    await until('start');
+    for (const w of (new URLSearchParams(location.search).get('to') ?? 'neon,castle').split(',')) { g.loadWorld(w); await until(w); await wait(1500); }
+    g.progress.settings.track = 'jungle'; g.applySettings('track'); await until('setting');
+    g.progress.settings.track = ''; g.applySettings('track'); await until('back');
+    out.ctx = g.audio.ctx?.state; out.voices = mu.player?.voices?.size;
+  }
+  if (sc === 'hitwall') { // a creature at the foot of a big structure attacks it: how much goes, how deep it gets
+    const q = new URLSearchParams(location.search), w = g.world, m = g.monster, st = w.structures.find((s) => s.kind === (q.get('kind') ?? 'mountain')), out = {}; window.__extra = out;
+    if (st) {
+      const cz = Math.round((st.z0 + st.z1) / 2) + Number(q.get('dz') ?? 0), cx = Math.round((st.x0 + st.x1) / 2), y = st.y0 + Math.round(m.h * 0.4) + 2;
+      let edge = st.x0; while (edge < cx && !w.get(edge, y, cz)) edge++;
+      const depth = () => { let d = 0; while (d < 40 && !w.get(edge + d, y, cz)) d++; return d; };
+      m.x = edge - m.h * 0.6 - 3; m.z = cz; m.y = w.heightBelow(m.x, m.z, y + 20); m.heading = Math.PI / 2; g.camYaw = Math.PI / 2; await wait(600);
+      g.selectTool(q.get('tool') ?? g.unlockedTools()[0]); const r0 = st.remaining; out.coll = []; const oc = g.stability.collapse.bind(g.stability); g.stability.collapse = (s2, yy) => { if (out.coll.length < 6) out.coll.push(s2.kind + ':' + yy + ':S' + Math.round(s2.S[yy]) + '/' + Math.round(s2.S0[yy]) + ':w' + s2.weak.toFixed(2) + ':sh' + s2.shove.toFixed(2)); return oc(s2, yy); };
+      for (let i = 0; i < Number(q.get('n') ?? 8); i++) { g.aim.x = edge + 2; g.aim.y = y; g.aim.z = cz; g.tools.use(g.tool, q.get('heavy') !== '0'); const t0 = performance.now(); while ((g.tools.act || performance.now() - t0 < 300) && performance.now() - t0 < 5000) { g.aim.x = edge + 2; g.aim.y = y; g.aim.z = cz; await wait(30); } }
+      Object.assign(out, { tool: g.tool, removed: r0 - st.remaining, hole: depth(), h: +m.h.toFixed(1) });
     }
   }
   if (sc === 'punch') { g.input.keys.add('KeyW'); await wait(1500); g.input.keys.delete('KeyW'); for (let i = 0; i < 12; i++) { fire(0.5, 0.45); await wait(350); } }

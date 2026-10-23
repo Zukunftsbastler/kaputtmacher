@@ -304,6 +304,13 @@ export const LOTS = {
     }
     g.shell(cx - 16, G + 50, cz - 8, 32, 40, 16, body); g.box(cx - 16, G + 50, cz - 8, 32, 2, 16, body); g.box(cx - 16, G + 88, cz - 8, 32, 2, 16, body); // hollow chest
     g.box(cx - 5, G + 62, cz + 8, 10, 10, 1, T.NEON_BLUE);
+    // Inside the chest, the machine that drives the giant: a glowing core on a steel stand with a gangway round it,
+    // gear wheels on the side walls, a ladder up to the head – and something hidden in the core.
+    g.box(cx - 3, G + 52, cz - 3, 6, 3, 6, T.STEEL_DARK); g.cyl(cx, cz, 3, G + 55, 16, T.NEON_BLUE); g.cyl(cx, cz, 4, G + 71, 2, T.STEEL_DARK);
+    g.box(cx - 15, G + 64, cz - 7, 30, 1, 14, T.STEEL); g.box(cx - 7, G + 64, cz - 4, 14, 1, 8, 0); // the gangway, open round the core
+    for (const s of [-1, 1]) for (let a = 0; a < 6.283; a += 0.12) for (const r of [6, 7]) g.set(cx + s * 15, G + 76 + Math.round(Math.sin(a) * r), cz + Math.round(Math.cos(a) * r), r === 7 && Math.round(a * 8) % 2 ? T.STEEL_DARK : T.STEEL); // gear wheels
+    for (let y = 52; y < 88; y++) if (y % 2 === 0) g.box(cx + 12, G + y, cz + 6, 3, 1, 1, T.STEEL_DARK); g.box(cx + 12, G + 52, cz + 7, 1, 36, 1, T.STEEL); g.box(cx + 14, G + 52, cz + 7, 1, 36, 1, T.STEEL); // the ladder
+    g.set(cx, G + 63, cz, T.SECRET);
     g.box(cx - 4, G + 90, cz - 4, 8, 4, 8, T.GRANITE);
     g.box(cx - 9, G + 94, cz - 8, 18, 16, 16, body); // head
     g.box(cx - 6, G + 101, cz + 8, 4, 4, 1, T.NEON_YELLOW); g.box(cx + 2, G + 101, cz + 8, 4, 4, 1, T.NEON_YELLOW); g.box(cx - 5, G + 96, cz + 8, 10, 2, 1, T.GRANITE);

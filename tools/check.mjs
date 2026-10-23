@@ -73,23 +73,30 @@ for (const [i, w] of WORLDS.entries()) {
 //    files without rendering them), the alarm level must map to states without fluttering, and without a
 //    worker (as here in Node) the game must fall back to the hand-written music.
 {
-  const { SCORE, RENDER_RATE, stateFor } = await import('../public/src/music-score.js');
+  const { TRACKS, scoreFor, trackFor, RENDER_RATE, stateFor } = await import('../public/src/music-score.js');
   const { planStems } = await import('../public/src/vendor/musik-generator/stems/render-stems.js');
-  try {
-    const { manifest, jobs } = planStems(SCORE, { sampleRate: RENDER_RATE });
-    const states = Object.keys(manifest.states);
-    if (states.join() !== 'stroll,chase,mayhem' || jobs[0].state !== 'stroll') fail('music: unexpected states ' + states);
-    const tempo = states.map((s) => manifest.segments[manifest.states[s].segments[0]].bpm);
-    if (!(tempo[0] < tempo[1] && tempo[1] < tempo[2])) fail('music: the states must get faster: ' + tempo);
-    const mb = manifest.ram.totalBytes / 1048576;
-    if (mb > 90) fail(`music: ${mb.toFixed(0)} MB decoded is too much`);
-    console.log(`rendered music: ${states.length} states at ${tempo.join(', ')} BPM, ${Object.keys(manifest.segments).length} segments, about ${mb.toFixed(0)} MB decoded`);
-  } catch (e) { fail('music description: ' + e.message); }
+  let most = 0;
+  for (const t of TRACKS) {
+    try {
+      const { manifest, jobs } = planStems(scoreFor(t.id), { sampleRate: RENDER_RATE });
+      const states = Object.keys(manifest.states);
+      if (states.join() !== 'stroll,chase,mayhem' || jobs[0].state !== 'stroll') fail(`music ${t.id}: unexpected states ` + states);
+      const tempo = states.map((s) => manifest.segments[manifest.states[s].segments[0]].bpm);
+      if (!(tempo[0] < tempo[1] && tempo[1] < tempo[2])) fail(`music ${t.id}: the states must get faster: ` + tempo);
+      const mb = manifest.ram.totalBytes / 1048576;
+      most = Math.max(most, mb);
+      if (mb > 90) fail(`music ${t.id}: ${mb.toFixed(0)} MB decoded is too much`);
+    } catch (e) { fail(`music ${t.id}: ` + e.message); }
+  }
+  if (new Set(TRACKS.map((t) => JSON.stringify(t.hook))).size !== TRACKS.length) fail('music: two pieces share a hook');
+  for (const w of WORLDS) if (!TRACKS.some((t) => t.id === trackFor(w.id))) fail('music: no piece for ' + w.id);
+  console.log(`rendered music: ${TRACKS.length} pieces, each 3 states, at most ${most.toFixed(0)} MB decoded`);
   let cur = 'stroll', changes = 0;
   for (let i = 0; i < 400; i++) { const next = stateFor(0.95 + 0.1 * Math.sin(i), cur); if (next !== cur) changes++; cur = next; }
   if (changes > 1 || stateFor(0, 'mayhem') !== 'stroll' || stateFor(3.2, 'stroll') !== 'mayhem' || stateFor(2.7, 'mayhem') !== 'mayhem') fail('music: alarm-to-state mapping');
   const { Music } = await import('../public/src/music.js');
   const music = new Music({ ctx: null });
+  music.setWorld('skyline');
   if (music.mode !== 'classic') fail('music: no fallback without a worker');
 }
 console.log(`${ACHIEVEMENTS.length} achievements, ${WORLDS.length} worlds`);

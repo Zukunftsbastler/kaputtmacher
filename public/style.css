@@ -93,6 +93,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 .card .bar { margin-top: 4px; height: 6px; border-radius: 3px; background: #d5d0c4; overflow: hidden; }
 .card .bar i { display: block; height: 100%; background: var(--good); }
 .parent input[type=range] { flex: 1; max-width: 200px; height: 30px; accent-color: var(--accent); }
+.parent select { font: inherit; font-size: 16px; max-width: 220px; padding: 6px 10px; border-radius: 12px; border: 2px solid var(--ink); background: #fff; color: var(--ink); cursor: pointer; }
 
 #next { left: 50%; top: 42%; transform: translate(-50%, -50%); width: 150px; height: 150px; font-size: 80px; border-radius: 40px; }
 #cross { width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 4px solid #fff; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4); }

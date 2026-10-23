@@ -6,7 +6,7 @@
 // Counters kept in the save. Everything else an achievement looks at is derived from the progress.
 export const STATS = ['vox', 'glass', 'wood', 'stone', 'steel', 'leaf', 'buildings', 'towers', 'collapses', 'crushed', 'chain', 'multi',
   'explosions', 'fires', 'hydrants', 'lamps', 'eggs', 'cars', 'news', 'police', 'trucks', 'army', 'fighters', 'wanted',
-  'jumps', 'flips', 'pounds', 'roars', 'shoves', 'dist', 'people', 'light', 'heavy', 'power', 'idle', 'time', 'spans', 'eruptions'];
+  'jumps', 'flips', 'pounds', 'roars', 'shoves', 'dist', 'people', 'light', 'heavy', 'power', 'idle', 'time', 'spans', 'eruptions', 'avalanches'];
 
 const fmt = (n) => (n >= 1e6 ? (n / 1e6).toLocaleString('de-DE') + ' Mio.' : n.toLocaleString('de-DE'));
 const CREATURES = { dino: ['🦖', 'Dino'], gorilla: ['🦍', 'Gorilla'], robot: ['🤖', 'Roboter'], tank: ['🪖', 'Panzer'], jet: ['✈️', 'Flieger'], digger: ['🚜', 'Bagger'] };
@@ -42,6 +42,7 @@ for (const [id, [icon, name]] of Object.entries(CREATURES)) {
 tiers('stageAll', '🎪', (n) => `Stufe ${n} mit allen sechs Figuren erreicht`, [[3, 'Monsterzoo'], [7, 'Monsterparade']]);
 tiers('spans', '🌉', (n) => `${n} Brücken, Bahnen und andere Verbindungen zum Absturz gebracht`, [[1, 'Brücke weg'], [25, 'Netzausfall']], 'Eine Brücke, Bahn oder andere Verbindung zum Absturz gebracht');
 tiers('eruptions', '🌋', (n) => `${n} Vulkane zum Ausbruch gebracht`, [[1, 'Feuerberg']], 'Einen Vulkan zum Ausbruch gebracht');
+tiers('avalanches', '🏔️', (n) => `${n} Lawinen ausgelöst`, [[1, 'Lawinengefahr']], 'Eine Lawine ausgelöst');
 tiers('explosions', '💥', (n) => `${n} Explosionen ausgelöst`, [[1, 'Bumm!'], [50, 'Knallfrosch'], [500, 'Feuerwerker']], 'Eine Explosion ausgelöst');
 tiers('fires', '🔥', (n) => `${n} Würfel in Brand gesetzt`, [[10, 'Zündler'], [1000, 'Lagerfeuer'], [3e4, 'Heiße Sache']]);
 tiers('hydrants', '🚰', (n) => `${n} Hydranten umgeworfen`, [[1, 'Wasser marsch!'], [40, 'Rasensprenger']], 'Einen Hydranten umgeworfen');

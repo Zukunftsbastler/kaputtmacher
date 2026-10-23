@@ -51,7 +51,7 @@ const DETAIL = [null,
   { planet: 1024, tall: 1024, cap: 430, debris: 14000, fx: 5000, people: 1.3, units: 1.4, thin: 1.3, fire: 1500, pixel: 1 },
 ];
 // Dust colour per material.
-const DUST = { [MAT.EARTH]: [0.55, 0.42, 0.3], [MAT.GLASS]: [0.85, 0.95, 1], [MAT.LEAF]: [0.4, 0.7, 0.3], [MAT.WOOD]: [0.75, 0.6, 0.4], [MAT.BRICK]: [0.8, 0.5, 0.4], [MAT.CONCRETE]: [0.75, 0.75, 0.73], [MAT.STEEL]: [0.6, 0.62, 0.66], [MAT.SHEET]: [0.7, 0.72, 0.75], [MAT.EXPLOSIVE]: [0.3, 0.3, 0.3], [MAT.FABRIC]: [0.9, 0.9, 0.85], [MAT.FORT]: [0.78, 0.72, 0.6] };
+const DUST = { [MAT.EARTH]: [0.55, 0.42, 0.3], [MAT.GLASS]: [0.85, 0.95, 1], [MAT.LEAF]: [0.4, 0.7, 0.3], [MAT.WOOD]: [0.75, 0.6, 0.4], [MAT.BRICK]: [0.8, 0.5, 0.4], [MAT.CONCRETE]: [0.75, 0.75, 0.73], [MAT.STEEL]: [0.6, 0.62, 0.66], [MAT.SHEET]: [0.7, 0.72, 0.75], [MAT.EXPLOSIVE]: [0.3, 0.3, 0.3], [MAT.FABRIC]: [0.9, 0.9, 0.85], [MAT.FORT]: [0.78, 0.72, 0.6], [MAT.ROCK]: [0.6, 0.58, 0.56] };
 
 const params = new URLSearchParams(location.search);
 const v3 = [0, 0, 0], mat = m4.create(), base = m4.create();
@@ -73,6 +73,7 @@ class Game {
     this.audio.setVolume(this.progress.settings.volume);
     this.music = new Music(this.audio);
     this.music.setVolume(this.progress.settings.music);
+    this.music.setChoice(this.progress.settings.track);
 
     this.rng = makeRng(1);
     this.time = 0;
@@ -296,6 +297,7 @@ class Game {
     const s = this.progress.settings;
     if (key === 'volume') this.audio.setVolume(s.volume);
     else if (key === 'music') this.music.setVolume(s.music);
+    else if (key === 'track') this.music.setChoice(s.track);
     else if (key === 'detail') { this.setQuality(); this.loadWorld(this.progress.world); }
     else if (key === 'life') { this.actors.populate(s.life ? Math.round((this.world.people ?? 0) * this.quality.people) : 0); this.traffic.reset(s.life); }
     else if (key === 'unlockAll') this.hud.refreshTools();
@@ -377,8 +379,8 @@ class Game {
     st.time += dt;
     if (p.playStage === p.stage) p.t += dt; // seconds spent on the current stage, for the play log
     if (this.idle) { st.idle += dt; c.fill(0); this.fire.lit = 0; }
-    st.vox += c[MAT.GLASS] + c[MAT.LEAF] + c[MAT.WOOD] + c[MAT.BRICK] + c[MAT.CONCRETE] + c[MAT.STEEL] + c[MAT.SHEET] + c[MAT.EXPLOSIVE] + c[MAT.FABRIC] + c[MAT.FORT];
-    st.glass += c[MAT.GLASS]; st.wood += c[MAT.WOOD]; st.leaf += c[MAT.LEAF]; st.stone += c[MAT.BRICK] + c[MAT.CONCRETE] + c[MAT.FORT]; st.steel += c[MAT.STEEL] + c[MAT.SHEET];
+    st.vox += c[MAT.GLASS] + c[MAT.LEAF] + c[MAT.WOOD] + c[MAT.BRICK] + c[MAT.CONCRETE] + c[MAT.STEEL] + c[MAT.SHEET] + c[MAT.EXPLOSIVE] + c[MAT.FABRIC] + c[MAT.FORT] + c[MAT.ROCK];
+    st.glass += c[MAT.GLASS]; st.wood += c[MAT.WOOD]; st.leaf += c[MAT.LEAF]; st.stone += c[MAT.BRICK] + c[MAT.CONCRETE] + c[MAT.FORT] + c[MAT.ROCK]; st.steel += c[MAT.STEEL] + c[MAT.SHEET];
     c.fill(0);
     st.fires += this.fire.lit; this.fire.lit = 0;
     const fresh = checkAchievements(p);
@@ -413,7 +415,7 @@ class Game {
     const t = body.tally, size = Math.min(1, body.count / 12000) * Math.min(1, speed / 30);
     this.shake(clamp((Math.cbrt(body.mass) * speed) / 900, 0, 0.6));
     if (body.count < 40) return;
-    if (t[MAT.CONCRETE] + t[MAT.BRICK] + t[MAT.FORT] > body.count * 0.3) this.audio.crumble(size);
+    if (t[MAT.CONCRETE] + t[MAT.BRICK] + t[MAT.FORT] + t[MAT.ROCK] > body.count * 0.3) this.audio.crumble(size);
     if (t[MAT.GLASS] > 40) this.audio.glassfall(Math.min(1, t[MAT.GLASS] / 3000));
     if (t[MAT.STEEL] + t[MAT.SHEET] > 30) this.audio.hit('metal', size + 0.2);
     if (t[MAT.WOOD] > body.count * 0.3) this.audio.hit('wood', size + 0.3);
@@ -441,7 +443,7 @@ class Game {
   // Something large has come loose: concrete cracks, steel starts to groan.
   onCollapse(body) {
     const t = body.tally, size = Math.min(1, body.count / 20000);
-    if (t[MAT.CONCRETE] + t[MAT.BRICK] + t[MAT.FORT] > 200) this.audio.crack(size);
+    if (t[MAT.CONCRETE] + t[MAT.BRICK] + t[MAT.FORT] + t[MAT.ROCK] > 200) this.audio.crack(size);
     if (t[MAT.STEEL] + t[MAT.SHEET] > 30 || body.count > 4000) this.audio.groan(size);
     if (t[MAT.WOOD] > body.count * 0.4) this.audio.hit('wood', 0.8);
     this.audio.rumble(size);

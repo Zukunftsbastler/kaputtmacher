@@ -8,6 +8,7 @@
 // Builders follow the lot rules of landmarks.js: (g, x0, G, z0, L, kit, H). Big plots follow BIG in landmarks2.js.
 
 import { T } from './materials.js';
+import { hash3 } from './math.js';
 import { line } from './landmarks.js';
 import { skyscraper } from './citykit.js';
 import { pine } from './landmarks2.js';
@@ -159,30 +160,76 @@ function henge(g, x0, G, z0, L) {
   g.end();
 }
 
-// A volcano: a cone of dark rock three voxels thick, with lava in its crater and glowing streams down its side, and
-// smoke rising (world.vents, drawn by reactions.js). It is hollow, and it hides a secret: behind a curtain of ferns
+// The shape of a mountain: not a cone but rock. At height y the outline runs round the centre at a base radius
+// (base(y)) that sines in the angle push out and pull in, so that the foot is no circle but a wavy line of spurs
+// and bays; their phase drifts with the height, so the gullies wind their way up the mountain. Over that lie bumps
+// (smooth noise over the surface, coarse and fine). The radius is worked out once per height and degree of angle;
+// rockCone builds the wall from it, `wall` voxels thick (rough: how deep the gullies cut, 1 for a mountain), and
+// returns it as radius(a, y), with radius.min(y) the
+// narrowest it gets at a height (inside that, the hollow is free of rock).
+function noise3(x, y, z, seed) { // smooth value noise, −1…1
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z), fx = x - ix, fy = y - iy, fz = z - iz;
+  const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy), sz = fz * fz * (3 - 2 * fz);
+  const h = (a, b, c) => hash3(ix + a + seed * 131, iy + b, iz + c);
+  const l = (a, b, t) => a + (b - a) * t;
+  return 2 * l(l(l(h(0, 0, 0), h(1, 0, 0), sx), l(h(0, 1, 0), h(1, 1, 0), sx), sy), l(l(h(0, 0, 1), h(1, 0, 1), sx), l(h(0, 1, 1), h(1, 1, 1), sx), sy), sz) - 1;
+}
+function rockCone(g, cx, G, cz, top, base, wall, seed, rough, type) {
+  const N = 360, table = new Float32Array(top * N), low = new Float32Array(top);
+  for (let y = 0; y < top; y++) {
+    const b = base(y);
+    let m = 1e9;
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * 6.283, ca = Math.cos(a), sa = Math.sin(a);
+      const gully = rough * 0.15 * Math.sin(5 * a + seed + 0.045 * y + 0.9 * Math.sin(0.03 * y + seed)) + rough * (0.07 * Math.sin(9 * a - 2 * seed - 0.06 * y) + 0.035 * Math.sin(17 * a + 3 * seed + 0.1 * y));
+      const bump = 3.5 * noise3((ca * b) / 13, y / 9, (sa * b) / 13, seed) + 1.5 * noise3((ca * b) / 5, y / 4, (sa * b) / 5, seed + 7);
+      const r = Math.max(1, b * (1 + gully) + bump);
+      table[y * N + i] = r; if (r < m) m = r;
+    }
+    low[y] = m;
+  }
+  const radius = (a, y) => {
+    const yy = Math.max(0, Math.min(top - 1, Math.round(y))), f = (((a / 6.283) % 1) + 1) % 1 * N, i = Math.floor(f) % N, k = f - Math.floor(f);
+    return table[yy * N + i] * (1 - k) + table[yy * N + ((i + 1) % N)] * k;
+  };
+  radius.min = (y) => low[Math.max(0, Math.min(top - 1, Math.round(y)))];
+  for (let y = 0; y < top; y++) {
+    const b = Math.ceil(base(y) * 1.3 + 7);
+    for (let dz = -b; dz <= b; dz++) for (let dx = -b; dx <= b; dx++) {
+      const d = Math.hypot(dx, dz);
+      if (d > b || d < low[y] - wall - 1) continue;
+      const a = Math.atan2(dz, dx), r = radius(a, y);
+      if (d > r || d < r - wall) continue;
+      const t = type(dx, y, dz, r - d, a);
+      if (t) g.set(cx + dx, G + y, cz + dz, t);
+    }
+  }
+  return radius;
+}
+
+// A volcano: a cone of living rock (ROCK, harder than anything built) twelve voxels thick, with lava in its crater
+// and glowing streams down its side, and smoke rising (world.vents, drawn by reactions.js). It hides a secret: behind a curtain of ferns
 // at its foot a passage leads into the mountain. Inside a lava lake glows, crystals grow from the walls, and on an
 // island of basalt the tribe keeps a giant golden idol among the eggs of its nest. Whoever breaks the idol (or tears
 // the mountain open) wakes the volcano: it erupts (reactions.js).
 function volcano(g, x, G, z, W, D, kit, H) {
   const cx = x + (W >> 1), cz = z + (D >> 1), R = Math.min(W, D) / 2 - 4, top = Math.min(H - G - 40, Math.round(R * 1.1)), crater = R * 0.22;
-  const outer = (y) => R - ((R - crater) * y) / top, isle = Math.round(R * 0.28), face = g.int(0, 3), fx = [1, 0, -1, 0][face], fz = [0, 1, 0, -1][face];
+  const isle = Math.round(R * 0.28), face = g.int(0, 3), fx = [1, 0, -1, 0][face], fz = [0, 1, 0, -1][face], WALL = 12;
   const st = g.begin('volcano', '🌋', { major: true });
-  for (let y = 0; y < top; y++) {
-    const r = outer(y);
-    for (let dz = -Math.ceil(r); dz <= r; dz++) for (let dx = -Math.ceil(r); dx <= r; dx++) {
-      const d = Math.hypot(dx, dz);
-      if (d > r || d < r - 3) continue; // a shell three voxels thick
-      g.set(cx + dx, G + y, cz + dz, (dx * 3 + dz * 7 + y) % 11 === 0 ? T.BASALT : y > top - 6 ? T.BASALT : (dx + dz + y) % 5 ? T.STONE : T.GRANITE);
-    }
-  }
-  for (let dz = -crater; dz <= crater; dz++) for (let dx = -crater; dx <= crater; dx++) if (dx * dx + dz * dz <= crater * crater) g.box(cx + dx, G + top - 8, cz + dz, 1, 3, 1, T.LAVA); // the lava lake in the crater
+  st.rock = true; // living rock: no storeys that give way (world.finalize)
+  // A slightly concave cone with gullies and bumps; the weathered outside, then the dark rock of the core.
+  const outer = rockCone(g, cx, G, cz, top, (y) => crater + (R * 0.82 - crater) * (1 - y / top) ** 1.15, WALL, g.rnd() * 6, 0.6, (dx, y, dz, depth) =>
+    depth < 2 ? ((dx * 3 + dz * 7 + y) % 11 === 0 || y > top - 6 || (dx + dz + y) % 5 === 0 ? T.ROCK_DARK : T.ROCK) : (dx * 5 + dz * 3 + y * 7) % 9 ? T.ROCK_DARK : T.ROCK);
+  const inner = (y) => outer.min(y) - WALL; // inside this the hollow is free of rock
+  const wallAt = (a, y) => { for (let d = inner(y) - 1; d < outer(a, y) + 1; d += 0.5) if (g.w.get(Math.round(cx + Math.cos(a) * d), G + y, Math.round(cz + Math.sin(a) * d))) return d; return inner(y); }; // where the rock begins, seen from inside
+  const lake = Math.max(2, inner(top - 8));
+  for (let dz = -lake; dz <= lake; dz++) for (let dx = -lake; dx <= lake; dx++) if (dx * dx + dz * dz <= lake * lake) g.box(cx + dx, G + top - 8, cz + dz, 1, 3, 1, T.LAVA); // the lava lake in the crater
   for (let k = 0; k < 4; k++) { // streams of lava down the flank
     const a = k * 1.57 + g.rnd(), len = top - 10;
-    for (let i = 0; i < len; i++) { const y = top - 8 - i, r = R - ((R - crater) * y) / top + 0.5; g.set(Math.round(cx + Math.cos(a + Math.sin(i * 0.08) * 0.08) * r), G + y, Math.round(cz + Math.sin(a + Math.sin(i * 0.08) * 0.08) * r), T.LAVA); }
+    for (let i = 0; i < len; i++) { const y = top - 8 - i, aa = a + Math.sin(i * 0.08) * 0.08, r = outer(aa, y) + 0.5; g.set(Math.round(cx + Math.cos(aa) * r), G + y, Math.round(cz + Math.sin(aa) * r), T.LAVA); }
   }
   // Inside: a lake of lava over the whole floor, an island in the middle and a causeway of basalt to the passage.
-  const floor = outer(0) - 4;
+  const floor = inner(0) - 1;
   for (let dz = -Math.ceil(floor); dz <= floor; dz++) for (let dx = -Math.ceil(floor); dx <= floor; dx++) {
     const d = Math.hypot(dx, dz), along = dx * fx + dz * fz, across = Math.abs(dx * fz - dz * fx);
     if (d > floor) continue;
@@ -192,12 +239,12 @@ function volcano(g, x, G, z, W, D, kit, H) {
   }
   // The passage: through the shell at the foot, hidden behind ferns.
   for (let y = 0; y < 12; y++) {
-    const r = outer(y);
-    for (let d = r - 5; d <= r + 0.5; d += 0.5) for (let c = -4; c <= 4; c++) g.set(Math.round(cx + fx * d - fz * c), G + y, Math.round(cz + fz * d + fx * c), d > r - 1.5 && y < 11 ? T.FERN : 0);
+    const r = outer(Math.atan2(fz, fx), y);
+    for (let d = r - WALL - 2; d <= r + 0.5; d += 0.5) for (let c = -4; c <= 4; c++) g.set(Math.round(cx + fx * d - fz * c), G + y, Math.round(cz + fz * d + fx * c), d > r - 1.5 && y < 11 ? T.FERN : 0);
   }
   // Crystals growing from the inner wall, pointing inwards and upwards.
   for (let k = 0; k < 46; k++) {
-    const a = g.rnd() * 6.283, y = g.int(4, Math.round(top * 0.65)), ri = outer(y) - 2, ca = Math.cos(a), sa = Math.sin(a), c = g.chance(0.6) ? T.CRYSTAL : T.CRYSTAL_PINK;
+    const a = g.rnd() * 6.283, y = g.int(4, Math.round(top * 0.65)), ri = wallAt(a, y), ca = Math.cos(a), sa = Math.sin(a), c = g.chance(0.6) ? T.CRYSTAL : T.CRYSTAL_PINK;
     for (let n = g.int(3, 5); n > 0; n--) {
       const len = g.int(4, 11), tilt = g.rnd() * 0.9, sp = (g.rnd() - 0.5) * 0.7, bx = Math.round(cx + ca * ri), bz = Math.round(cz + sa * ri);
       line(g, bx, G + y, bz, Math.round(bx - (ca - sa * sp) * len), G + y + Math.round(len * tilt), Math.round(bz - (sa + ca * sp) * len), c, n === 1 ? 2 : 1);
@@ -518,21 +565,114 @@ function gondola(g, x0, G, z0, L, kit, H) {
   void kit;
 }
 
-// A mountain: a rugged cone of rock with a snow cap, a summit cross and a hut for the skiers. Hollow inside, like the volcano.
+// A mountain: a rugged cone of living rock (ROCK, harder than anything built) with ridges and gullies, a snow cap,
+// a summit cross and pines at its foot; its wall is twelve voxels thick. It hides a secret: at its foot the timbered
+// mouth of an old gold mine, half buried in snow, leads along a rail track into an ice cave – a frozen lake, a frozen
+// waterfall, icicles, ice crystals, a gold vein in the rock with a mine cart full of gold below it, lanterns, and in
+// the middle a giant mammoth, frozen into the ice since the ice age, the miners' hoard at its feet. Whoever takes the
+// hoard (or tears the mountain open) sets off an avalanche (world.peaks, reactions.js).
 function peak(g, x, G, z, W, D, kit, H) {
-  const cx = x + (W >> 1), cz = z + (D >> 1), R = Math.min(W, D) / 2 - 4, top = Math.min(H - G - 30, Math.round(R * 1.3));
-  g.begin('mountain', '🏔️', { major: true });
-  for (let y = 0; y < top; y++) {
-    const r0 = R * (1 - y / top) ** 0.9 + 2;
-    for (let a = 0; a < 6.283; a += 1 / Math.max(4, r0)) {
-      const r = r0 * (1 + 0.12 * Math.sin(a * 5 + y * 0.07) + 0.06 * Math.sin(a * 13)); // ridges and gullies
-      const t = y > top * 0.62 || (y > top * 0.45 && Math.sin(a * 5) > 0.3) ? T.TILE_WHITE : (y + Math.round(a * 9)) % 7 ? T.STONE : T.GRANITE;
-      g.box(Math.round(cx + Math.cos(a) * r) - 1, G + y, Math.round(cz + Math.sin(a) * r) - 1, 3, 1, 3, t);
+  const cx = x + (W >> 1), cz = z + (D >> 1), R = Math.min(W, D) / 2 - 4, top = Math.min(H - G - 30, Math.round(R * 1.3)), WALL = 12;
+  const face = g.int(0, 3), fx = [1, 0, -1, 0][face], fz = [0, 1, 0, -1][face], fa = Math.atan2(fz, fx), snow = [];
+  const st = g.begin('mountain', '🏔️', { major: true });
+  st.rock = true;
+  // The outside: snow above the snow line and higher up the spurs, weathered rock below; the core inside.
+  const outer = rockCone(g, cx, G, cz, top, (y) => R * 0.74 * (1 - y / top) ** 0.9 + 2, WALL, g.rnd() * 6, 1, (dx, y, dz, depth, a) => {
+    if (depth >= 1.5) return (dx * 5 + dz * 3 + y * 7) % 9 ? T.ROCK : T.ROCK_DARK;
+    const t = y > top * 0.62 || (y > top * 0.45 && Math.sin(a * 5 + y * 0.045) > 0.3) ? T.TILE_WHITE : (y + Math.round(a * 9)) % 7 ? T.ROCK : T.ROCK_DARK;
+    if (t === T.TILE_WHITE) snow.push(cx + dx, G + y, cz + dz);
+    return t;
+  });
+  const hollow = (y) => outer.min(y) - WALL; // inside this, nothing of the wall reaches in
+  const wallAt = (a, y) => { for (let d = hollow(y) - 1; d < outer(a, y) + 1; d += 0.5) if (g.w.get(Math.round(cx + Math.cos(a) * d), G + y, Math.round(cz + Math.sin(a) * d))) return d; return hollow(y); }; // where the rock begins, seen from inside
+  g.box(cx, G + top, cz, 1, 12, 1, T.WOOD_DARK); g.box(cx - 3, G + top + 8, cz, 7, 1, 1, T.WOOD_DARK); // summit cross
+  // Inside, on the floor: a frozen lake, and a rock platform in the middle.
+  const fl = Math.floor(hollow(0)) - 1, isle = Math.round(R * 0.22);
+  for (let dz = -fl; dz <= fl; dz++) for (let dx = -fl; dx <= fl; dx++) {
+    const d = Math.hypot(dx, dz);
+    if (d > fl) continue;
+    if (d <= isle) g.box(cx + dx, G - 1, cz + dz, 1, 2, 1, T.ROCK_DARK); else g.set(cx + dx, G - 1, cz + dz, T.ICE);
+  }
+  // The mine: a tunnel through the wall with timber frames, a rail track from the mouth to the platform.
+  for (let y = 0; y < 9; y++) for (let d = hollow(y) - 2; d <= outer(fa, y) + 2; d += 0.5) for (let c = -3; c <= 3; c++) g.set(Math.round(cx + fx * d - fz * c), G + y, Math.round(cz + fz * d + fx * c), 0);
+  const mouthIn = outer(fa, 0);
+  for (let d = Math.floor(hollow(0)) - 2; d <= mouthIn + 1; d += 4) { // timber frames, the first at the mouth
+    for (const c of [-3, 3]) for (let y = 0; y < 9; y++) g.set(Math.round(cx + fx * d - fz * c), G + y, Math.round(cz + fz * d + fx * c), T.WOOD_DARK);
+    for (let c = -3; c <= 3; c++) g.set(Math.round(cx + fx * d - fz * c), G + 8, Math.round(cz + fz * d + fx * c), T.WOOD);
+  }
+  for (let d = mouthIn - 1; d <= mouthIn + 1; d += 0.5) for (let c = -2; c <= 2; c++) for (let y = 0; y < 5 - Math.abs(c); y++) g.set(Math.round(cx + fx * d - fz * c), G + y, Math.round(cz + fz * d + fx * c), T.TILE_WHITE); // a snowdrift half blocks the mouth
+  for (let d = isle - 2; d <= mouthIn + 3; d += 0.5) { // the rails
+    for (const c of [-2, 2]) g.set(Math.round(cx + fx * d - fz * c), G, Math.round(cz + fz * d + fx * c), T.STEEL_DARK);
+    if (Math.round(d * 2) % 4 === 0) for (let c = -2; c <= 2; c++) g.set(Math.round(cx + fx * d - fz * c), G, Math.round(cz + fz * d + fx * c), c === -2 || c === 2 ? T.STEEL_DARK : T.WOOD_DARK);
+    if (Math.round(d * 2) % 24 === 0 && d < mouthIn - 6) { const lx = Math.round(cx + fx * d - fz * 4), lz = Math.round(cz + fz * d + fx * 4); g.box(lx, G, lz, 1, 6, 1, T.WOOD_DARK); g.set(lx, G + 6, lz, T.LAMP); } // lanterns on posts
+  }
+  // The gold vein: a seam of gold winding round the inside of the wall, and a mine cart full of it below.
+  for (let a = fa + 0.6; a < fa + 3.4; a += 0.02) {
+    const y = Math.round(18 + 8 * Math.sin(a * 3)), ca = Math.cos(a), sa = Math.sin(a);
+    for (let d = hollow(y) - 1; d < outer(a, y) + 1; d += 0.5) { // from inside outwards to the rock face, then a little into it
+      const px = Math.round(cx + ca * d), pz = Math.round(cz + sa * d);
+      if (!g.w.get(px, G + y, pz)) continue;
+      for (let k = 0; k < 2; k++) g.set(Math.round(cx + ca * (d + k)), G + y + (k & 1), Math.round(cz + sa * (d + k)), T.GOLD);
+      break;
     }
   }
-  g.box(cx, G + top, cz, 1, 12, 1, T.WOOD_DARK); g.box(cx - 3, G + top + 8, cz, 7, 1, 1, T.WOOD_DARK); // summit cross
+  { const d = isle + 8, a = fa + 1.2, mx = Math.round(cx + Math.cos(a) * d), mz = Math.round(cz + Math.sin(a) * d);
+    g.box(mx - 2, G + 1, mz - 3, 5, 3, 7, T.STEEL_DARK); g.box(mx - 1, G + 3, mz - 2, 3, 2, 5, T.GOLD); for (const [a2, b2] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) g.set(mx + a2, G, mz + b2, T.CAR_BLACK); }
+  // The frozen waterfall: a sheet of ice down the inner wall, opposite the mine, into the lake.
+  for (let y = 0; y < Math.round(top * 0.5); y++) for (let a = fa + Math.PI - 0.25; a < fa + Math.PI + 0.25; a += 0.01) {
+    const ca = Math.cos(a), sa = Math.sin(a);
+    for (let d = hollow(y) - 1; d < outer(a, y) + 1; d += 0.5) {
+      if (!g.w.get(Math.round(cx + ca * d), G + y, Math.round(cz + sa * d))) continue;
+      g.set(Math.round(cx + ca * (d - 1)), G + y, Math.round(cz + sa * (d - 1)), T.GLASS); g.set(Math.round(cx + ca * (d - 2)), G + y, Math.round(cz + sa * (d - 2)), (y + Math.round(a * 50)) % 5 ? T.GLASS : T.CRYSTAL);
+      break;
+    }
+  }
+  // Icicles hanging from the vault, ice crystals growing from the wall.
+  for (let k = 0; k < 70; k++) {
+    const a = g.rnd() * 6.283, y = g.int(Math.round(top * 0.3), Math.round(top * 0.7)), ri = wallAt(a, y), bx = Math.round(cx + Math.cos(a) * ri), bz = Math.round(cz + Math.sin(a) * ri);
+    line(g, bx, G + y, bz, Math.round(cx + Math.cos(a) * (ri - 2)), G + y - g.int(4, 12), Math.round(cz + Math.sin(a) * (ri - 2)), T.GLASS);
+  }
+  for (let k = 0; k < 30; k++) {
+    const a = g.rnd() * 6.283, y = g.int(3, Math.round(top * 0.4)), ri = wallAt(a, y), ca = Math.cos(a), sa = Math.sin(a);
+    for (let n = g.int(3, 5); n > 0; n--) {
+      const len = g.int(4, 10), tilt = g.rnd() * 0.9, sp = (g.rnd() - 0.5) * 0.7, bx = Math.round(cx + ca * ri), bz = Math.round(cz + sa * ri);
+      line(g, bx, G + y, bz, Math.round(bx - (ca - sa * sp) * len), G + y + Math.round(len * tilt), Math.round(bz - (sa + ca * sp) * len), T.CRYSTAL, n === 1 ? 2 : 1);
+    }
+  }
+  g.end();
+  // The mammoth, frozen in up to its knees, looking at the mine, and the hoard of the miners at its feet.
+  g.begin('frozen', '🦣', { major: true });
+  const sc = Math.max(0.7, Math.min(1.3, R / 85)), base = G + 1;
+  const put = (a, y, b, t) => g.set(cx + Math.round((fx * a - fz * b) * sc), base + Math.round(y * sc), cz + Math.round((fz * a + fx * b) * sc), t);
+  const blk = (a0, y0, b0, a1, y1, b1, t) => { for (let y = y0; y <= y1; y += 0.5 / sc) for (let b = b0; b <= b1; b += 0.5 / sc) for (let a = a0; a <= a1; a += 0.5 / sc) put(a, y, b, t); };
+  const fur = (a, y, b) => ((a * 3 + b * 5 + y * 7) & 7 ? T.WOOD_DARK : T.TRUNK);
+  const blob = (a0, y0, b0, ra, ry, rb, fn) => { // an ellipsoid of fur
+    for (let y = -ry; y <= ry; y += 0.5 / sc) for (let b = -rb; b <= rb; b += 0.5 / sc) for (let a = -ra; a <= ra; a += 0.5 / sc)
+      if ((a / ra) ** 2 + (y / ry) ** 2 + (b / rb) ** 2 <= 1) put(a0 + a, y0 + y, b0 + b, fn(a0 + a, y0 + y, b0 + b));
+  };
+  for (const [a, b] of [[-7, -4.5], [-7, 4.5], [6, -4.5], [6, 4.5]]) blob(a, 6, b, 2.6, 7, 2.6, fur); // legs, like pillars
+  blob(-1, 17, 0, 13, 8, 8, fur); // the body
+  blob(-4, 22, 0, 8, 6, 6, fur); // the hump of the shoulders
+  blob(13, 20, 0, 5, 6, 5, fur); blob(13, 25, 0, 4, 3, 4, fur); // the head with its domed top
+  for (const s of [-1, 1]) blob(11, 20, s * 5.5, 2, 3.5, 1, () => T.TRUNK); // ears
+  for (let i = 0; i <= 16; i++) { const k = i / 16; blob(17 + 3 * Math.sin(k * 1.6), 17 - 14 * k, 0, 1.4 - 0.5 * k, 1.2, 1.4 - 0.5 * k, () => T.TRUNK); } // the trunk, curling down
+  for (const s of [-1, 1]) for (let i = 0; i <= 36; i++) { const k = i / 36, a = 14 + 12 * Math.sin(k * 1.8), y = 17 - 9 * Math.sin(k * 2.6) + 6 * k * k; put(a, y, s * (3 + 4 * k), T.TILE_WHITE); put(a, y + 1, s * (3 + 4 * k), T.TILE_WHITE); } // tusks, out of the head, sweeping down and up
+  for (const s of [-1, 1]) put(16, 22, s * 3.8, T.CAR_BLACK); // eyes
+  for (let i = 0; i < 8; i++) put(-14 - i * 0.6, 18 - i, 0, T.TRUNK); // tail
+  for (let b = -12; b <= 12; b += 0.5) for (let a = -18; a <= 22; a += 0.5) { // the ice it is frozen into, up to its knees, in floes and lumps
+    const h = Math.round(4 + 2.5 * Math.sin(a * 0.4 + b * 0.3) + 1.5 * Math.sin(a * 1.3 - b * 0.9)), edge = Math.max(Math.abs(a - 2) / 20, Math.abs(b) / 12);
+    for (let y = 0; y < (edge > 0.85 ? h - 2 : h); y++) {
+      const px = cx + Math.round((fx * a - fz * b) * sc), py = base + Math.round(y * sc), pz = cz + Math.round((fz * a + fx * b) * sc);
+      if (!g.w.get(px, py, pz)) g.set(px, py, pz, (Math.round(a) + Math.round(b) + y) % 7 ? T.GLASS : T.CRYSTAL);
+    }
+  }
+  g.end();
+  g.begin('hoard', '💰', { major: true });
+  { const hx = cx + fx * Math.round(isle * 0.8), hz = cz + fz * Math.round(isle * 0.8);
+    g.ball(hx, G + 1, hz, 4, [T.GOLD, T.GOLD, T.STEEL_YELLOW]); g.box(hx - 2, G + 1, hz - 2, 4, 3, 4, T.WOOD_DARK); g.box(hx - 2, G + 4, hz - 2, 4, 1, 4, T.GOLD); g.set(hx - 1, G + 2, hz - 1, T.SECRET); }
   g.end();
   pine(g, x + 6, G, z + 6, 1.4); pine(g, x + W - 8, G, z + D - 8, 1.6); pine(g, x + 8, G, z + D - 10, 1.2);
+  (g.w.peaks ??= []).push({ x: cx, y: G + top, z: cz, r: R, g: G, id: st.id, snow });
   void kit;
 }
 

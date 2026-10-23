@@ -6,6 +6,7 @@ import { SPECIES } from './monster.js';
 import { WORLDS } from './worldgen.js';
 import { saveProgress, resetProgress, exportProgress, importProgress, MAX_DETAIL } from './progress.js';
 import { ACHIEVEMENTS, achievementProgress } from './achievements.js';
+import { TRACKS } from './music-score.js';
 
 function el(tag, cls, parent, text) {
   const e = document.createElement(tag);
@@ -460,6 +461,15 @@ export class Hud {
     mus.type = 'range'; mus.min = 0; mus.max = 1; mus.step = 0.05; mus.value = s.music;
     mus.addEventListener('input', () => { s.music = Number(mus.value); saveProgress(p); g.applySettings('music'); });
     row('Musik (0 = aus)', mus);
+    // Each world has a piece of its own; one of them can also play everywhere.
+    const tr = document.createElement('select');
+    for (const [id, title] of [['', 'Passend zur Welt'], ...TRACKS.map((t) => [t.id, `${t.title} (${t.worlds.map((w) => WORLDS.find((x) => x.id === w)?.icon ?? '').join('')})`])]) {
+      const o = document.createElement('option');
+      o.value = id; o.textContent = title; o.selected = s.track === id;
+      tr.appendChild(o);
+    }
+    tr.addEventListener('change', () => { s.track = tr.value; saveProgress(p); g.applySettings('track'); });
+    row('Musikstück', tr);
     // One slider between speed and detail; nobody has to know what their device can do.
     el('p', 'note', sheet, 'Grafik: links läuft das Spiel flüssiger (kleinerer Ausschnitt, weniger Trümmer, Staub, Feuer und Fahrzeuge), rechts sieht es reicher aus. Ruckelt es, schiebe den Regler nach links. Die Welt wird dabei neu aufgebaut.');
     const auto = document.createElement('input'), q = document.createElement('input');

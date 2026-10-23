@@ -1,10 +1,11 @@
 // Music that follows the game, composed and rendered in the browser by the Musik-Generator suite
 // (vendor/musik-generator); there are no audio files and nothing is downloaded.
 //
-// When the page loads, a worker composes the description in music-score.js and renders it into
-// layered loops ("stems") for three states: stroll, chase and mayhem. The first one is ready after
-// a second or two, the others follow in the background. The stem player then plays them in sync
-// with the audio clock:
+// Every world has a piece of its own (TRACKS in music-score.js), unless the player has chosen one piece for all
+// (settings.track). When a world is loaded and its piece is not the one playing, the old one fades out and a worker
+// composes the new description and renders it into layered loops ("stems") for three states: stroll, chase and
+// mayhem. The first one is ready after a second or two, the others follow in the background; only one piece is
+// kept in memory. The stem player then plays them in sync with the audio clock:
 //   - the music starts with the first key press or click, softly: chords and bass only;
 //   - drums and the melody fade in as things break (intensity);
 //   - from the first alarm star the faster "chase" takes over on the next bar, through a one-bar
@@ -15,7 +16,7 @@
 
 import { ClassicMusic } from './music-classic.js';
 import { StemPlayer } from './vendor/musik-generator/player/stem-player.js';
-import { SCORE, RENDER_RATE, stateFor } from './music-score.js';
+import { RENDER_RATE, stateFor, scoreFor, trackFor } from './music-score.js';
 
 const WORKER = './vendor/musik-generator/stems/stem-worker.js';
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
@@ -31,25 +32,61 @@ export class Music {
     this.waiting = new Map(); // file name -> callbacks of the player waiting for it
     this.player = null;
     this.started = false;
-    this.state = SCORE.initial;
+    this.state = 'stroll';
     this.intensity = 0.1;
     this.swell = 0;
     this.paused = false;
     this.progress = 0; // 0..1 share of the music that is rendered (for tests and diagnostics)
-    this.render();
+    this.track = null; // the piece that is playing or being rendered
+    this.choice = ''; // the piece the player chose for all worlds ('' = each world its own)
+    this.world = null;
+  }
+
+  // The world that is being played: its piece, unless the player chose one for all.
+  setWorld(id) {
+    this.world = id;
+    this.classic.setWorld(id);
+    this.pick();
+  }
+
+  setChoice(track) {
+    this.choice = track;
+    if (this.world !== null) this.pick();
+  }
+
+  pick() {
+    const want = this.choice || trackFor(this.world);
+    if (want !== this.track) this.load(want);
+  }
+
+  // Lets the piece that is playing fade out, forgets it and starts rendering another.
+  load(id) {
+    this.track = id;
+    if (this.mode === 'classic') return; // the fallback plays its own music
+    this.worker?.terminate();
+    if (this.player) {
+      const player = this.player, bus = this.bus, ctx = this.audio.ctx;
+      bus.gain.setTargetAtTime(0, ctx.currentTime, 0.2);
+      setTimeout(() => { player.dispose(); bus.disconnect(); }, 900);
+    }
+    this.player = null; this.bus = null; this.manifest = null;
+    this.files.clear(); this.waiting.clear();
+    this.mode = 'rendering'; this.started = false; this.state = 'stroll'; this.progress = 0;
+    this.render(scoreFor(id));
   }
 
   // Starts the worker. Under the page's Trusted Types policy a worker address must come from a
   // named policy; this one can only ever produce the address of the stem worker.
-  render() {
+  render(description) {
     try {
       const url = new URL(WORKER, import.meta.url);
       const tt = globalThis.trustedTypes;
-      const address = tt?.createPolicy ? tt.createPolicy('kaputtmacher-music', { createScriptURL: () => url.href }).createScriptURL('') : url;
+      this.policy ??= tt?.createPolicy ? tt.createPolicy('kaputtmacher-music', { createScriptURL: () => url.href }) : null;
+      const address = this.policy ? this.policy.createScriptURL('') : url;
       const worker = (this.worker = new Worker(address, { type: 'module' }));
-      worker.onmessage = (e) => this.receive(e.data);
-      worker.onerror = () => this.fallBack();
-      worker.postMessage({ type: 'render', description: SCORE, sampleRate: RENDER_RATE });
+      worker.onmessage = (e) => { if (worker === this.worker) this.receive(e.data); }; // (a worker that was replaced has nothing more to say)
+      worker.onerror = () => { if (worker === this.worker) this.fallBack(); };
+      worker.postMessage({ type: 'render', description, sampleRate: RENDER_RATE });
     } catch {
       this.fallBack();
     }
@@ -77,7 +114,6 @@ export class Music {
     this.worker?.terminate();
   }
 
-  setWorld(id) { this.classic.setWorld(id); }
   setVolume(v) { this.volume = v; this.classic.setVolume(v); }
 
   // True once everything the first state needs has been rendered.

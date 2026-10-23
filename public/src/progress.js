@@ -5,6 +5,7 @@
 import { DEFAULT_MIX, WORLDS } from './worldgen.js';
 import { SPECIES } from './monster.js';
 import { ACHIEVEMENTS, STATS } from './achievements.js';
+import { TRACKS } from './music-score.js';
 
 const KEY = 'kaputtmacher.v1';
 export const MAX_STAGE = 30; // far beyond what any world can show; keeps model building and maths bounded
@@ -31,7 +32,7 @@ const DEFAULTS = {
   stats: {}, // counters behind the achievements (buildings felled, jumps ...)
   achieved: [], // ids of achievements reached
   mixSeed: 0, // seed of the last randomly mixed world
-  settings: { volume: 0.8, music: 0.6, detail: 0, shake: true, life: true, units: true, smoke: true, fireSpread: true, fightBack: false, unlockAll: false, cascade: true, autoIdle: false, minimap: true },
+  settings: { volume: 0.8, music: 0.6, detail: 0, shake: true, life: true, units: true, smoke: true, fireSpread: true, fightBack: false, unlockAll: false, cascade: true, autoIdle: false, minimap: true, track: '' }, // track: one piece of music for all worlds ('' = each world its own)
   mix: { ...DEFAULT_MIX },
 };
 
@@ -82,6 +83,7 @@ function sanitize(raw) {
   if (Array.isArray(s.achieved)) d.achieved = ACHIEVEMENTS.map((a) => a.id).filter((id) => s.achieved.includes(id));
   d.settings.volume = num(set.volume, 0, 1, d.settings.volume);
   d.settings.music = num(set.music, 0, 1, d.settings.music);
+  d.settings.track = oneOf(set.track, TRACKS.map((t) => t.id), '');
   d.settings.detail = cleanDetail(Object.hasOwn(set, 'detail') ? set.detail : set.quality);
   for (const k of TOGGLES) if (typeof set[k] === 'boolean') d.settings[k] = set[k];
   for (const k of Object.keys(DEFAULT_MIX)) d.mix[k] = num(mix[k], 0, 1, DEFAULT_MIX[k]);

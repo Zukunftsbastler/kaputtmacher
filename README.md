@@ -58,7 +58,7 @@ Der Flieger ist immer in Bewegung: A/D lenkt, W/S steigt und sinkt, Umschalt ist
 
 **Die Welt reagiert:** Beim ersten Schaden kommt ein Polizeiauto, dann mehr, dazu Reporter im Hubschrauber, die Feuerwehr, sobald es brennt, und schließlich das Militär mit Hubschraubern und Kampffliegern. Niemand kann dem Kaputtmacher etwas anhaben; alle lassen sich umwerfen oder vom Himmel holen. Die Alarmstufe (Sterne) steigt mit der Zeit und ebbt wieder ab, wenn man nichts zerstört.
 
-**Erfolge:** 138 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der sechs Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
+**Erfolge:** 139 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der sechs Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
 
 Das vollständige Konzept mit allen Zahlen steht in [KONZEPT.md](KONZEPT.md).
 
@@ -84,7 +84,7 @@ Spielbar. Geprüft wurde bisher fast nur automatisiert (Durchläufe im Browser m
 
 ```
 serve.py            lokaler Entwicklungsserver ohne Cache
-tools/              Prüfwerkzeuge (Node, ohne Pakete): check.mjs, floating.mjs, smoke.mjs, serve.mjs, browser.mjs, web/test.js
+tools/              Prüfwerkzeuge (Node, ohne Pakete): check.mjs, floating.mjs, music.mjs, smoke.mjs, serve.mjs, browser.mjs, web/test.js
 TESTEN.md           Checkliste für Tests von Hand
 VERLAUF.md          was sich von Entwurf zu Entwurf geändert hat
 netlify.toml        veröffentlicht public/
@@ -121,8 +121,8 @@ public/
 | `frail.js` | Standfestigkeit schlanker Bauten: Was mit dem Schwerpunkt neben seiner Standfläche hängt, kippt |
 | `rampart.js` | Der Schutzschirm über den Mauern von Festung Titan: keine Figur kommt hinüber, nur durch Tor oder Bresche |
 | `spans.js` | Wie Superstrukturen brechen: Seile reißen und schwingen an ihren Festpunkten herab (Kette aus Würfeln, danach als Schutt abgelegt), Träger halten als Kragarm oder brechen an der Stütze, Mauerwerk stürzt feldweise ein, Glas zerspringt; zu schwere Figuren brechen ein |
-| `music.js` | Musik, die der Handlung folgt: lässt die Musik beim Laden in einem Worker komponieren und rendern und steuert den Stem-Player (drei Zustände nach Alarmstufe, Schichten nach Zerstörung); fällt ohne Worker auf `music-classic.js` zurück |
-| `music-score.js` | Die Musik als Daten: Ohrwurm, Zustände (Bummeln, Verfolgung, Chaos), Schichten, Übergänge; Zuordnung Alarmstufe → Zustand |
+| `music.js` | Musik, die der Handlung folgt: lässt das Stück der Welt (oder das gewählte) beim Laden in einem Worker komponieren und rendern, beim Weltwechsel ein anderes und steuert den Stem-Player (drei Zustände nach Alarmstufe, Schichten nach Zerstörung); fällt ohne Worker auf `music-classic.js` zurück |
+| `music-score.js` | Die Musik als Daten: ein Stück je Welt (Ohrwurm, Tonart, Tempi, Stil, Startwert), daraus die Beschreibung mit Zuständen (Bummeln, Verfolgung, Chaos), Schichten und Übergängen; Zuordnung Alarmstufe → Zustand |
 | `music-classic.js` | Die frühere handgeschriebene Electro-Swing-Musik (Rückfall) |
 | `vendor/musik-generator/` | Eingekopierte Teile der Musik-Generator-Suite des Autors (MIT): Stem-Player und Stem-Renderer. Nicht hier ändern; `tools/vendor-music.mjs` kopiert neu |
 | `achievements.js` | Liste der 131 Erfolge, Zähler (`STATS`), Prüfung |

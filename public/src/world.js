@@ -174,7 +174,7 @@ export class World {
           if (z < st.z0) st.z0 = z; if (z > st.z1) st.z1 = z;
           if (y > st.top) st.top = y;
           if (y < st.y0) st.y0 = y;
-          if (st.major && !st.link && !this.isLink(x, y, z)) { // superstructures have no storeys (spans.js decides how they fail), and a bridge passing over a building is no part of its storeys
+          if (st.major && !st.link && !st.rock && !this.isLink(x, y, z)) { // superstructures have no storeys (spans.js decides how they fail), nor has living rock (it does not give way storey by storey), and a bridge passing over a building is no part of its storeys
             if (!st.S) { st.S = new Float32Array(this.sy); st.M = new Float32Array(this.sy); st.matW = new Float32Array(16); }
             st.S[y] += VOXEL_STRENGTH[t]; st.M[y] += VOXEL_MASS[t];
             if (TYPE_MAT[t] !== MAT.GLASS) st.matW[TYPE_MAT[t]] += VOXEL_STRENGTH[t];
@@ -227,16 +227,25 @@ export class World {
         if (!corner && (ca || cb || cd)) continue;
         const u = nb(this, c, inner, x, y, z, a, b, d);
         if (!u || (!(TYPE_FLAGS[u] & F_TERRAIN) && a * 9 + b * 3 + d < 0 && this.thin(x + a, y + b, z + d))) continue; // a pair of thin voxels is looked at once
-        if (!corner) { if (b < 0) fills.push(x, y + b, z, t); else fills.push(a ? x + a : x, y, a ? z : z + d, t); continue; }
+        if (!corner) { if (b < 0) fills.push(x, y + b, z, t, i); else fills.push(a ? x + a : x, y, a ? z : z + d, t, i); continue; }
         if (ca || cb || cd) { // at a corner: a path over two cells
           const cab = nb(this, c, inner, x, y, z, a, b, 0), cad = nb(this, c, inner, x, y, z, a, 0, d), cbd = nb(this, c, inner, x, y, z, 0, b, d);
           if ((ca && (cab || cad)) || (cb && (cab || cbd)) || (cd && (cad || cbd))) continue;
         }
-        if (b < 0) fills.push(x, y + b, z, t, x + a, y + b, z, t); else fills.push(x + a, y, z, t, x + a, y, z + d, t);
+        if (b < 0) fills.push(x, y + b, z, t, i, x + a, y + b, z, t, i); else fills.push(x + a, y, z, t, i, x + a, y, z + d, t, i);
       }
     }
+    // A fill next to a superstructure's voxel belongs to the superstructure as well (links.js noted its voxels in linkCols).
+    const cols = this.linkCols, colOf = (x, z) => (x & this.mx) + this.sx * (z & this.mz), inLink = (x, y, z) => { const r = cols?.get(colOf(x, z)); if (r) for (let k = 0; k < r.length; k += 2) if (y >= r[k] && y <= r[k + 1]) return true; return false; };
     let n = 0;
-    for (let i = 0; i < fills.length; i += 4) if (!this.get(fills[i], fills[i + 1], fills[i + 2])) { this.set(fills[i], fills[i + 1], fills[i + 2], fills[i + 3]); n++; }
+    for (let k = 0; k < fills.length; k += 5) {
+      const x = fills[k], y = fills[k + 1], z = fills[k + 2], src = fills[k + 4];
+      if (this.get(x, y, z)) continue;
+      this.set(x, y, z, fills[k + 3]); n++;
+      if (!cols) continue;
+      const sy = (src / layer) | 0, sr = src - sy * layer, sz = (sr / this.sx) | 0;
+      if (inLink(sr - sz * this.sx, sy, sz)) { const c = colOf(x, z), r = cols.get(c); if (r) r.push(y, y); else cols.set(c, [y, y]); }
+    }
     this.welded = n;
     this.builtList = null;
   }

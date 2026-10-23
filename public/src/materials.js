@@ -1,7 +1,7 @@
 // Materials (physical behaviour) and voxel types (material + colour).
 // A voxel is one byte: 0 = air, 1..127 = original voxel types, type|128 = the same type as loose rubble.
 
-export const MAT = { AIR: 0, BEDROCK: 1, EARTH: 2, GLASS: 3, LEAF: 4, WOOD: 5, BRICK: 6, CONCRETE: 7, STEEL: 8, SHEET: 9, EXPLOSIVE: 10, FABRIC: 11, FORT: 12 };
+export const MAT = { AIR: 0, BEDROCK: 1, EARTH: 2, GLASS: 3, LEAF: 4, WOOD: 5, BRICK: 6, CONCRETE: 7, STEEL: 8, SHEET: 9, EXPLOSIVE: 10, FABRIC: 11, FORT: 12, ROCK: 13 };
 
 // strength: resistance to damage. density: mass per voxel. power: what one destroyed voxel is worth.
 // sound: audio family. debris: share of destroyed voxels that fly off as loose cubes.
@@ -19,6 +19,7 @@ export const MATS = [
   { strength: 2, density: 1, power: 3, sound: 'metal', debris: 0.3 },
   { strength: 1.5, density: 0.3, power: 0.8, sound: 'leaf', debris: 0.8 },
   { strength: 22, density: 3, power: 3, sound: 'stone', debris: 1 }, // fortification: the walls and towers of fortress Titan
+  { strength: 16, density: 3.2, power: 2, sound: 'stone', debris: 1 }, // the living rock of mountains and volcanoes
 ];
 
 export const F_TERRAIN = 1; // ground: anchors structures, is not counted as a building voxel
@@ -124,7 +125,8 @@ export const T = {
   TOY_GREEN: def(MAT.WOOD, 0x43a047),
   TOY_ORANGE: def(MAT.WOOD, 0xfb8c00),
   TOY_PURPLE: def(MAT.WOOD, 0x8e44ad),
-  TOY_WHITE: def(MAT.WOOD, 0xfafafa),
+  // The living rock of mountains and volcanoes, harder than anything built (in the place of an unused toy colour).
+  ROCK: def(MAT.ROCK, 0x8b8984),
 
   LEAF: def(MAT.LEAF, 0x3f9b3a),
   LEAF_LIGHT: def(MAT.LEAF, 0x67bf4e),
@@ -132,7 +134,7 @@ export const T = {
   LEAF_AUTUMN: def(MAT.LEAF, 0xe08a2c),
   FLOWER_RED: def(MAT.LEAF, 0xe84a5f),
   FLOWER_YELLOW: def(MAT.LEAF, 0xffd54f),
-  FLOWER_WHITE: def(MAT.LEAF, 0xffffff),
+  ROCK_DARK: def(MAT.ROCK, 0x47403f),
   FERN: def(MAT.LEAF, 0x7fb83a),
   PALM: def(MAT.LEAF, 0x4e9a3c),
   REED: def(MAT.LEAF, 0x9caf4c),
@@ -197,7 +199,7 @@ TYPE_MAT[SOOT] = MAT.CONCRETE; TYPE_FLAGS[SOOT] = F_RUBBLE; TYPE_RGBA.set([46, 4
 // Flash point per material: how much heat a voxel has to take before it reacts (see fire.js).
 // Leaves and cloth catch at the first spark, wood needs a real fire next to it, glass bursts,
 // metal and stone never burn but turn black under a flame thrower. 0 = never reacts.
-export const FLASH = [0, 0, 3, 4, 1, 2.5, 6, 7, 9, 5, 1, 1, 9];
+export const FLASH = [0, 0, 3, 4, 1, 2.5, 6, 7, 9, 5, 1, 1, 9, 9];
 // Seconds a burning voxel lasts (minimum, random extra), the heat it gives off per spread attempt,
 // how often a charred rest stays behind, and spread attempts per second. Leaves flare up and pass the
 // fire on quickly, so a tree burns down; wood burns long but needs several flames next to it.

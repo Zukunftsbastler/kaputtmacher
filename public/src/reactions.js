@@ -2,6 +2,7 @@
 // a broken hydrant shoots up a fountain for a while, water (fountains, water towers) gushes out,
 // lamps, neon signs and traffic lights die in a shower of sparks. Water puts out fires nearby.
 // A volcano wakes when the idol hidden inside it is broken or when it is torn open far enough: it erupts.
+// A mountain lets its snow go the same way, when the gold hoard inside it is taken: an avalanche.
 
 import { T } from './materials.js';
 import { GRAVITY } from './particles.js';
@@ -27,11 +28,12 @@ export class Reactions {
     this.zapT = 0;
     this.blast = null; // an ammunition depot going up: { d: depot, t: seconds since, n: blasts so far }
     this.eruptions = []; // volcanoes erupting: { v: vent, t: seconds since it woke, next: time of the next lava bomb }
-    this.bombs = []; // lava bombs in flight
+    this.bombs = []; // lava bombs (and snowballs) in flight
+    this.slides = []; // avalanches: { p: peak, t: seconds since, cut: snow voxels gone, next: time of the next snowball }
     this.volcT = 0;
   }
 
-  clear() { this.jets.length = 0; this.blast = null; this.eruptions.length = 0; this.bombs.length = 0; }
+  clear() { this.jets.length = 0; this.blast = null; this.eruptions.length = 0; this.bombs.length = 0; this.slides.length = 0; }
 
   // Called for every original voxel that is destroyed.
   onVoxel(type, x, y, z) {
@@ -54,6 +56,7 @@ export class Reactions {
       g.addPower(400 * g.monster.stage ** 2); // worth looking for
       const wrap = g.cam.wrap;
       for (const v of g.world.vents ?? []) if (Math.hypot(wrapDelta(x - v[0], wrap), wrapDelta(z - v[2], wrap)) < v[4]) this.wake(v); // the idol of the volcano
+      for (const p of g.world.peaks ?? []) if (Math.hypot(wrapDelta(x - p.x, wrap), wrapDelta(z - p.z, wrap)) < p.r) this.avalanche(p); // the hoard in the mountain
     } else if (r === BALLOON) { // set free: it drifts up and away
       const c = BALLOON_RGB[type], rnd = this.g.rng;
       this.g.fx.add(x + 0.5, y + 0.5, z + 0.5, (rnd() - 0.5) * 5, 5 + rnd() * 4, (rnd() - 0.5) * 5, 1.6, 0, 6 + rnd() * 4, c[0], c[1], c[2], 1, 0, -3, 0.1);
@@ -73,6 +76,52 @@ export class Reactions {
     v.woke = this.g.time;
     this.eruptions.push({ v, t: 0, next: 0, blown: false });
     this.g.audio.rumble(1); this.g.audio.groan(1);
+  }
+
+  // A mountain lets go of its snow (world.peaks: x, top y, z, radius, ground, structure id, the snow voxels of its cap):
+  // a rumble, then the cap slides off from the top down within four seconds, throwing snowballs out over the land
+  // round about, which knock over what they hit, and a white cloud rolls down the slopes.
+  avalanche(p) {
+    if (p.woke !== undefined) return;
+    p.woke = this.g.time;
+    this.slides.push({ p, t: 0, cut: 0, next: 1.2 });
+    this.g.stat('avalanches');
+    this.g.audio.rumble(1); this.g.audio.groan(0.8);
+  }
+
+  slide(dt) {
+    const g = this.g, w = g.world, rnd = g.rng, thin = g.fx.thin;
+    for (let i = this.slides.length - 1; i >= 0; i--) {
+      const s = this.slides[i], p = s.p, snow = p.snow, n = snow.length / 3;
+      s.t += dt;
+      if (s.t < 1.2) { g.shake(0.06 + s.t * 0.06); continue; }
+      // The cap goes from the top down (the list runs from the foot up, so it is eaten from its end).
+      const want = Math.min(n, Math.round(n * Math.min(1, (s.t - 1.2) / 4)));
+      g.gainScale = 0.5;
+      for (; s.cut < want; s.cut++) {
+        const k = (n - 1 - s.cut) * 3, x = snow[k], y = snow[k + 1], z = snow[k + 2], t = w.get(x, y, z);
+        if (t !== T.TILE_WHITE) continue;
+        w.set(x, y, z, 0);
+        g.destruction.addSeeds(x, y, z);
+        if (rnd() < 0.03) { const dx = x - p.x, dz = z - p.z, l = Math.hypot(dx, dz) || 1; g.debris.spawn(x + 0.5, y + 0.5, z + 0.5, (dx / l) * 18, -4, (dz / l) * 18, T.TILE_WHITE); }
+        if (rnd() < 0.01 * thin) g.fx.dust(x, y, z, 5, 0.95, 0.97, 1, 3);
+      }
+      g.gainScale = 1;
+      g.shake(0.1);
+      // Snowballs bound out over the land, and a cloud rolls down the slopes.
+      while (s.t < 8 && s.next <= s.t) {
+        s.next += 0.1 + rnd() * 0.08;
+        const a = rnd() * 6.283, h = p.y - p.g, sy = p.g + h * (0.45 + rnd() * 0.3), sr = p.r * (1 - (sy - p.g) / h) * 0.9;
+        const x0 = p.x + Math.cos(a) * sr, z0 = p.z + Math.sin(a) * sr, d = p.r * (1.05 + rnd() * 1.1), T2 = 1.3 + rnd() * 0.9;
+        const tx = p.x + Math.cos(a) * d, tz = p.z + Math.sin(a) * d, ty = w.heightBelow(tx, tz, w.sy - 1);
+        this.bombs.push({ x: x0, y: sy, z: z0, vx: (tx - x0) / T2, vz: (tz - z0) / T2, vy: (ty - sy + 0.5 * GRAVITY * T2 * T2) / T2, t: T2, r: 2.5 + rnd() * 2.5, snow: true });
+      }
+      if (s.t < 9) for (let k = 0; k < 4 * thin; k++) {
+        const a = rnd() * 6.283, d = p.r * (0.7 + rnd() * 0.6);
+        g.fx.add(p.x + Math.cos(a) * d, p.g + 2 + rnd() * 10, p.z + Math.sin(a) * d, Math.cos(a) * 14, 1, Math.sin(a) * 14, 8 + rnd() * 8, 6, 2.5 + rnd(), 0.95, 0.97, 1, 0.6, 0, 0, 0.4);
+      }
+      if (s.t > 12) this.slides.splice(i, 1);
+    }
   }
 
   // One lava bomb from the crater: it flies in an arc to a spot up to three radii away and explodes where it lands.
@@ -112,6 +161,16 @@ export class Reactions {
     for (let i = this.bombs.length - 1; i >= 0; i--) {
       const b = this.bombs[i], h = Math.min(dt, b.t);
       b.x += b.vx * h; b.z += b.vz * h; b.y += b.vy * h - 0.5 * GRAVITY * h * h; b.vy -= GRAVITY * h; b.t -= h;
+      if (b.snow) { // a snowball: white, with a trail of powder; where it lands it knocks things over, nothing burns
+        g.fx.add(b.x, b.y, b.z, 0, 0, 0, b.r * 1.6, 0, 0.06, 0.95, 0.97, 1, 1, 0);
+        if (rnd() < 0.6 * thin) g.fx.add(b.x, b.y, b.z, 0, 1, 0, b.r, 3, 1, 0.95, 0.97, 1, 0.5, 0, 0, 0.5);
+        if (b.t <= 0 || (b.vy < 0 && g.world.get(Math.floor(b.x), Math.floor(b.y), Math.floor(b.z)))) {
+          this.bombs.splice(i, 1);
+          g.destruction.sphere(b.x, b.y, b.z, b.r, 16, { impulse: 18, debris: 30, blast: 14 });
+          g.fx.dust(b.x, b.y + 1, b.z, b.r * 2, 0.95, 0.97, 1, 6); g.audio.hit('earth', 0.5);
+        }
+        continue;
+      }
       g.fx.add(b.x, b.y, b.z, 0, 0, 0, b.r * 1.4, 0, 0.06, 1, 0.5, 0.12, 1, 1); // the glowing bomb
       if (rnd() < 0.7 * thin) g.fx.add(b.x, b.y, b.z, 0, 2, 0, b.r * 0.6, 3, 1.4, 0.25, 0.22, 0.2, 0.6, 0, 0, 0.5); // its trail of smoke
       if (b.t <= 0 || (b.vy < 0 && g.world.get(Math.floor(b.x), Math.floor(b.y), Math.floor(b.z)))) { this.bombs.splice(i, 1); g.explode(b.x, b.y, b.z, b.r, 26); }
@@ -163,8 +222,10 @@ export class Reactions {
     // A volcano torn open far enough wakes by itself (looked at once a second).
     if ((this.volcT -= dt) <= 0) {
       this.volcT = 1;
-      for (const v of g.world.vents ?? []) { const st = g.world.structures[v[6]]; if (v.woke === undefined && st && st.remaining < st.total * 0.7) this.wake(v); }
+      for (const v of g.world.vents ?? []) { const st = g.world.structures[v[6]]; if (v.woke === undefined && st && st.remaining < st.total * 0.88) this.wake(v); }
+      for (const p of g.world.peaks ?? []) { const st = g.world.structures[p.id]; if (p.woke === undefined && st && st.remaining < st.total * 0.88) this.avalanche(p); }
     }
+    if (this.slides.length) this.slide(dt);
     if (this.eruptions.length || this.bombs.length) this.erupt(dt);
     // Volcanoes smoke (world.vents: x, y, z, radius of the crater) as long as their crater is still there, and for
     // two minutes after an eruption.

@@ -2,6 +2,12 @@
 
 Was sich von Entwurf zu Entwurf des Spielkonzepts (KONZEPT.md) geändert hat, neueste zuerst. Die Zahlen in Klammern verweisen auf Abschnitte des Konzepts.
 
+**Nachtrag 15 zu Entwurf 12:** Fels wieder leichter zu brechen (Festigkeit 16); Berg und Vulkan mit welliger Grundfläche, gewundenen Schluchten und buckeliger Oberfläche (7.4, 7.4b).
+
+**Nachtrag 14 zu Entwurf 12:** Berg und Vulkan aus Fels (Festigkeit 40) mit zwölf statt drei Würfel starken Wänden und ohne Stockwerke; im Berg ein Goldbergwerk mit Eishöhle, gefrorenem Wasserfall, Goldader und eingefrorenem Mammut, der Schatz löst eine Lawine aus; ein Maschinenraum in der Riesenstatue; ein neuer Erfolg (7.4, 7.4b, 11.4, 11.7a, 18).
+
+**Nachtrag 13 zu Entwurf 12:** 18 neue Musikstücke, eines für jede Welt – eigene Ohrwürmer, Tonarten, Tempi und Besetzungen, meist Arcade und Chiptune, dazu Synthwave (Neon), Marsch (Festung), Rollenspiel-Orchester (Burg) und Jig (Dorf, Hafen); beim Weltwechsel wird das passende Stück gerendert; in den Einstellungen lässt sich ein Stück für alle Welten wählen (13a).
+
 **Nachtrag 12 zu Entwurf 12:** Nichts schwebt mehr ohne Halt – schräge Teile werden beim Erzeugen verschweißt, abgelegte Bruchstücke noch einmal geprüft, über 20 Baupläne mit Lücken korrigiert (darunter Rohbauten, Pyramide, Looping, Gondeln und die Vorposten der Festung), und eine Prüfung meldet künftig, was in einer frischen Welt schwebt (11.3, 11.3a). Festung Titan: Mauern, Türme und Torhäuser aus Festungsmauerwerk (Festigkeit 22), ein Schutzschirm über den Mauern, der nur durch Tor oder Bresche hineinlässt, und Geschütze, die beim Zerstören explodieren (7.4b, 11.7a).
 
 **Nachtrag 11 zu Entwurf 12:** Superstrukturen brechen nach ihrem Material: Seile und Lianen reißen (auch unter zu schweren Figuren und im Feuer) und schwingen an ihren Festpunkten herab, Träger bleiben als kurzer Kragarm stehen und brechen an der Stütze ab, wenn sie zu lang überstehen oder ihnen ein Pfeiler fehlt, Steinbrücken und Aquädukte stürzen feldweise ein, Glasröhren zerspringen; eine Brücke hält kein Gebäude mehr fest, und eingestürzte Verbindungen geben keinen Kettenreaktions-Stoß weiter (11.4b, 11.6). Der Vulkan verbirgt hinter Farnen einen Gang zu Lavasee, Kristallen und einem goldenen Götzenbild; wer es zerschlägt oder den Berg aufreißt, löst einen Ausbruch mit Lavabomben aus (7.4b, 11.7a). Babel bekommt ein Netz aus Aquädukten auf Arkaden zwischen hoch gelegenen Wasserreservoirs, Brunnentürmen, Gärten und Zikkurats (7.4c). Drei neue Erfolge (18).
