@@ -32,6 +32,9 @@ if (process.argv[2] !== 'quick') runs.push(
   ['fortress-gun', 'world=fortress&stage=2&mode=gun', 'fortress', 9000],
   ['floaters', 'world=site&kind=shell&n=2&cut=0.1', 'floaters', 14000],
   ['phone', 'world=city&stage=4', 'mobile', 5000, '740', '360'],
+  ['buttons-laptop', 'world=village', 'buttons', 11000],
+  ['buttons-phone', 'world=village', 'buttons', 11000, '390', '844'],
+  ['buttons-narrow', 'world=village', 'buttons', 11000, '320', '568'],
   ['lowest-detail', 'world=skyline&stage=6&idle=1&quality=1&run=20000', 'units', 23000],
 );
 let failed = 0;

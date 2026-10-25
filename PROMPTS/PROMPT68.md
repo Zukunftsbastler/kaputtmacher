@@ -1,0 +1,1 @@
+Ein Spieltest ergab, dass eine Schaltfläche (für Springen beim Helikopter auf dem Laptop) verrutscht war. Prüfe bitte systematisch, ob diese Interaktionsflächen noch irgendwo anders verschwunden sind.

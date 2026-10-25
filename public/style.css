@@ -93,7 +93,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 .card .bar { margin-top: 4px; height: 6px; border-radius: 3px; background: #d5d0c4; overflow: hidden; }
 .card .bar i { display: block; height: 100%; background: var(--good); }
 .parent input[type=range] { flex: 1; max-width: 200px; height: 30px; accent-color: var(--accent); }
-.parent select { font: inherit; font-size: 16px; max-width: 220px; padding: 6px 10px; border-radius: 12px; border: 2px solid var(--ink); background: #fff; color: var(--ink); cursor: pointer; }
+.parent select { font: inherit; font-size: 16px; max-width: 220px; min-width: 0; flex: 0 1 auto; padding: 6px 10px; border-radius: 12px; border: 2px solid var(--ink); background: #fff; color: var(--ink); cursor: pointer; }
 
 #next { left: 50%; top: 42%; transform: translate(-50%, -50%); width: 150px; height: 150px; font-size: 80px; border-radius: 40px; }
 #cross { width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 4px solid #fff; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4); }
@@ -141,7 +141,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6fb3f2; fon
 .parent .row { justify-content: stretch; }
 .parent .row button { flex: 1; }
 .parent label { text-align: left; }
-.parent input[type=checkbox] { width: 24px; height: 24px; }
+.parent input[type=checkbox] { width: 24px; height: 24px; flex: none; } /* never squeezed by a long label on a narrow phone */
 
 #menuBtn, #legal2, #touchpad { display: none; }
 .btn .badge { position: absolute; right: -4px; top: -6px; font-size: 0.5em; }
@@ -184,6 +184,7 @@ body.compact { --btn: 46px; --sl: calc(8px + env(safe-area-inset-left)); --sr: c
 .compact #topright.open { display: grid; grid-template-columns: repeat(3, var(--btn)); gap: 10px; right: var(--sr); top: calc(var(--st) + var(--btn) + 10px); padding: 12px; background: var(--panel); border: 3px solid #fff; border-radius: 20px; box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18); pointer-events: auto; --btn: 52px; }
 .compact #topright.open #legal2 { display: block; grid-column: 1 / -1; text-align: center; font-size: 13px; color: var(--ink); padding: 8px 4px 2px; }
 .compact #toolbar { bottom: var(--sb); gap: 6px; }
+@media (max-width: 480px) { .compact #toolbar { left: var(--sl); transform: none; } } /* a narrow window: the moves move left, out from under jump and roar */
 .compact #abilities { right: var(--sr); bottom: var(--sb); gap: 6px; }
 .compact .tile { --btn: 72px; }
 .compact .sheet { padding: 14px; gap: 10px; border-radius: 20px; max-height: 92vh; max-height: 92dvh; }
@@ -195,7 +196,7 @@ body.compact { --btn: 46px; --sl: calc(8px + env(safe-area-inset-left)); --sr: c
 .touch #stick i { width: 46px; height: 46px; margin: -23px; }
 .touch #touchpad, .touch #abilities { display: block; right: var(--sr); bottom: var(--sb); width: 0; height: 0; }
 .touch #touchpad .btn, .touch #abilities .btn { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.72); }
-.touch #abilities .btn[data-id=stomp] { --btn: 76px; right: 0; bottom: 0; }
+.touch #abilities .btn[data-id=stomp], .touch #abilities .btn[data-id=up] { --btn: 76px; right: 0; bottom: 0; } /* jump, or the helicopter's up */
 .touch #touchpad .btn[data-id=light] { --btn: 66px; right: 86px; bottom: 6px; }
 .touch #touchpad .btn[data-id=heavy] { --btn: 62px; right: 8px; bottom: 86px; }
 .touch #touchpad .btn[data-id=cycle] { --btn: 44px; right: 84px; bottom: 82px; }

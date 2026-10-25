@@ -169,6 +169,46 @@ async function run() {
     for (let t = 0; t < T; t += 2000) { await wait(2000); const a = g.autopilot.target; path.push([Math.round(m.x), Math.round(m.z), Math.round(m.y), m.under ? 'U' : 'S', a ? Math.round(Math.hypot((a.x0 + a.x1) / 2 - m.x, (a.z0 + a.z1) / 2 - m.z)) : -1, +g.input.forward.toFixed(1), g.tools.act ? g.tools.act.move.id : '-']); }
     window.__extra = { earned: Math.round(g.earned - e0), book: Object.fromEntries(Object.entries(book).sort((a, b) => b[1] - a[1]).slice(0, 8)), path };
   }
+  if (sc === 'buttons') { // every button on screen, for every creature and every input device: inside the picture, big enough, not covered by another
+    const { SPECIES } = await import('./src/monster.js'), { movesFor } = await import('./src/tools.js'), m = g.monster, bad = [], seen = {};
+    g.hud.hintBox?.remove(); g.hud.hintId = null; g.progress.settings.unlockAll = true;
+    const check = (label) => {
+      const vis = [...document.querySelectorAll('#hud .btn')].filter((b) => b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden' && !b.closest('.overlay'));
+      seen[label] = vis.length;
+      for (const b of vis) {
+        const r = b.getBoundingClientRect(), name = (b.dataset.id ?? b.textContent.slice(0, 4)) + '';
+        if (r.width < 24 || r.height < 24) { bad.push(label + ' ' + name + ' too small ' + Math.round(r.width)); continue; }
+        if (r.left < -1 || r.top < -1 || r.right > innerWidth + 1 || r.bottom > innerHeight + 1) { bad.push(label + ' ' + name + ' outside ' + [r.left, r.top, r.right, r.bottom].map(Math.round)); continue; }
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        if (!hit || (!b.contains(hit) && !(label.startsWith('menu/') && hit.closest('#topright.open')))) bad.push(label + ' ' + name + ' covered by ' + (hit ? hit.tagName + '.' + hit.className + '#' + hit.id + ' ' + (hit.dataset?.id ?? hit.textContent.slice(0, 4)) : 'nothing'));
+      }
+    };
+    for (const sp of SPECIES) {
+      g.progress.species = sp.id; m.stage = 9; g.tool = movesFor(sp.id)[0].id; g.buildMonster(); g.hud.refreshTools(); g.hud.refreshButtons();
+      for (const dev of ['kbm', 'pad', 'touch']) { g.input.device = dev; g.hud.layout(); await wait(120); check(sp.id + '/' + dev); }
+      g.input.device = 'kbm'; g.hud.layout();
+    }
+    // The sheets (world choice, settings) and the folded menu: every control within the width of the picture and big enough
+    // (a sheet may scroll, so below the bottom edge is allowed there), and the folded menu fully inside.
+    const sheet = (label) => {
+      const ctl = [...document.querySelectorAll('#hud .overlay button, #hud .overlay input, #hud .overlay select, #hud .overlay a')].filter((b) => b.getClientRects().length);
+      seen[label] = ctl.length;
+      for (const b of ctl) { const r = b.getBoundingClientRect(), name = b.tagName + ' ' + (b.textContent || b.type || '').trim().slice(0, 12) + ' [' + (b.closest('label')?.textContent ?? b.parentElement?.textContent ?? '').trim().slice(0, 30) + '] ' + Math.round(r.width) + 'x' + Math.round(r.height); if (r.width < 14 || r.height < 14) bad.push(label + ' ' + name + ' too small'); else if (r.left < -1 || r.right > innerWidth + 1) bad.push(label + ' ' + name + ' outside ' + [r.left, r.right].map(Math.round)); }
+    };
+    for (const dev of ['kbm', 'touch']) {
+      g.input.device = dev; g.hud.layout(); g.progress.species = 'chopper'; g.hud.refreshTools();
+      g.hud.openWorlds(); await wait(150); sheet('worlds/' + dev); g.hud.close();
+      g.hud.openParent(); await wait(150); sheet('settings/' + dev); g.hud.close();
+      if (document.body.classList.contains('compact')) { g.hud.toggleMenu(true); await wait(150); check('menu/' + dev); g.hud.toggleMenu(false); }
+    }
+    g.input.device = 'kbm'; g.hud.layout();
+    // A mouse click on the helicopter's up button must leave the layout as it is.
+    g.progress.species = 'chopper'; g.hud.refreshTools(); g.input.device = 'kbm'; g.hud.layout(); await wait(100);
+    const up = document.querySelector('#abilities .btn[data-id=up]'); up?.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse', bubbles: true })); up?.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'mouse', bubbles: true })); await wait(100);
+    if (document.body.className.startsWith('touch')) bad.push('mouse click on up switched to touch');
+    window.__extra = { size: [innerWidth, innerHeight], bad: bad.slice(0, 40), nbad: bad.length, seen };
+    if (bad.length) setTimeout(() => { throw new Error('buttons: ' + bad.join('; ')); }); // makes the smoke run fail
+  }
   if (sc === 'punch') { g.input.keys.add('KeyW'); await wait(1500); g.input.keys.delete('KeyW'); for (let i = 0; i < 12; i++) { fire(0.5, 0.45); await wait(350); } }
   if (sc === 'walk') { g.input.keys.add('KeyW'); await wait(4000); }
   if (sc === 'shoot') { for (let i = 0; i < 10; i++) { fire(0.35 + i * 0.03, 0.42); await wait(450); } }

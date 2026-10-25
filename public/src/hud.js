@@ -154,7 +154,7 @@ export class Hud {
     const sp = g.progress.species;
     if (sp === 'chopper') { // the jump button, held: up. Let go, the helicopter sinks back by itself
       const b = this.button(this.abilities, '🔼', null, '␣');
-      b.addEventListener('pointerdown', () => { g.audio.unlock(); g.input.gesture('touch'); g.input.jumpBtn = true; });
+      b.addEventListener('pointerdown', (e) => { g.audio.unlock(); if (e.pointerType === 'touch') g.input.gesture('touch'); g.input.jumpBtn = true; }); // a mouse click must not switch to the touch layout
       for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => { g.input.jumpBtn = false; });
       b.dataset.id = 'up';
       this.toolButtons.up = b;
