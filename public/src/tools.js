@@ -6,7 +6,7 @@
 import { isTerrain, TYPE_MAT, MAT, RUBBLE } from './materials.js';
 import { clamp, wrapDelta } from './math.js';
 import { GRAVITY, launch } from './particles.js';
-import { stageScale, tracked } from './monster.js';
+import { stageScale, tracked, airborne, SEGS } from './monster.js';
 
 const ease = (x) => x * x * (3 - 2 * x);
 const snap = (x) => 1 - (1 - x) ** 3; // fast start, soft landing: the feel of a blow
@@ -14,6 +14,8 @@ const pulse = (x) => Math.sin(clamp(x, 0, 1) * Math.PI);
 const crossed = (b0, b1, at) => b0 < at && b1 >= at;
 // Calls fn(k) for each of n evenly spaced events that fall into the step from b0 to b1.
 const eachShot = (b0, b1, n, fn) => { for (let k = 0; k < n; k++) if (crossed(b0, b1, k / n) || (k === 0 && b0 === 0 && b1 > 0)) fn(k); };
+// Bends the tentacle: every segment by its share of amt, more towards the tip (forwards; side: sideways).
+const curl = (j, amt, side = 0) => { for (let i = 0; i < SEGS; i++) { const w = 2 * (i / (SEGS - 1)) ** 1.3, q = j['seg' + i]; q[0] += amt * w; q[2] += side * w; } };
 
 export const ABILITIES = [
   { id: 'stomp', icon: '🦶', stage: 1 }, // jumping is there from the start; from stage 2 every landing is a stomp
@@ -475,6 +477,135 @@ const MOVES = {
         hit(T) { const B = T.base(); T.bomb(14 + B.S * 2.4, 20 + B.S * 2, 0, false, 2.4); T.g.shake(0.4); },
       } },
   ],
+  // ---------------------------------------------------------------- Helicopter: gun, rockets, winch and rotor
+  // From the least to the most spectacular: a gun that nibbles, rockets, the winch that lifts whole cars and swings a
+  // wrecking ball, and at last the rotor itself: a saw that cuts through a building, and the tornado.
+  chopper: [
+    { id: 'guns', icon: '🔫', stage: 1,
+      light: { // a burst from the gun under the nose
+        wind: 0.04, strike: 0.4, recover: 0.1,
+        pose(j, p, a, b) { j.barrel[5] -= Math.abs(Math.sin(b * 20)) * 1.4 * (b > 0 && b < 1 ? 1 : 0); },
+        tick(T, act, dt, b0, b1) { eachShot(b0, b1, 5, () => { const B = T.base(); T.bolt(T.nose(), T.g.aim, 0.6 + B.S * 0.08 + B.H * 0.012, 3 + B.S * 0.35, 1, 0.85, 0.3); T.g.audio.hit('metal', 0.2); }); },
+      },
+      heavy: { // circling: once round the aimed spot at the same height, firing inwards all the way
+        wind: 0.3, strike: 2.6, recover: 0.3,
+        pose(j, p, a, b, c, act) { const on = b > 0 ? 1 - c : a * 0.3; j.torso[2] -= 0.35 * on * act.side; j.barrel[5] -= Math.abs(Math.sin(b * 60)) * 1.4 * (b > 0 && b < 1 ? 1 : 0); },
+        begin(T, act) { T.circle(act); },
+        tick(T, act, dt, b0, b1) {
+          T.orbit(act, b1);
+          eachShot(b0, b1, 16, () => {
+            const B = T.base(), r = T.g.rng, s = B.H * 0.15 + 2;
+            T.tgt.x = act.ax + (r() - 0.5) * s; T.tgt.y = act.ay + (r() - 0.5) * s; T.tgt.z = act.az + (r() - 0.5) * s;
+            T.bolt(T.nose(), T.tgt, 0.6 + B.S * 0.08 + B.H * 0.012, 3 + B.S * 0.35, 1, 0.85, 0.3); T.g.audio.hit('metal', 0.15);
+          });
+        },
+        end(T) { T.driven = false; },
+      } },
+    { id: 'rockets', icon: '🚀', stage: 3,
+      light: { // a pair of rockets, one from each pod
+        wind: 0.1, strike: 0.25, recover: 0.2,
+        pose(j, p, a, b) { j.pods[5] -= 1.2 * pulse(b); j.torso[0] -= 0.05 * pulse(b); },
+        tick(T, act, dt, b0, b1) { eachShot(b0, b1, 2, (k) => { const B = T.base(), o = T.at(T.o, 0.22, 0.1, k ? 0.32 : -0.32); T.rocket(o, T.g.aim, 4 + B.S * 0.9, 12 + B.S * 2, 70); }); },
+      },
+      heavy: { // salvo: both pods empty themselves, the rockets climb and come down all over the target
+        wind: 0.35, strike: 0.7, recover: 0.3,
+        pose(j, p, a, b, c) { j.torso[0] -= 0.12 * a * (1 - c); j.pods[5] -= Math.abs(Math.sin(b * 25)) * 0.8 * (b > 0 && b < 1 ? 1 : 0); },
+        tick(T, act, dt, b0, b1) {
+          eachShot(b0, b1, 8, (k) => { const B = T.base(), o = T.at(T.o, 0.22, 0.1, k % 2 ? 0.32 : -0.32), aim = T.g.aim, r = T.g.rng, s = B.H * 0.55 + 7; T.tgt.x = aim.x + (r() - 0.5) * 2 * s; T.tgt.y = aim.y; T.tgt.z = aim.z + (r() - 0.5) * 2 * s; T.rocket(o, T.tgt, 5 + B.S, 13 + B.S * 2, 60, true); });
+        },
+      } },
+    { id: 'winch', icon: '🪝', stage: 5,
+      light: { // the hook: down on the rope, takes hold of what is there and lifts it. Once more: let go
+        wind: 0.12, strike: 0.45, recover: 0.25, hitAt: 0.9,
+        pose(j, p, a, b) { j.winch[4] -= 0.6 * pulse(b); },
+        begin(T, act) { if (T.held) { act.drop = true; T.dropLoad(); } else T.lowerHook(act); },
+        hit(T, act) { if (!act.drop) T.hookGrab(act); },
+      },
+      heavy: { // the wrecking ball: a steel ball on the rope that swings along behind; flown past a building, it smashes into it
+        wind: 0.3, strike: 0.3, recover: 0.25, hitAt: 0.3,
+        pose(j, p, a, b) { j.winch[4] -= 0.6 * pulse(b); },
+        hit(T) { if (T.held) T.dropLoad(); if (T.rope?.ball) T.stow(); else T.lowerBall(); },
+      } },
+    { id: 'rotor', icon: '🌪️', stage: 7,
+      light: { // rotor saw: the nose goes down, the blades cut to and fro through whatever stands in front, and it pushes on into the cut
+        wind: 0.35, strike: 1.3, recover: 0.4,
+        pose(j, p, a, b, c) { const on = a * (1 - c); j.torso[0] += 0.75 * on; j.rotor[1] += p.time * 30 * on; p.hop -= 2 * on; },
+        tick(T, act, dt, b0, b1) { T.saw(act, b0, b1); },
+      },
+      heavy: { // tornado: it spins faster and faster until a whirlwind forms under it; the tornado follows the aim point
+        wind: 1.0, strike: 0.25, recover: 0.4,
+        pose(j, p, a, b, c) { p.spin = Math.PI * 6 * a * a * (1 - c); j.torso[2] += 0.35 * a * (1 - c); p.hop += 3 * a * (1 - c); },
+        windTick(T) { const m = T.g.monster, r = T.g.rng, a = r() * 6.283, d = m.h * (0.6 + r()); T.g.fx.add(m.x + Math.cos(a) * d, m.y - r() * m.h, m.z + Math.sin(a) * d, -Math.sin(a) * m.h * 2, m.h * 0.5, Math.cos(a) * m.h * 2, 0.8 + m.h * 0.05, m.h * 0.04, 0.7, 0.78, 0.76, 0.72, 0.7, 0, 0, 1); },
+        hit(T) { const B = T.base(), m = T.g.monster; T.vortex(m.x, m.z, T.g.aim.x, T.g.aim.z, 8, B.H * 0.42 + 5, B.H * 2.8 + 10, B.R * 0.8, B.P * 1.1, true); T.g.shake(0.4); },
+      } },
+  ],
+  // ---------------------------------------------------------------- Tentacle: whip, grip, ink and the deep
+  // It reaches further than a body length (about two), but it does not walk: to get anywhere it has to go down into the ground.
+  // From the least to the most spectacular: the whip, wrapping round and pulling over, ink, and the awakening of the deep.
+  tentacle: [
+    { id: 'whip', icon: '〰️', stage: 1,
+      light: { // crack of the whip: the tip shoots out to the aimed spot and snaps
+        wind: 0.14, strike: 0.12, recover: 0.26, hitAt: 0.6,
+        pose(j, p, a, b, c) { curl(j, -0.11 * a * (1 - snap(b)) + 0.13 * snap(b) * (1 - c)); p.squash = -0.6 * pulse(b); },
+        hit(T, act) {
+          const B = T.base(), q = T.tipHit(act, 2.2);
+          T.blow(q[0], q[1], q[2], B.R * 0.72, B.P, false, T.dx, T.dz, false, 10);
+          const o = T.opt; o.dx = T.dx; o.dz = T.dz; o.impulse = launch(B.H + 6); o.debris = 8; o.spare = false; o.blast = 0;
+          T.g.destruction.capsule(q[0], q[1], q[2], q[0] + T.dx * (B.H * 0.25 + 2), q[1], q[2] + T.dz * (B.H * 0.25 + 2), B.R * 0.3, B.P * 1.1, o); // a deep, narrow hole
+          T.g.fx.sparks(q[0], q[1], q[2], 12, 10, 1, 1, 1); T.g.audio.crack(0.45);
+        },
+      },
+      heavy: { // whirl: it winds itself up, then the arm comes round once at full stretch, rising as it goes
+        wind: 0.5, strike: 0.42, recover: 0.5, root: true,
+        turn: (a, b) => -0.9 * a + (Math.PI * 2 + 0.9) * snap(b),
+        pose(j, p, a, b, c, act) {
+          p.spin = this.turn(a, b) * act.side;
+          const coil = a * (1 - Math.min(1, b * 4)), out = b > 0 ? 1 - c : 0;
+          curl(j, -0.06 * coil + 0.09 * out, 0.05 * coil * act.side); p.squash = 0.4 * coil - 0.5 * out;
+        },
+        tick(T, act, dt, b0, b1) { T.whirl(act, this, b0, b1); },
+        end(T) { const m = T.g.monster; T.g.debris.blast(m.x, m.y, m.z, m.h * 2.4, launch(m.h * 1.5)); T.g.emote('dizzy'); },
+      } },
+    { id: 'wrap', icon: '➰', stage: 3,
+      light: { // squeeze: it coils round the target (a corner, a mast, a tower, a tree) and squeezes: a ring cut all round
+        wind: 0.25, strike: 0.45, recover: 0.3,
+        pose(j, p, a, b, c) { const on = a * (1 - c); curl(j, 0.05 * on, 0); for (let i = SEGS - 5; i < SEGS; i++) { j['seg' + i][0] += 0.35 * on; j['seg' + i][1] += 0.5 * pulse(b); } p.squash = 0.25 * pulse(b); },
+        begin(T, act) { const q = T.tipHit(act, 2.2); act.wx = q[0]; act.wy = q[1]; act.wz = q[2]; T.g.audio.crack(0.3); },
+        tick(T, act, dt, b0, b1) { eachShot(b0, b1, 3, (k) => T.squeeze(act, 1.2 - k * 0.2)); },
+      },
+      heavy: { // pull over: the suckers take hold high up on the building, and the tentacle hauls it over towards itself
+        wind: 0.45, strike: 0.6, recover: 0.45, root: true, hitAt: 0.35,
+        pose(j, p, a, b, c) { const reach = a * (1 - Math.min(1, b * 3)), pull = b > 0.3 ? 1 - c : 0; curl(j, 0.06 * reach - 0.1 * pull); p.squash = -0.5 * reach + 0.4 * pull; },
+        hit(T, act) { T.pullOver(act); },
+      } },
+    { id: 'ink', icon: '💧', stage: 5,
+      light: { // ink jet: a thin jet under high pressure that cuts like a water knife while it lasts
+        wind: 0.2, strike: 0.9, recover: 0.25,
+        pose(j, p, a, b, c) { const on = b > 0 ? 1 - c : 0; p.squash = 0.15 * on + Math.sin(p.time * 40) * 0.05 * on; },
+        tick(T, act, dt) {
+          const B = T.base(), o = T.tip();
+          T.ray(o, T.g.aim, 0.7 + B.S * 0.1 + B.H * 0.014, 7 + B.S * 0.8, 0.42, 0.2, 0.62, false, dt);
+          if (T.hitSolid && T.g.rng() < 0.5) T.inkSplash(T.hit[0], T.hit[1], T.hit[2], 0.5 + B.H * 0.05, 3);
+        },
+      },
+      heavy: { // ink bomb: a ball of ink flies in an arc and bursts into a huge cloud; glass, leaves and cloth go to pieces all round
+        wind: 0.45, strike: 0.15, recover: 0.4,
+        pose(j, p, a, b, c) { p.squash = 0.6 * a * (1 - b) - 0.6 * pulse(b); curl(j, -0.05 * a * (1 - b) + 0.08 * pulse(b)); },
+        hit(T) { const B = T.base(); T.inkBomb(T.tip(), T.g.aim, 5 + B.S, 12 + B.S * 2, B.H * 0.75 + 8); },
+      } },
+    { id: 'deep', icon: '🌊', stage: 7,
+      light: { // ground wave: it slams onto the ground, and a wave runs through the earth to the aimed spot
+        wind: 0.3, strike: 0.3, recover: 0.4, hitAt: 0.6,
+        pose(j, p, a, b, c) { curl(j, -0.06 * a * (1 - snap(b)) + 0.16 * snap(b) * (1 - c)); p.squash = 0.6 * pulse(b); },
+        hit(T, act) { T.groundWave(act); },
+      },
+      heavy: { // awakening of the deep: the cut-in, then five tentacles burst out of the ground round the target and drag it down
+        wind: 1.0, strike: 2.8, recover: 0.5, root: true, cutIn: true,
+        pose(j, p, a, b, c) { const on = b > 0 ? 1 - c : 0; curl(j, -0.05 * a * (1 - on) + 0.05 * on); p.squash = -0.4 * a * (1 - on) + 0.3 * on; p.roar = Math.max(p.roar, 0.4 * on); },
+        begin(T, act) { T.kraken(act); },
+        tick(T, act, dt, b0, b1) { T.krakenTick(act, b0, b1); },
+      } },
+  ],
 };
 
 export const movesFor = (species) => MOVES[species] ?? MOVES.dino;
@@ -503,6 +634,12 @@ export class Tools {
     this.rays = []; // beams to draw: { ax, ay, az, bx, by, bz, w, r, g, b, life }
     this.timers = [];
     this.marks = []; // pending sky strikes
+    this.rope = null; // the helicopter's winch rope: { x, y, z, vx, vy, vz, len, want, r, ball, hitT }
+    this.hook = null; // the hook on its way down: { x, y, z, t }
+    this.vortices = []; // whirlwinds of the helicopter
+    this.krakens = []; // the five tentacles of the awakening
+    this.queued = null; // an attack pressed while the tentacle was below the ground: it comes up first
+    this.driven = false; // a move flies the helicopter (the circling): the controls wait
   }
 
   // True while a move keeps the feet planted.
@@ -534,20 +671,332 @@ export class Tools {
   }
   later(delay, fn) { this.timers.push({ t: delay, fn }); }
 
+  // ---- helicopter -------------------------------------------------------------------------
+
+  // Where the gun under the helicopter's nose ends.
+  nose() {
+    const m = this.g.monster, o = this.at(this.o, 0.09, 0.42), yaw = this.turretYaw(), len = m.h * 0.26, c = Math.cos(m.pose.aimPitch);
+    o[0] += Math.sin(yaw) * len * c; o[1] -= Math.sin(m.pose.aimPitch) * len; o[2] += Math.cos(yaw) * len * c;
+    return o;
+  }
+
+  // Circling: the circle runs round the aimed spot at the helicopter's distance (not too close, not too far).
+  circle(act) {
+    const g = this.g, m = g.monster, B = this.base(), size = g.world.wrap ? g.world.sx : 0, dx = wrapDelta(m.x - act.ax, size), dz = wrapDelta(m.z - act.az, size);
+    act.r = clamp(Math.hypot(dx, dz), B.H * 1.2 + 8, B.H * 4 + 30); act.a0 = Math.atan2(dx, dz);
+    this.driven = true;
+  }
+  orbit(act, b) {
+    const g = this.g, w = g.world, m = g.monster, size = w.wrap ? w.sx : 0, a = act.a0 + act.side * Math.PI * 2 * b;
+    const nx = act.ax + Math.sin(a) * act.r, nz = act.az + Math.cos(a) * act.r;
+    const x = m.x + wrapDelta(nx - m.x, size) * 0.2, z = m.z + wrapDelta(nz - m.z, size) * 0.2;
+    if (!w.get(Math.floor(x), Math.floor(m.y + m.h * 0.4), Math.floor(z))) { m.x = x; m.z = z; } // a wall in the way: it waits there
+    m.vx = 0; m.vz = 0;
+    m.heading = Math.atan2(wrapDelta(act.ax - m.x, size), wrapDelta(act.az - m.z, size));
+  }
+
+  // Rotor saw: the blades sweep to and fro across what is in front, at the height of the aim, and the helicopter creeps on into the cut.
+  saw(act, b0, b1) {
+    const g = this.g, w = g.world, m = g.monster, B = this.base(), o = this.opt, reach = B.H * 1.0 + 4, fx = Math.sin(m.heading), fz = Math.cos(m.heading);
+    const y = clamp(act.ay, m.y - B.H * 0.2, m.y + B.H * 0.6), step = B.H * 0.9 * (b1 - b0);
+    if (!w.get(Math.floor(m.x + fx * B.H * 0.5), Math.floor(m.y + B.H * 0.35), Math.floor(m.z + fz * B.H * 0.5))) { m.x += fx * step; m.z += fz * step; }
+    o.dx = 0; o.dz = 0; o.impulse = launch(reach * 0.3 + 4); o.debris = 8; o.spare = false; o.blast = 0; o.quiet = true;
+    let n = 0;
+    for (let k = 1; k <= 4; k++) { // a broad cut: two blades a little apart in height
+      const b = b0 + ((b1 - b0) * k) / 4, a = m.heading + Math.sin(b * Math.PI * 7) * 0.95, sx = Math.sin(a), sz = Math.cos(a), yy = y - (k % 2) * B.H * 0.12;
+      g.lastHit.dx = sx; g.lastHit.dz = sz;
+      n += g.destruction.capsule(m.x + sx * B.H * 0.25, yy, m.z + sz * B.H * 0.25, m.x + sx * reach, yy, m.z + sz * reach, 1 + B.H * 0.04, B.P * 1.6, o);
+    }
+    o.quiet = false;
+    if (n) { g.fx.sparks(m.x + fx * reach * 0.8, y, m.z + fz * reach * 0.8, 16, 4, 1, 0.85, 0.4); g.audio.sword(); }
+  }
+
+  // The winch. The hook goes down to the aimed spot (or as far as the rope reaches) and takes hold of what is there;
+  // the load then hangs on the rope and swings along. Dropped, it falls with the swing it has and lands like a bomb.
+  lowerHook(act) {
+    const g = this.g, m = g.monster, B = this.base(), size = g.world.wrap ? g.world.sx : 0, ay = m.y + m.h * 0.1;
+    const dx = wrapDelta(act.ax - m.x, size), dy = act.ay - ay, dz = wrapDelta(act.az - m.z, size), d = Math.hypot(dx, dy, dz) || 1, k = Math.min(1, (B.H * 3 + 20) / d);
+    act.hx = m.x + dx * k; act.hy = ay + dy * k; act.hz = m.z + dz * k;
+    this.hook = act;
+    g.audio.whoosh();
+  }
+  hookGrab(act) {
+    const g = this.g, m = g.monster, B = this.base();
+    this.hook = null;
+    this.grab(act.hx, act.hy, act.hz, clamp(B.H * 0.3, 2.5, 15), act.hx, act.hz);
+    const b = this.held;
+    if (!b) return;
+    this.rope = { x: b.pos[0], y: b.pos[1], z: b.pos[2], px: b.pos[0], py: b.pos[1], pz: b.pos[2], vx: 0, vy: 0, vz: 0, len: Math.max(m.h * 0.5, Math.hypot(b.pos[0] - m.x, b.pos[1] - m.y, b.pos[2] - m.z)), want: B.H * 0.8 + b.radius, r: Math.max(1, b.radius * 0.8), ball: false, hitT: 0 };
+    g.audio.crack(0.5);
+  }
+  dropLoad() {
+    const g = this.g, b = this.held, R = this.rope;
+    this.held = null;
+    if (b && !b.dead) {
+      b.kinematic = false; b.thrown = true; b.age = 0; b.hard = true;
+      if (R) { b.v[0] = R.vx; b.v[1] = R.vy; b.v[2] = R.vz; }
+      b.w[0] = (g.rng() - 0.5) * 3; b.w[1] = (g.rng() - 0.5) * 3; b.w[2] = (g.rng() - 0.5) * 3;
+    }
+    if (R && !R.ball) this.rope = null;
+    g.audio.whoosh();
+  }
+  lowerBall() {
+    const m = this.g.monster, B = this.base(), y = m.y + m.h * 0.1;
+    this.rope = { x: m.x, y, z: m.z, px: m.x, py: y, pz: m.z, vx: 0, vy: 0, vz: 0, len: m.h * 0.3, want: B.H * 1.25 + 2, r: B.H * 0.2 + 1, ball: true, hitT: 0 };
+    this.g.audio.hit('metal', 0.6);
+  }
+  // Put away whatever hangs on the winch (when another move is chosen).
+  stow() {
+    if (this.held && this.g.progress.species === 'chopper') this.dropLoad();
+    this.rope = null; this.hook = null;
+  }
+
+  // The rope's end swings like a pendulum under the helicopter (Verlet, with the rope as a limit, not a rod). What hangs
+  // on it smashes into whatever it meets, the harder the faster it goes; what does not give way stops it.
+  updateRope(dt) {
+    const g = this.g, w = g.world, m = g.monster, R = this.rope, size = w.wrap ? w.sx : 0;
+    if (!R) return;
+    if (this.held?.dead) { this.held = null; if (!R.ball) { this.rope = null; return; } }
+    const ax = m.x, ay = m.y + m.h * 0.1, az = m.z, damp = 1 - Math.min(1, dt * 0.5);
+    const reel = (6 + m.h * 0.3) * dt; R.len += clamp(R.want - R.len, -reel, reel); // the winch reels slowly: hauling up is no blow
+    const nx = R.x + (R.x - R.px) * damp, ny = R.y + (R.y - R.py) * damp - GRAVITY * 0.7 * dt * dt, nz = R.z + (R.z - R.pz) * damp;
+    R.px = R.x; R.py = R.y; R.pz = R.z; R.x = nx; R.y = ny; R.z = nz;
+    const dx = wrapDelta(R.x - ax, size), dy = R.y - ay, dz = wrapDelta(R.z - az, size), d = Math.hypot(dx, dy, dz) || 1;
+    if (d > R.len) { R.x = ax + (dx / d) * R.len; R.y = ay + (dy / d) * R.len; R.z = az + (dz / d) * R.len; }
+    if (size) { R.px = R.x - wrapDelta(R.x - R.px, size); R.pz = R.z - wrapDelta(R.z - R.pz, size); }
+    R.vx = (R.x - R.px) / dt; R.vy = (R.y - R.py) / dt; R.vz = (R.z - R.pz) / dt;
+    R.hitT -= dt;
+    // Only a swing does damage: hanging still against a wall (or dragged slowly along it) it just scrapes.
+    const r = R.r, solid = (x, y, z) => w.get(Math.floor(x), Math.floor(y), Math.floor(z)), B0 = this.base(), fast = Math.hypot(R.vx, R.vy, R.vz) > 8 + B0.H * 0.15;
+    if (R.hitT <= 0 && fast && (solid(R.x, R.y, R.z) || solid(R.x + r * 0.8, R.y, R.z) || solid(R.x - r * 0.8, R.y, R.z) || solid(R.x, R.y - r * 0.8, R.z) || solid(R.x, R.y, R.z + r * 0.8) || solid(R.x, R.y, R.z - r * 0.8))) {
+      R.hitT = 0.2;
+      const B = this.base(), sp = Math.hypot(R.vx, R.vy, R.vz), k = clamp((sp - 8 - B.H * 0.15) / (14 + B.H * 0.6) + 0.3, 0.3, 2), inv = 1 / (sp || 1), o = this.opt;
+      o.dx = R.vx * inv; o.dz = R.vz * inv; o.impulse = launch(sp * 0.5 + 6); o.debris = 50; o.spare = true; o.blast = 0; // buildings, not the ground
+      g.lastHit.dx = o.dx; g.lastHit.dz = o.dz; g.lastHit.pop = 0;
+      const n = g.destruction.sphere(R.x + o.dx * r * 0.5, R.y, R.z + o.dz * r * 0.5, r * 1.25, B.P * k * (R.ball ? 1.3 : 0.7), o);
+      o.spare = false;
+      g.actors.hitAir(R.x, R.y, R.z, r + 2);
+      if (n) { g.impactFx(R.x, R.y, R.z, r * 1.4, 0.3 + k * 0.25, k > 1.2); g.audio.hit('metal', Math.min(1, 0.3 + k * 0.3)); }
+      const keep = n ? 0.6 : -0.3; // through what gave way, a bounce off what did not
+      R.px = R.x - (R.x - R.px) * keep; R.py = R.y - (R.y - R.py) * keep; R.pz = R.z - (R.z - R.pz) * keep;
+    }
+    if (solid(R.x, R.y, R.z)) { R.px = R.x; R.pz = R.z; R.y += 1.5; R.py = R.y; } // stuck in something: it comes to rest on top
+    if (this.held && !this.held.dead) { this.held.pos[0] = R.x; this.held.pos[1] = R.y; this.held.pos[2] = R.z; }
+  }
+
+  // Whirlwinds. x/z: where it forms, tx/tz: where it goes (the tornado follows the aim point), r: width, h: height,
+  // rr and p: the blows it deals as it turns. Loose cubes, cars and people are carried up in a spiral.
+  vortex(x, z, tx, tz, life, r, h, rr, p, big) {
+    this.vortices.push({ x, z, tx, tz, t: 0, life, r, h, rr, p, big, tick: 0 });
+    this.g.audio.whoosh();
+  }
+  updateVortices(dt) {
+    const g = this.g, w = g.world, size = w.wrap ? w.sx : 0, o = this.opt, rnd = g.rng;
+    for (let i = this.vortices.length - 1; i >= 0; i--) {
+      const v = this.vortices[i];
+      v.t += dt;
+      const grow = Math.max(0.05, Math.min(1, v.t / 0.6, (v.life - v.t) / 0.5));
+      if (v.big) { v.tx = g.aim.x; v.tz = g.aim.z; }
+      const dx = wrapDelta(v.tx - v.x, size), dz = wrapDelta(v.tz - v.z, size), d = Math.hypot(dx, dz), sp = (v.big ? 14 + v.r * 0.6 : v.r * 3 + 20) * dt;
+      if (d > 1) { v.x += (dx / d) * Math.min(d, sp); v.z += (dz / d) * Math.min(d, sp); }
+      if (w.wrap) { v.x = ((v.x % w.sx) + w.sx) % w.sx; v.z = ((v.z % w.sz) + w.sz) % w.sz; }
+      if (v.gy === undefined || rnd() < 0.1) v.gy = this.terrainBelow(v.x, v.z);
+      // The funnel: dust spiralling up, wider at the top.
+      for (let k = 0; k < (v.big ? 26 : 10) * g.fx.thin + 2; k++) {
+        const hh = rnd() * v.h, rad = v.r * (0.2 + 0.8 * hh / v.h) * grow, a = rnd() * 6.283, sh = 0.5 + rnd() * 0.25;
+        g.fx.add(v.x + Math.cos(a) * rad, v.gy + hh, v.z + Math.sin(a) * rad, -Math.sin(a) * rad * 5, v.h * 0.3, Math.cos(a) * rad * 5, 1.5 + v.r * 0.14, v.r * 0.06, 1, sh, sh * 0.97, sh * 0.92, 0.8, 0, 0, 1);
+      }
+      if ((v.tick -= dt) <= 0) {
+        v.tick = 0.1;
+        const n = v.big ? 4 : 3;
+        o.impulse = launch(v.h * 0.5 + 10); o.debris = 30; o.spare = false; o.blast = 0; o.quiet = true; o.dy = 0.9;
+        for (let k = 0; k < n; k++) {
+          const ang = v.t * 7 + k * 2.1, rk = v.r * (0.35 + (0.65 * k) / n) * grow, px = v.x + Math.cos(ang) * rk, pz = v.z + Math.sin(ang) * rk, py = v.gy + v.h * ((k + 0.5) / n) * 0.9;
+          o.dx = -Math.sin(ang); o.dz = Math.cos(ang); g.lastHit.dx = o.dx; g.lastHit.dz = o.dz; g.lastHit.pop = launch(v.h * 0.3);
+          g.destruction.sphere(px, py, pz, v.rr * grow, v.p, o);
+        }
+        o.dy = 0.15; o.quiet = false;
+        g.debris.swirl(v.x, v.z, v.r * 1.6, 6 + v.r * 0.6, 12 + v.h * 0.12); // loose cubes are drawn in and carried up
+        if (rnd() < 0.3) g.audio.crumble(0.2);
+      }
+      if (v.t >= v.life) {
+        if (v.big) { // the end: everything it carried is thrown out in a ring
+          const B = this.base();
+          this.shock(v.x, v.gy, v.z, v.r * 1.4, B.R * 0.8, B.P * 0.8, 12);
+          g.debris.blast(v.x, v.gy, v.z, v.r * 3, launch(B.H * 2));
+        }
+        this.vortices.splice(i, 1);
+      }
+    }
+  }
+
+  // Top of the ground (not of what is built on it) at (x, z).
+  terrainBelow(x, z) {
+    const w = this.g.world, ix = Math.floor(x), iz = Math.floor(z);
+    for (let y = w.sy - 1; y >= 0; y--) { const t = w.get(ix, y, iz); if (t && isTerrain(t)) return y + 1; }
+    return 0;
+  }
+
+  // ---- tentacle ---------------------------------------------------------------------------
+
+  // The tentacle's tip, as drawn.
+  tip() { return this.g.tipPos(this.o); }
+
+  // Where a blow of the tentacle lands: the first solid thing on the way from high up its arm to the aimed spot, within reach.
+  tipHit(act, reachMul) {
+    const g = this.g, m = g.monster, B = this.base(), q = this.hp, size = g.world.wrap ? g.world.sx : 0, cy = m.y + B.H * 0.7, reach = B.H * reachMul + 2;
+    let dx = wrapDelta(act.ax - m.x, size), dy = clamp(act.ay, m.y + 1, m.y + B.H * 2.3) - cy, dz = wrapDelta(act.az - m.z, size);
+    const dl = Math.hypot(dx, dy, dz) || 1;
+    dx /= dl; dy /= dl; dz /= dl;
+    let t = B.H * 0.3;
+    for (; t < reach; t += 0.5) {
+      const x = m.x + dx * t, y = cy + dy * t, z = m.z + dz * t;
+      if (g.world.get(Math.floor(x), Math.floor(y), Math.floor(z)) || g.bodies.solidAt(x, y, z)) break;
+    }
+    t = Math.min(t + 1, reach, dl);
+    q[0] = m.x + dx * t; q[1] = cy + dy * t; q[2] = m.z + dz * t;
+    const hl = Math.hypot(dx, dz) || 1;
+    this.dx = dx / hl; this.dz = dz / hl;
+    return q;
+  }
+
+  // Whirl: the arm comes round at full stretch, everything along it is hit, and it rises as it turns.
+  whirl(act, v, b0, b1) {
+    const g = this.g, m = g.monster, B = this.base(), o = this.opt;
+    o.impulse = launch(B.H * 3 + 10); o.debris = 100; o.spare = true; o.blast = 0;
+    let n = 0, hx = 0, hy = 0, hz = 0;
+    for (let k = 1; k <= 4; k++) {
+      const b = b0 + ((b1 - b0) * k) / 4, ang = act.heading + v.turn(1, b) * act.side, sx = Math.sin(ang), sz = Math.cos(ang), y = m.y + B.H * (0.25 + 0.8 * b);
+      o.dx = sz * act.side; o.dz = -sx * act.side; // debris flies along the sweep
+      g.lastHit.dx = o.dx; g.lastHit.dz = o.dz; g.lastHit.pop = launch(B.H * 0.4);
+      for (const r of [0.55, 0.95, 1.35, 1.75]) {
+        const x = m.x + sx * B.H * r, z = m.z + sz * B.H * r, c = g.destruction.sphere(x, y, z, B.R * 0.8, B.P * 1.4, o);
+        g.actors.hitAir(x, y, z, B.R + 2);
+        if (c) { n += c; hx = x; hy = y; hz = z; }
+      }
+    }
+    o.spare = false;
+    if (n && g.time - (act.fxT ?? -1) > 0.09) { act.fxT = g.time; g.impactFx(hx, hy, hz, B.R * 1.2, 0.6 + B.S * 0.07, true); }
+  }
+
+  // Squeeze: a ring cut round the gripped spot, tightening with every squeeze (k: ring size).
+  squeeze(act, k) {
+    const g = this.g, B = this.base(), o = this.opt, rr = (B.H * 0.2 + 2) * k, t = 0.7 + B.H * 0.04;
+    o.impulse = launch(B.H * 0.6 + 4); o.debris = 20; o.spare = false; o.blast = 0; o.quiet = true;
+    let n = 0;
+    for (let i = 0; i < 10; i++) {
+      const a0 = (i / 10) * 6.283, a1 = ((i + 1) / 10) * 6.283;
+      o.dx = Math.cos(a0); o.dz = Math.sin(a0); g.lastHit.dx = -o.dx; g.lastHit.dz = -o.dz;
+      n += g.destruction.capsule(act.wx + Math.cos(a0) * rr, act.wy, act.wz + Math.sin(a0) * rr, act.wx + Math.cos(a1) * rr, act.wy, act.wz + Math.sin(a1) * rr, t, B.P * 1.15, o);
+    }
+    o.quiet = false;
+    if (n) { g.fx.dust(act.wx, act.wy, act.wz, rr, 0.78, 0.74, 0.68, 4); g.audio.crumble(0.3); g.shake(0.15); }
+  }
+
+  // Pull over: a grip high up on the building and a mighty tug towards the tentacle (the same reckoning as a shove,
+  // only far stronger): whatever is not very solid goes over.
+  pullOver(act) {
+    const g = this.g, w = g.world, m = g.monster, B = this.base(), size = w.wrap ? w.sx : 0, st = w.structureAt(act.ax, act.az), q = this.tipHit(act, 2.3);
+    let gx = q[0], gz = q[2], gy = q[1];
+    if (st && st.major) { // as high up as it reaches: along a level line from the root towards the aim, the first thing solid
+      const hy = Math.min(st.top - 2, m.y + B.H * 2.2), ax = wrapDelta(act.ax - m.x, size), az = wrapDelta(act.az - m.z, size), al = Math.hypot(ax, az) || 1;
+      for (let t = B.H * 0.3; t < B.H * 2.6 + 4; t += 0.7) {
+        const x = m.x + (ax / al) * t, z = m.z + (az / al) * t;
+        if (g.world.get(Math.floor(x), Math.floor(hy), Math.floor(z))) { gx = x; gy = hy; gz = z; break; }
+      }
+    }
+    const dx = wrapDelta(m.x - gx, size), dz = wrapDelta(m.z - gz, size), d = Math.hypot(dx, dz) || 1;
+    this.blow(gx, gy, gz, B.R * 0.9, B.P * 1.2, true, dx / d, dz / d);
+    g.onShove(m, gx - (dx / d) * 2, gz - (dz / d) * 2, dx / d, dz / d, 5);
+    g.audio.groan(0.6); g.shake(0.3);
+  }
+
+  // Ink: dark splashes where the jet hits, and the ink bomb.
+  inkSplash(x, y, z, size, n) {
+    const g = this.g, r = g.rng;
+    for (let i = 0; i < n; i++) g.fx.add(x, y, z, (r() - 0.5) * 14, r() * 10, (r() - 0.5) * 14, size, size * 0.4, 0.9, 0.2, 0.1, 0.3, 0.9, 0, 40, 0.5);
+  }
+  inkBomb(o, aim, radius, power, cloud) {
+    const d = Math.hypot(aim.x - o[0], aim.z - o[2]), tf = clamp(d / 60, 0.7, 2.2);
+    this.proj.push({ kind: 'mortar', ink: true, cloud: Math.min(cloud, 48), x: o[0], y: o[1], z: o[2], vx: (aim.x - o[0]) / tf, vy: (aim.y - o[1]) / tf + 0.5 * GRAVITY * tf, vz: (aim.z - o[2]) / tf, r: 1.2 + this.g.monster.stage * 0.2, radius, power, life: 8, grav: GRAVITY });
+    this.g.audio.whoosh();
+  }
+  // The ink bomb bursts: a huge dark cloud in which glass, leaves and cloth fall apart.
+  inkBurst(p) {
+    const g = this.g, o = this.opt, r = g.rng;
+    o.dx = 0; o.dz = 0; o.impulse = launch(12); o.debris = 60; o.spare = true; o.blast = 0; o.quiet = true;
+    g.lastHit.dx = 0; g.lastHit.dz = 0;
+    g.destruction.sphere(p.x, p.y, p.z, p.cloud, 1.7, o);
+    o.quiet = false; o.spare = false;
+    for (let i = 0; i < 60 * g.fx.thin + 10; i++) {
+      const a = r() * 6.283, e = (r() - 0.3) * 1.4, s = p.cloud * (0.4 + r() * 0.8);
+      g.fx.add(p.x, p.y, p.z, Math.cos(a) * Math.cos(e) * s, Math.sin(e) * s * 0.6, Math.sin(a) * Math.cos(e) * s, 2 + p.cloud * 0.1, p.cloud * 0.08, 2.2, 0.18, 0.1, 0.28, 0.85, 0, 0, 1.5);
+    }
+    g.audio.boom(0.5);
+  }
+
+  // Ground wave: one blow after another through the earth, from the root to the aimed spot.
+  groundWave(act) {
+    const g = this.g, m = g.monster, B = this.base(), size = g.world.wrap ? g.world.sx : 0, x0 = m.x, z0 = m.z;
+    const dx = wrapDelta(act.ax - x0, size), dz = wrapDelta(act.az - z0, size), d = Math.hypot(dx, dz) || 1, len = Math.min(d, B.H * 4 + 20), ux = dx / d, uz = dz / d;
+    for (let i = 1; i <= 7; i++) {
+      const s = (len * i) / 7;
+      this.later(i * 0.08, () => {
+        const x = x0 + ux * s, z = z0 + uz * s, gy = this.terrainBelow(x, z);
+        this.shock(x, gy, z, B.H * 0.16, B.R * 0.5, B.P * 0.95, 4, i % 3 !== 0);
+        g.fx.dust(x, gy + 1, z, B.H * 0.3, 0.6, 0.5, 0.4, 4);
+      });
+    }
+    g.audio.boom(0.5); g.shake(0.4);
+  }
+
+  // The awakening of the deep: five tentacles burst out of the ground in a ring round the target, coil round it,
+  // squeeze, and drag it down into the earth (its foundations go, and it sinks into its own rubble).
+  kraken(act) {
+    const g = this.g, w = g.world, B = this.base(), st = w.structureAt(act.ax, act.az), big = st && st.major && !st.done ? st : null;
+    const cx = big ? (big.x0 + big.x1) / 2 + 0.5 : act.ax, cz = big ? (big.z0 + big.z1) / 2 + 0.5 : act.az;
+    const r = big ? Math.min(Math.max(big.x1 - big.x0, big.z1 - big.z0) * 0.55 + 2, B.H * 1.5) : B.H * 0.4 + 6, gy = big ? big.y0 : this.terrainBelow(cx, cz);
+    const top = big ? Math.min(big.top, gy + B.H * 3) : gy + B.H * 1.6;
+    this.krakens.push({ cx, cz, gy, r, h: Math.max(B.H * 0.8, top - gy + 3), w: B.H * 0.2 + 1, t: 0, life: act.S, a0: g.rng() * 6.283, st: big });
+    g.audio.boom(0.9); g.shake(0.8);
+  }
+  krakenTick(act, b0, b1) {
+    const K = this.krakens[this.krakens.length - 1], g = this.g, B = this.base(), o = this.opt;
+    if (!K) return;
+    eachShot(b0, b1, 18, (k) => {
+      const u = k / 18;
+      o.impulse = launch(B.H * 1.2 + 8); o.debris = 40; o.spare = false; o.blast = 0; o.quiet = k % 3 !== 0;
+      for (let i = 0; i < 5; i++) {
+        const a = K.a0 + (i / 5) * 6.283, ca = Math.cos(a), sa = Math.sin(a), bx = K.cx + ca * K.r, bz = K.cz + sa * K.r;
+        o.dx = -ca; o.dz = -sa; g.lastHit.dx = -ca; g.lastHit.dz = -sa;
+        if (u < 0.25) g.destruction.sphere(bx, K.gy + 1, bz, B.R * 0.7, B.P * 1.2, o); // bursting out of the ground
+        else if (u < 0.6) { const y = K.gy + K.h * (0.25 + 0.6 * ((u - 0.25) / 0.35)); g.destruction.capsule(bx, y, bz, K.cx + ca * K.r * 0.3, y, K.cz + sa * K.r * 0.3, B.R * 0.45, B.P * 1.3, o); } // coiling round, squeezing in
+        else { o.dy = -0.6; g.destruction.sphere(K.cx + ca * K.r * 0.55, K.gy + 1 + B.R * 0.5, K.cz + sa * K.r * 0.55, B.R * 1.05, B.P * 1.6, o); o.dy = 0.15; } // down: the foundations go
+      }
+      o.quiet = false;
+      if (K.st && u >= 0.6) { g.stability.weaken(K.st, 0.15 * clamp((0.3 * g.monster.h ** 3) / Math.max(200, K.st.remaining), 0.1, 1)); g.onShove(g.monster, K.cx, K.cz, 0, 0, 2); }
+      g.shake(0.2);
+    });
+  }
+
   // Starts a move. heavy = the slow, strong version.
   use(moveId, heavy) {
     const g = this.g, m = g.monster;
     if (this.act || this.cool > 0) return;
     if (g.fly) { this.flyFire(heavy); return; }
-    if (!m.onGround && !m.cling && g.progress.species !== 'jet') return; // no attacks in mid-jump (but while hanging on a wall); the aircraft is always in the air
-    const list = movesFor(g.progress.species), move = list.find((x) => x.id === moveId) ?? list[0];
+    const sp = g.progress.species;
+    if (sp === 'tentacle' && (m.under || m.pose.emerge < 0.9)) { this.queued = { moveId, heavy }; m.surface(); return; } // up out of the ground first
+    if (!m.onGround && !m.cling && !airborne(sp)) return; // no attacks in mid-jump (but while hanging on a wall); aircraft and helicopter are always in the air
+    const list = movesFor(sp), move = list.find((x) => x.id === moveId) ?? list[0];
     const v = heavy ? move.heavy : move.light, aim = g.aim;
     // Tank, excavator and aircraft keep their course: only the upper part turns towards the target.
-    if ((!tracked(g.progress.species) && g.progress.species !== 'jet') || v.root) m.faceTo(aim.x, aim.z);
+    if ((!tracked(sp) && !airborne(sp)) || v.root) m.faceTo(aim.x, aim.z);
     this.side = -this.side;
     // Bigger creatures take a little longer to wind up: more weight to move.
     const slow = 1 + m.stage * 0.035;
-    this.act = { move, v, heavy, t: 0, W: v.wind * slow, S: v.strike, R: v.recover * slow, ax: aim.x, ay: aim.y, az: aim.z, heading: m.heading, side: this.side, begun: false, hit: false, landed: false };
+    this.act = { move, v, heavy, t: 0, W: v.wind * slow, S: v.strike, R: v.recover * slow, ax: aim.x, ay: aim.y, az: aim.z, heading: m.heading, side: this.side, begun: false, hit: false, landed: false, rem: g.world.remaining };
+    if (heavy) g.emote(v.cutIn ? 'menace' : 'alert'); // the tentacle's "!" before a heavy blow, its ゴゴゴ before the greatest
+    if (v.cutIn) { g.hud.cutIn(); g.hitStop = Math.max(g.hitStop, 0.3); g.audio.roar(m.stage); } // the world holds its breath
     g.emit('tool', heavy ? 'heavy' : 'light');
     g.stat(heavy ? 'heavy' : 'light');
     if (heavy) g.audio.whoosh();
@@ -574,7 +1023,7 @@ export class Tools {
   updateAct(dt) {
     const g = this.g, m = g.monster, a = this.act, v = a.v, t0 = a.t;
     a.t += dt;
-    if (v.root) m.heading = a.heading; else if (!tracked(g.progress.species) && g.progress.species !== 'jet') m.faceTo(g.aim.x, g.aim.z);
+    if (v.root) m.heading = a.heading; else if (!tracked(g.progress.species) && !airborne(g.progress.species)) m.faceTo(g.aim.x, g.aim.z);
     const A = ease(Math.min(1, a.t / a.W)), b = clamp((a.t - a.W) / a.S, 0, 1), c = clamp((a.t - a.W - a.S) / a.R, 0, 1);
     v.pose(m.pose.j, m.pose, A, b, c, a);
     if (a.t < a.W) { if (v.windTick && g.rng() < 0.6) v.windTick(this, a); return; }
@@ -584,7 +1033,8 @@ export class Tools {
     if (!a.hit && b >= (v.hitAt ?? 0.5)) { a.hit = true; v.hit?.(this, a); }
     if (a.t >= a.W + a.S + a.R) {
       v.end?.(this, a);
-      if (this.held) this.release(1, false);
+      if (a.heavy && g.world.remaining === a.rem) g.emote('sweat'); // all that effort, and nothing gave way
+      if (this.held && g.progress.species !== 'chopper') this.release(1, false); // the helicopter's load stays on its rope
       this.act = null;
       this.cool = 0.05;
     }
@@ -871,13 +1321,14 @@ export class Tools {
   // a garden gnome; how big it may be depends on the creature), otherwise a lump torn out of whatever the
   // hand reaches (a piece of a building), and if there is nothing at all, a lump of the ground underfoot.
   // The creature never comes away empty-handed.
-  grab(x, y, z, r) {
-    const g = this.g, w = g.world, m = g.monster;
+  // cx/cz: where to look round for an object (default: the creature itself; the helicopter's hook looks where it is lowered).
+  grab(x, y, z, r, cx, cz) {
+    const g = this.g, w = g.world, m = g.monster, hooked = cx !== undefined;
     if (this.held) return;
     const fits = (st) => st && st.grabbable && st.remaining > 3 && Math.max(st.x1 - st.x0, st.z1 - st.z0, st.top - (st.y0 ?? 0)) < r * 5 + 6;
     // Look around for an object: the nearest one within a good arm's length.
     let obj = null, best = 1e9, ox = 0, oz = 0, last = 0;
-    const R = Math.ceil(m.h * 1.3 + 6), mx = Math.floor(m.x), mz = Math.floor(m.z);
+    const R = Math.ceil(m.h * (hooked ? 0.5 : 1.3) + 6), mx = Math.floor(hooked ? cx : m.x), mz = Math.floor(hooked ? cz : m.z);
     for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) {
       const d = dx * dx + dz * dz;
       if (d >= best || d > R * R) continue;
@@ -894,7 +1345,7 @@ export class Tools {
       // Small things come up whole.
       const st = obj, ax = ox, az = oz, span = Math.max(st.x1 - st.x0, st.z1 - st.z0) + 2;
       x = ox + 0.5; z = oz + 0.5;
-      m.faceTo(x, z);
+      if (!hooked) m.faceTo(x, z);
       cells = g.bodies.reserve((span * 2 + 1) ** 2 * (st.top + 1));
       for (let dz = -span; dz <= span; dz++) for (let dx = -span; dx <= span; dx++) {
         const cx = w.wrap ? (ax + dx) & w.mx : ax + dx, cz = w.wrap ? (az + dz) & w.mz : az + dz;
@@ -932,7 +1383,8 @@ export class Tools {
     if (n < 3) n = lump(x, y, z, true); // a piece of the building within reach
     if (n < 3) { // nothing built: a lump of the ground in front of the feet
       const o = this.at(this.hp, 0, 0.55);
-      x = o[0]; z = o[2]; y = w.heightBelow(x, z, m.y + m.h * 0.5) - r * 0.35;
+      if (hooked) { x = cx; z = cz; y = w.heightBelow(x, z, w.sy - 1) - r * 0.35; }
+      else { x = o[0]; z = o[2]; y = w.heightBelow(x, z, m.y + m.h * 0.5) - r * 0.35; }
       n = lump(x, y, z, false);
     }
     if (n < 3) return;
@@ -958,8 +1410,14 @@ export class Tools {
   }
 
   stomp() {
-    const g = this.g;
-    if (g.fly || this.act || !g.monster.jump()) return;
+    const g = this.g, m = g.monster, sp = g.progress.species;
+    if (sp === 'chopper' || g.fly) return; // the helicopter's up and down are held, not pressed
+    if (sp === 'tentacle') { // the big button: down into the ground or up out of it
+      if (this.act || !(m.under ? m.surface() : m.dive())) return;
+      g.emit('ability', 'stomp');
+      return;
+    }
+    if (this.act || !m.jump()) return;
     g.emit('ability', 'stomp');
     g.audio.whoosh();
   }
@@ -1021,7 +1479,16 @@ export class Tools {
     if (this.held) {
       const b = this.held;
       if (b.dead) this.held = null;
-      else if (g.progress.species !== 'dino') { b.pos[0] = m.x; b.pos[1] = m.y + m.h * 1.15 + b.radius * 0.6; b.pos[2] = m.z; }
+      else if (g.progress.species !== 'dino' && g.progress.species !== 'chopper') { b.pos[0] = m.x; b.pos[1] = m.y + m.h * 1.15 + b.radius * 0.6; b.pos[2] = m.z; }
+    }
+    this.updateRope(dt);
+    this.updateVortices(dt);
+    for (let i = this.krakens.length - 1; i >= 0; i--) if ((this.krakens[i].t += dt) > this.krakens[i].life + 0.8) this.krakens.splice(i, 1);
+    // An attack pressed below the ground: the tentacle comes up, then it strikes.
+    if (this.queued && g.progress.species !== 'tentacle') this.queued = null;
+    if (this.queued && !this.act) {
+      if (m.under) m.surface();
+      else if (m.pose.emerge > 0.9) { const q = this.queued; this.queued = null; this.use(q.moveId, q.heavy); }
     }
 
     for (let i = this.marks.length - 1; i >= 0; i--) {
@@ -1079,6 +1546,7 @@ export class Tools {
             if (!n || p.pierce <= 0) { dead = true; if (p.blast) g.explode(p.x, p.y, p.z, p.blast, p.power + 8); }
           } else if (p.kind === 'rocket' || p.kind === 'mortar') {
             g.explode(p.x, p.y, p.z, p.radius, p.power);
+            if (p.ink) this.inkBurst(p);
             if (p.fire) { g.fire.heatSphere(p.x, p.y, p.z, p.radius * 2.5, 8, 160); for (let k = 0; k < 4; k++) g.fire.spot(p.x + (g.rng() - 0.5) * p.radius * 2, p.y, p.z + (g.rng() - 0.5) * p.radius * 2, 2, 6 + g.rng() * 6); }
             dead = true;
           } else {
@@ -1101,7 +1569,55 @@ export class Tools {
       out[o++] = rk ? Math.atan2(p.vx, p.vz) : time * 3; out[o++] = rk ? -Math.atan2(p.vy, Math.hypot(p.vx, p.vz)) : d && p.stuck ? 0 : time * 5;
       if (d) { out[o++] = 0.2; out[o++] = blink ? 0.9 : 0.5; out[o++] = 1; out[o++] = blink ? 1 : 0.6; }
       else if (rk) { out[o++] = 0.9; out[o++] = 0.9; out[o++] = 0.95; out[o++] = 0; }
+      else if (p.ink) { out[o++] = 0.3; out[o++] = 0.12; out[o++] = 0.42; out[o++] = 0.2; }
       else { out[o++] = 0.15; out[o++] = 0.15; out[o++] = 0.18; out[o++] = 0; }
+    }
+    return this.writeGear(out, o);
+  }
+
+  // One box from a to b, w thick (cube instances are turned by yaw and tumble only, which is all a rope or an arm needs).
+  stick(out, o, ax, ay, az, bx, by, bz, w, r, g, b, em = 0) {
+    const dx = bx - ax, dy = by - ay, dz = bz - az, len = Math.hypot(dx, dy, dz) || 0.01;
+    out[o++] = (ax + bx) / 2; out[o++] = (ay + by) / 2; out[o++] = (az + bz) / 2;
+    out[o++] = w; out[o++] = w; out[o++] = len;
+    out[o++] = Math.atan2(dx, dz); out[o++] = -Math.atan2(dy, Math.hypot(dx, dz));
+    out[o++] = r; out[o++] = g; out[o++] = b; out[o++] = em;
+    return o;
+  }
+
+  // The helicopter's rope with hook or wrecking ball, and the five tentacles of the awakening.
+  writeGear(out, o) {
+    const g = this.g, m = g.monster, size = g.world.wrap ? g.world.sx : 0, B = this.base();
+    const ax = m.x, ay = m.y + m.h * 0.1, az = m.z, w = 0.25 + m.h * 0.012;
+    let end = null;
+    if (this.rope) end = [ax + wrapDelta(this.rope.x - ax, size), this.rope.y, az + wrapDelta(this.rope.z - az, size)];
+    else if (this.hook && this.act === this.hook) { // on its way down
+      const a = this.hook, k = clamp((a.t - a.W) / (a.S * 0.9), 0, 1);
+      end = [ax + wrapDelta(a.hx - ax, size) * k, ay + (a.hy - ay) * k, az + wrapDelta(a.hz - az, size) * k];
+    }
+    if (end) {
+      o = this.stick(out, o, ax, ay, az, end[0], end[1], end[2], w, 0.16, 0.16, 0.18);
+      if (this.rope?.ball) { const r = this.rope.r * 1.8; o = this.stick(out, o, end[0], end[1] - r * 0.5, end[2], end[0], end[1] + r * 0.5, end[2], r, 0.3, 0.31, 0.35); o = this.stick(out, o, end[0] - r * 0.6, end[1], end[2], end[0] + r * 0.6, end[1], end[2], r * 0.82, 0.26, 0.27, 0.3); }
+      else if (!this.held) o = this.stick(out, o, end[0], end[1] - w * 3, end[2], end[0], end[1] + w, end[2], w * 3, 0.85, 0.65, 0.1); // the hook
+    }
+    for (const K of this.krakens) {
+      const u = K.t / K.life, rise = ease(clamp(u / 0.25, 0, 1)), coil = ease(clamp((u - 0.2) / 0.4, 0, 1)), sink = ease(clamp((u - 0.6) / 0.4, 0, 1)) + Math.max(0, K.t - K.life) / 0.8;
+      const N = 10, P = (i, s, c, out3) => {
+        const a = K.a0 + (i / 5) * 6.283, ca = Math.cos(a), sa = Math.sin(a), inward = K.r * (0.1 + 0.8 * s * s) * c, swirl = Math.sin(s * 4 + K.t * 5 + i) * K.r * 0.1 * (1 + c);
+        out3[0] = K.cx + ca * (K.r - inward) - sa * swirl; out3[1] = K.gy + K.h * s * rise * 1.05 - sink * K.h * 1.1; out3[2] = K.cz + sa * (K.r - inward) + ca * swirl;
+        return out3;
+      };
+      for (let i = 0; i < 5; i++) {
+        const a = K.a0 + (i / 5) * 6.283, ca = Math.cos(a), sa = Math.sin(a);
+        for (let k = 0; k < N; k++) {
+          const p = P(i, k / N, coil, this.pa), q = P(i, (k + 1) / N, coil, this.pb);
+          if (q[1] < K.gy - 1) continue; // still (or again) below the ground
+          const ww = K.w * (1 - 0.7 * (k / N)) * Math.min(1, rise * 2);
+          o = this.stick(out, o, p[0], p[1], p[2], q[0], q[1], q[2], ww, 1, 0.52, 0.38, 0.27);
+          o = this.stick(out, o, p[0] + ca * ww * 0.3, p[1], p[2] + sa * ww * 0.3, q[0] + ca * ww * 0.3, q[1], q[2] + sa * ww * 0.3, ww * 0.8, 0.76, 0.25, 0.13, 0.14); // the dark back, facing out
+          if (k % 2 === 0) o = this.stick(out, o, p[0] - ca * ww * 0.45, p[1], p[2] - sa * ww * 0.45, (p[0] + q[0]) / 2 - ca * ww * 0.45, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2 - sa * ww * 0.45, ww * 0.45, 1, 0.78, 0.7, 0.24); // a sucker, facing in
+        }
+      }
     }
     return o;
   }

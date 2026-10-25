@@ -1,6 +1,6 @@
 # Kaputtmacher
 
-Ein 3D-Voxel-Spiel im Browser, in dem man als Monster, Roboter, Panzer oder Flieger eine detailliert gebaute Welt zerlegt. Es gibt kein Ziel, keine Gegner, kein Verlieren – nur Zerstörung, die sich wuchtig anfühlt.
+Ein 3D-Voxel-Spiel im Browser, in dem man als Monster, Roboter, Panzer, Flieger, Hubschrauber oder Tentakel eine detailliert gebaute Welt zerlegt. Es gibt kein Ziel, keine Gegner, kein Verlieren – nur Zerstörung, die sich wuchtig anfühlt.
 
 Diese README hat zwei Teile: [Teil 1](#teil-1-das-spiel) beschreibt das Spiel und seine Absicht, [Teil 2](#teil-2-projektüberblick-für-eine-ki) ist ein Projektüberblick für eine KI (oder einen Menschen), die am Code weiterarbeiten soll.
 
@@ -39,7 +39,7 @@ Dann `http://localhost:8000` öffnen. Es wird nichts installiert und nichts geba
 | Gamepad | wird automatisch erkannt (Trigger rechts/links) |
 | Handy, Tablet | Steuerknüppel links; rechts Knöpfe für Springen, schnellen und starken Angriff und Angriffswechsel; alles Übrige im Menü ☰ oben rechts. Ins Bild tippen zielt (kurz = schnell, halten = stark) |
 
-**Sechs Figuren, sechs Arten zu zerstören.** Jede hat vier Angriffe (ab Stufe 1, 3, 5, 7), jeden in einer schnellen und einer starken Fassung:
+**Acht Figuren, acht Arten zu zerstören.** Jede hat vier Angriffe (ab Stufe 1, 3, 5, 7), jeden in einer schnellen und einer starken Fassung:
 
 | Figur | Angriffe |
 |---|---|
@@ -49,8 +49,14 @@ Dann `http://localhost:8000` öffnen. Es wird nichts installiert und nichts geba
 | 🪖 Panzer | Kanone, Mörser, Rammen, Flammenwerfer und Bunkerbrecher |
 | 🚜 Bagger | Schaufel (Graben, Schaufelschlag), Hydraulikhammer (Meißeln, Durchbruch), Schwenken (Schwenkhieb, Karussell), Auskippen und Planierschild – alles am Ende seines Arms; er schießt und klettert nicht |
 | ✈️ Flieger | Bordkanone und Bomben, Raketen, Bombenteppich, Brandbomben und Riesenbombe |
+| 🚁 Hubschrauber | Bordkanone (Feuerstoß, Kreisflug), Raketen (Paar, Salve), Seilwinde (Haken, der Dinge anhebt und fallen lässt; Abrissbirne), Rotor (Rotorsäge, Tornado) |
+| 🐙 Tentakel | Peitsche (Schnalzer, Wirbel), Umschlingen (Zudrücken, Umreißen), Tinte (Strahl, Bombe), Erwachen (Bodenwelle; fünf Tentakel ziehen ein Gebäude in die Tiefe) |
 
 Der Flieger ist immer in Bewegung: A/D lenkt, W/S steigt und sinkt, Umschalt ist der Nachbrenner. Er fliegt durch Häuserschluchten und durch Gebäude hindurch.
+
+Der Hubschrauber schwebt: W/S vor und zurück, A/D dreht die Ansicht, Q/E gleitet seitwärts; solange die Leertaste (am Handy der 🔼-Knopf) gehalten wird, steigt er, sonst sackt er von selbst ab. Die Nase zeigt zum Ziel.
+
+Das Tentakel läuft nicht: Es reist unter der Erde (den Steuerknüppel durchdrücken, oder die Leertaste bzw. der 🕳️-Knopf) und taucht zum Angreifen wieder auf, auch unter einem Haus mitten durch die Stockwerke. Steht es unter der Erde still, sieht man nichts; bewegt es sich, hebt es den Boden über sich an, ab Stufe 3 für immer. Es hat kein Gesicht; über seiner Spitze ploppen Manga-Zeichen mit Tuscherand und Katakana-Lautmalerei auf (ゴゴゴ, ドン!, ズズズ, Zornesader, Schweißtropfen, Rotzblase …).
 
 **Zehn Welten,** frei wählbar: die Wolkenkratzer-Stadt als Hauptszenario (Start im Zentralpark, Türme bis 230 m), dazu Bauklotz-Zimmer, Garten, Wohnstraße, Spielzeugland, Dorf, Parklandschaft, Stadt, Fabrik und ein gewürfelter Planet mit Schiebereglern. Große Welten sind Planeten ohne Rand.
 
@@ -58,7 +64,7 @@ Der Flieger ist immer in Bewegung: A/D lenkt, W/S steigt und sinkt, Umschalt ist
 
 **Die Welt reagiert:** Beim ersten Schaden kommt ein Polizeiauto, dann mehr, dazu Reporter im Hubschrauber, die Feuerwehr, sobald es brennt, und schließlich das Militär mit Hubschraubern und Kampffliegern. Niemand kann dem Kaputtmacher etwas anhaben; alle lassen sich umwerfen oder vom Himmel holen. Die Alarmstufe (Sterne) steigt mit der Zeit und ebbt wieder ab, wenn man nichts zerstört.
 
-**Erfolge:** 139 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der sechs Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
+**Erfolge:** 143 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der acht Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
 
 Das vollständige Konzept mit allen Zahlen steht in [KONZEPT.md](KONZEPT.md).
 
@@ -115,7 +121,8 @@ public/
 | `fire.js` | Hitze und Flammpunkte je Material (`heat`, `heatSphere`), brennende Voxel, langsame Ausbreitung, Ruß, Brandherde, Staubwolken, Löschen (`douse`) |
 | `reactions.js` | Reaktionen zerstörter Dinge: Hydranten-Fontänen, Wasserschwall, Funken an Lampen; Wasser löscht Feuer; Munitionsdepot; der Vulkan erwacht und wirft Lavabomben |
 | `sweeper.js` | Entfernt lose Trümmer nach 30 s, lässt Haufen ab 14 Würfeln stehen |
-| `monster.js` | Gelenkmodelle der sechs Figuren je Stufe, Körpersprache (`locomotion`), Steuerung am Boden und in der Luft (`Monster`) |
+| `monster.js` | Gelenkmodelle der acht Figuren je Stufe (das Tentakel als Kette aus 14 Gliedern, dazu seine Emoticons), Körpersprache (`locomotion`, `reachFor` für den Arm des Tentakels), Steuerung am Boden, in der Luft (`flyPlane`), schwebend (`hover`) und unter der Erde (`burrow`) (`Monster`) |
+| `heave.js` | Der Boden über dem reisenden Tentakel: hebt echte Würfel in einer mitwandernden Kuppel an, ab Stufe 3 bleibend, und lässt jeden zehnten Pflasterstein brechen |
 | `tools.js` | Angriffe: Tabelle `MOVES` je Figur (leicht/schwer, Pose, Wirkung) und die Bausteine dafür (`blow`, `shock`, `bolt`, `ray`, `rocket`, `bomb`, `grab` …) |
 | `actors.js` | Bewohner und Einsatzkräfte: Polizeiautos, Feuerwehr, Reporter-, Lösch- und Militär-Hubschrauber, Kampfflieger; Alarmstufe |
 | `frail.js` | Standfestigkeit schlanker Bauten: Was mit dem Schwerpunkt neben seiner Standfläche hängt, kippt |
@@ -198,7 +205,7 @@ Bewusst belassen: `window.game` und die Test-Parameter. Beides gibt nur Zugriff 
 ### Rezepte
 
 - **Neuer Angriff:** in `tools.js` einen Eintrag in `MOVES.<figur>` anlegen: `{ id, icon, stage, light, heavy }`. Jede Fassung hat `wind`, `strike`, `recover` (Sekunden), `pose(j, p, a, b, c, act)` für die Gelenke und eine oder mehrere Wirkungen: `begin`, `tick` (jeden Schritt während des Schlags), `hit` (einmal bei `hitAt`), `end`. `root: true` hält die Füße fest.
-- **Neue Figur:** in `monster.js` Eintrag in `SPECIES`, Modell in `buildModel` (Teile mit Drehpunkt und Elternteil), Körpersprache in `locomotion`; in `tools.js` eine Angriffsliste.
+- **Neue Figur:** in `monster.js` Eintrag in `SPECIES`, Modell in `buildModel` (Teile mit Drehpunkt und Elternteil), Körpersprache in `locomotion`; in `tools.js` eine Angriffsliste; in `achievements.js` Name und Symbol (`CREATURES`); eine eigene Bewegung bekommt in `Monster.update` einen Zweig und in `main.js` (`step`) ihre Steuerung, das Selbstspiel in `autopilot.js` einen Zweig. Den Schaden an den anderen Figuren messen (`income`, `audit` in `tools/web/test.js`).
 - **Neue Welt:** in `worldgen.js` eine Bauplan-Funktion (liefert eine `World`) und einen Eintrag in `WORLDS`. Für Städte genügt ein neuer Parametersatz für `town()`.
 - **Neues Material oder neuer Voxel-Typ:** `materials.js`; höchstens 127 Typen.
 - **Neue Welt:** ein Eintrag in `WORLDS` (`worldgen.js`) mit Gewichten je Grundstücksart; neue Grundstücksarten als Funktion in `LOTS` (`landmarks.js`), dazu ein Eintrag in `WORLD_NAMES` (`achievements.js`) und in der Liste von `tools/smoke.mjs`. Jedes Bauteil muss zusammenhängen und den Boden berühren, sonst hängt es in der Luft, bis es angestoßen wird.

@@ -1,0 +1,1 @@
+Zum Hubschrauber: Die Sprungtaste sollte ihn steigen lassen, absacken sollte er selbst wieder, wenn man die Sprungtaste nicht drückt. Ein bisschen die Steuerung wie unter Wasser, nur dass man die Sprungtaste auch gedrückt halten darf.

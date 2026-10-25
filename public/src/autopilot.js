@@ -7,7 +7,7 @@ import { clamp, wrapDelta } from './math.js';
 import { WORLDS } from './worldgen.js';
 
 // Attacks that work from a distance; all others need the creature to stand next to its target.
-const RANGED = new Set(['breath', 'laser', 'rockets', 'orbital', 'gun', 'mortar', 'bunker']);
+const RANGED = new Set(['breath', 'laser', 'rockets', 'orbital', 'gun', 'mortar', 'bunker', 'guns', 'ink', 'deep']);
 const WORLD_TIME = 12 * 60; // seconds after which the autopilot moves on even if a world is not finished
 const v3 = [0, 0, 0];
 
@@ -69,7 +69,7 @@ export class Autopilot {
 
   // Called once per frame while idle mode is on, after the real input has been read.
   update(dt) {
-    const g = this.g, inp = g.input, m = g.monster, size = g.cam.wrap, jet = g.progress.species === 'jet';
+    const g = this.g, inp = g.input, m = g.monster, size = g.cam.wrap, sp = g.progress.species, jet = sp === 'jet';
     inp.forward = 0; inp.turn = 0; inp.lift = 0; inp.sprint = false; inp.jumpHeld = true;
     // Hanging on a wall: climb up it. On the roof the walk goes on.
     if (m.cling) {
@@ -114,6 +114,31 @@ export class Autopilot {
     if (g.project(this.px, this.py, this.pz, v3)) { inp.aimX = clamp(v3[0], 4, innerWidth - 4); inp.aimY = clamp(v3[1], 4, innerHeight - 4); }
     this.cool -= dt;
 
+    if (sp === 'chopper') {
+      // The helicopter hovers in to a little way off the target and fires; the winch and the rotor want it close.
+      // With the wrecking ball out it keeps flying on past the building, so that the ball swings into it.
+      inp.jumpHeld = m.y < this.py + m.h * 0.4; // up to a little above the spot it works on, then let it sink
+      const near = ranged ? m.h * 2.2 + 20 : m.h * 0.7 + 4, ball = !!g.tools.rope?.ball;
+      inp.forward = ball ? (facing ? 1 : 0.3) : dist > near ? (facing ? 1 : 0.3) : dist < near * 0.4 ? -0.5 : 0;
+      inp.sprint = facing && dist > near * 3;
+      if (this.cool <= 0 && !g.tools.act && dist < near * 1.6 && facing) {
+        if (g.tool === 'winch') { if (g.tools.held && this.rnd() < 0.6) inp.firePressed = true; else if (!g.tools.held && !ball) { if (this.rnd() < 0.5) inp.heavyPressed = true; else inp.firePressed = true; } }
+        else if (this.rnd() < 0.35) inp.heavyPressed = true; else inp.firePressed = true;
+        this.cool = 0.4 + this.rnd() * 0.6;
+      }
+      return;
+    }
+    if (sp === 'tentacle') {
+      // Down into the ground and off to the target (leaning on the stick sends it down), up and strike once there.
+      const reach = ranged ? m.h * 2.4 + 16 : m.h * 1.8 + 3;
+      if (dist > reach) inp.forward = facing ? 1 : 0.3;
+      else if (this.cool <= 0 && !g.tools.act && facing) {
+        if (this.rnd() < 0.4) inp.heavyPressed = true; else inp.firePressed = true;
+        this.cool = 0.35 + this.rnd() * 0.6;
+      }
+      inp.jumpHeld = false;
+      return;
+    }
     if (jet) {
       // The aircraft circles in on the target at a little above roof height, firing ahead and bombing when close.
       inp.forward = clamp((Math.min(this.target.top + 22 + m.h, g.world.sy + 40) - m.y) / 20, -1, 1);

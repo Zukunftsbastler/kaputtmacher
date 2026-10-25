@@ -9,7 +9,7 @@ export const STATS = ['vox', 'glass', 'wood', 'stone', 'steel', 'leaf', 'buildin
   'jumps', 'flips', 'pounds', 'roars', 'shoves', 'dist', 'people', 'light', 'heavy', 'power', 'idle', 'time', 'spans', 'eruptions', 'avalanches'];
 
 const fmt = (n) => (n >= 1e6 ? (n / 1e6).toLocaleString('de-DE') + ' Mio.' : n.toLocaleString('de-DE'));
-const CREATURES = { dino: ['🦖', 'Dino'], gorilla: ['🦍', 'Gorilla'], robot: ['🤖', 'Roboter'], tank: ['🪖', 'Panzer'], jet: ['✈️', 'Flieger'], digger: ['🚜', 'Bagger'] };
+const CREATURES = { dino: ['🦖', 'Dino'], gorilla: ['🦍', 'Gorilla'], robot: ['🤖', 'Roboter'], tank: ['🪖', 'Panzer'], jet: ['✈️', 'Flieger'], digger: ['🚜', 'Bagger'], chopper: ['🚁', 'Hubschrauber'], tentacle: ['🐙', 'Tentakel'] };
 const WORLD_NAMES = { skyline: ['🌆', 'Wolkenkratzer-Stadt', 'Skyline-Schreck'], blocks: ['🧱', 'Bauklotz-Zimmer', 'Aufräumen? Nö!'],
   village: ['🏘️', 'Dorf', 'Dorfschreck'], site: ['🚧', 'Großbaustelle', 'Bauherr des Chaos'], city: ['🏙️', 'Stadt', 'Stadtbummel'], funfair: ['🎡', 'Vergnügungspark', 'Kirmesschreck'], harbour: ['⚓', 'Hafen', 'Leinen los'], giants: ['🗿', 'Welt der Riesenbauten', 'Riesentöter'], primeval: ['🦕', 'Urzeit-Nekropole', 'Holzfäller der Urzeit'], babel: ['🏛️', 'Babel', 'Sprachverwirrung'], neon: ['🌃', 'Neon-Megacity', 'Kurzschluss'], fortress: ['🏰', 'Festung Titan', 'Festungsknacker'], skyyard: ['☁️', 'Wolkenwerft', 'Luftschlösser'], castle: ['🏰', 'Burg und Dorf', 'Raubritter'], winter: ['⛄', 'Winterwelt', 'Tauwetter'], airport: ['🛫', 'Flughafen', 'Flug gestrichen'], reef: ['🐠', 'Stadt unter dem Meer', 'Seeungeheuer'], spaceport: ['🚀', 'Raumhafen', 'Fehlstart'], factory: ['🏭', 'Fabrik', 'Feierabend'], random: ['🎲', 'Würfelwelt', 'Glückswurf'] };
 
@@ -39,7 +39,7 @@ for (const [id, [icon, name]] of Object.entries(CREATURES)) {
   ACHIEVEMENTS.push({ id: `stage:${id}:5`, icon, name: `${name}-Lehrling`, stat: 'stage:' + id, n: 5, text: `Stufe 5 mit dem ${name} erreicht` });
   ACHIEVEMENTS.push({ id: `stage:${id}:9`, icon, name: `${name}-Meister`, stat: 'stage:' + id, n: 9, text: `Stufe 9 mit dem ${name} erreicht` });
 }
-tiers('stageAll', '🎪', (n) => `Stufe ${n} mit allen sechs Figuren erreicht`, [[3, 'Monsterzoo'], [7, 'Monsterparade']]);
+tiers('stageAll', '🎪', (n) => `Stufe ${n} mit allen acht Figuren erreicht`, [[3, 'Monsterzoo'], [7, 'Monsterparade']]);
 tiers('spans', '🌉', (n) => `${n} Brücken, Bahnen und andere Verbindungen zum Absturz gebracht`, [[1, 'Brücke weg'], [25, 'Netzausfall']], 'Eine Brücke, Bahn oder andere Verbindung zum Absturz gebracht');
 tiers('eruptions', '🌋', (n) => `${n} Vulkane zum Ausbruch gebracht`, [[1, 'Feuerberg']], 'Einen Vulkan zum Ausbruch gebracht');
 tiers('avalanches', '🏔️', (n) => `${n} Lawinen ausgelöst`, [[1, 'Lawinengefahr']], 'Eine Lawine ausgelöst');

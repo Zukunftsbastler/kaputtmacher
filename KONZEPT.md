@@ -4,6 +4,12 @@ Status: in Umsetzung. Dieser Entwurf nennt überall konkrete Zahlen; sie entspre
 
 **Nachtrag 3 zu Entwurf 12:** Heimatwelten für alle fünf Figuren (7.4b); Klettern mit festen Griffen für Hände und Füße, doppelt so schnell (4.2).
 
+**Nachtrag 18 zu Entwurf 12:** Unter der Erde ist das Tentakel unsichtbar; wenn es sich bewegt, hebt es die echten Würfel über sich in einer mitwandernden Kuppel an, ab Stufe 3 bleibt die Erde oben liegen, über einem Hohlraum; etwa jeder zehnte angehobene Pflasterstein und jeder zehnte Würfel von dem, was darauf steht, bricht. Die Emoticons sind jetzt Manga-Zeichen mit Tuscherand und Katakana-Lautmalerei. Der Hubschrauber schießt Raketen (Stufe 3); der Abwind ist gestrichen, die Rotorsäge ist mit dem Tornado auf Stufe 7 gewandert und viel stärker (9.4).
+
+**Nachtrag 17 zu Entwurf 12:** Hubschrauber und Tentakel sind gebaut, als siebte und achte Figur mit eigenen Erfolgen und Heimatwelten (Hafen, Stadt unter dem Meer). Das Tentakel hat kein Gesicht, sondern Manga-Emoticons über der Spitze und die Farben Korallen-Orange, gebranntes Orange-Rot und Pfirsich; der Hubschrauber steigt, solange die Sprungtaste gehalten wird, und sackt sonst von selbst ab; die Angriffe beider gehen vom unscheinbarsten zum spektakulärsten und sind am Schaden der anderen Figuren ausgerichtet (9.4).
+
+**Nachtrag 16 zu Entwurf 12:** Entwurf für zwei neue Figuren mit eigener Bewegung und eigenen Angriffen: den Hubschrauber, der schwebt, Dinge anhebt und Wirbelstürme macht, und ein Tentakel im Anime-Stil, das unter der Erde reist, hervorbricht und Gebäude umschlingt (9.4).
+
 **Nachtrag 15 zu Entwurf 12:** Fels wieder leichter zu brechen (Festigkeit 16 statt 40); Berg und Vulkan sehen natürlich aus: eine wellige Grundfläche mit Ausläufern und Buchten, Schluchten, die sich gewunden den Berg hinaufziehen, und eine buckelige Oberfläche (7.4, 7.4b).
 
 **Nachtrag 14 zu Entwurf 12:** Berg und Vulkan haben Wände aus gewachsenem Fels, zwölf statt drei Würfel stark und viermal so hart wie Beton, und geben nicht mehr stockwerksweise nach; im Berg wartet ein verlassenes Goldbergwerk mit Eishöhle und einem eingefrorenen Mammut, wer den Schatz hebt oder den Berg aufreißt, löst eine Lawine aus; in der Brust der Riesenstatue arbeitet eine Maschine (7.4, 7.4b, 11.4, 11.7a).
@@ -68,7 +74,7 @@ Zielspieler ist ein 5-jähriges Kind, das baut, um zu zerstören.
 
 ## 4. Der Spieler: das Monster
 
-- Dritte-Person-Ansicht von schräg hinten. Sechs Figuren: Dino, Gorilla, Roboter, Panzer, Bagger, Flieger. Sie sehen nicht nur anders aus, sie zerstören grundverschieden (Abschnitt 9).
+- Dritte-Person-Ansicht von schräg hinten. Acht Figuren: Dino, Gorilla, Roboter, Panzer, Bagger, Flieger, Hubschrauber, Tentakel. Sie sehen nicht nur anders aus, sie zerstören grundverschieden (Abschnitt 9).
 - Unverwundbar. Trümmer prallen ab.
 - Laufen zerstört bereits: Was schwächer ist als das Monster, bricht beim Durchlaufen.
 - **Flugkamera** als zweiter Modus: frei fliegen und direkt feuern. Selten gebraucht, deshalb nicht auf dem Bildschirm, sondern in den Einstellungen (oder Taste Tab). Solange sie an ist, zeigt ein Knopf mit dem Bild der Figur den Weg zurück.
@@ -127,7 +133,7 @@ Weitere Anpassungen: Vorführ-Hinweise erscheinen oben statt unten, damit sie ni
 | Sprung von der Wand | Die Sprungtaste stößt die Figur **nach oben und ein Stück nach hinten** ab (2,4 Körperhöhen hoch). Wer danach wieder nach vorn drückt, landet weiter oben erneut an der Wand; der Doppelsprung ist danach wieder frei |
 | Gewicht | Ab Stufe 3 reißen die Krallen beim Klettern jede Sekunde weiter Stücke heraus. Gibt die Wand nach, fällt die Figur |
 | Angriff | An der Wand hängend kann man zuschlagen |
-| Wer klettert | Alle Figuren außer Panzer und Flieger, auch im Selbstspiel (dort klettert die Figur einfach hinauf). An Bäumen, Laternen und Kleinkram hält sich niemand fest |
+| Wer klettert | Alle Figuren außer Panzer, Bagger, Flieger, Hubschrauber und Tentakel, auch im Selbstspiel (dort klettert die Figur einfach hinauf). An Bäumen, Laternen und Kleinkram hält sich niemand fest |
 | **Panzer** | Springt nicht, er hüpft: 0,7 Körperhöhen hoch, ohne Doppelsprung, ohne Stampfattacke, ohne Schub in der Luft und ohne Krater bei der Landung. Das reicht, um aus einer selbst gegrabenen Kuhle wieder herauszukommen |
 | Landung | Springen kann das Monster von Anfang an. Ab Stufe 2 ist jede Landung am Boden ein Stampfer – aber einer unter vielen Angriffen, nicht der stärkste: ein Krater von rund einem Drittel der Körperbreite (Radius 0,28 Körperhöhen plus 0,5 m, Stärke 3 + 0,9 × Stufe) und ein mäßiger Stoßring. Mit Stufe 1 gibt es nur eine Staubwolke. **Auf einem Dach** gibt es den Krater nur, solange die Sprungtaste bei der Landung gehalten wird |
 
@@ -180,7 +186,7 @@ Größe · detailreicheres Modell je Stufe (Rückenstacheln ab 2, Hörner ab 4, 
 
 ### 5.4 Jede Figur wächst für sich
 
-Dino, Gorilla, Roboter, Panzer, Bagger und Flieger haben jeweils eine eigene Stufe und eigene Macht. Wer mit dem Dino Stufe 7 erreicht hat, beginnt mit dem Roboter trotzdem bei Stufe 1 und schaltet dessen Angriffe einzeln frei. Alle sechs Figuren sind von Anfang an wählbar; in der Weltauswahl zeigt jede ihre Stufe. Beim Wechsel wird die Figur sofort mit ihrer eigenen Größe weitergespielt. Ein Spielstand aus der Zeit davor wird der zuletzt gespielten Figur gutgeschrieben.
+Dino, Gorilla, Roboter, Panzer, Bagger, Flieger, Hubschrauber und Tentakel haben jeweils eine eigene Stufe und eigene Macht. Wer mit dem Dino Stufe 7 erreicht hat, beginnt mit dem Roboter trotzdem bei Stufe 1 und schaltet dessen Angriffe einzeln frei. Alle sechs Figuren sind von Anfang an wählbar; in der Weltauswahl zeigt jede ihre Stufe. Beim Wechsel wird die Figur sofort mit ihrer eigenen Größe weitergespielt. Ein Spielstand aus der Zeit davor wird der zuletzt gespielten Figur gutgeschrieben.
 
 ## 6. Zähler
 
@@ -277,7 +283,7 @@ Alle Welten entstehen aus Bauplänen im Code mit festem Startwert: Wer eine Welt
 
 ### 7.4b Heimatwelten
 
-Jede der sechs Figuren hat eine Welt, die auf das zugeschnitten ist, was sie am besten kann (`landmarks3.js`). In der Weltauswahl trägt ihre Kachel das Symbol der Figur. Alle sind hoch – 180 bis 250 Würfel – und voller Schwachstellen, von denen aus ein Einsturz um sich greift.
+Jede der sechs ersten Figuren hat eine Welt, die auf das zugeschnitten ist, was sie am besten kann (`landmarks3.js`); Hubschrauber und Tentakel haben bestehende Welten als Heimat bekommen (siehe unten). In der Weltauswahl trägt ihre Kachel das Symbol der Figur. Alle sind hoch – 180 bis 250 Würfel – und voller Schwachstellen, von denen aus ein Einsturz um sich greift.
 
 | Welt | Was dort steht | Wie es fällt |
 |---|---|---|
@@ -287,6 +293,8 @@ Jede der sechs Figuren hat eine Welt, die auf das zugeschnitten ist, was sie am 
 | 🏰 Festung Titan (Panzer) | Eine **Festung in der Wüste** (`fortress.js`), in die man eindringen muss. Start auf der leeren Sandebene vor dem Tor, Dünen, Kakteen. Auf der Ebene **Vorposten** – Bunker mit Sandsäcken, hölzerne Wachtürme, Zeltlager mit Treibstofffässern und Funkmast –, die für Stufe 2 reichen. Dann ein **trockener Graben** mit einem Damm zum Tor und die **äußere Mauer** (40 Würfel hoch, sechs dick, Zinnen, Strebepfeiler) mit Rundtürmen an den Ecken und in den Seitenmitten und einem Torhaus mit Stahltor. Im Hof zwischen den Mauern stehen Reihen von **Kasernen**, **Flaktürmen**, **Bunkern**, **Radarmasten**, Lagerhallen, Hangars und **Tanklagern**, in den Ecken ein **Riesenpanzer** und ein **Riesenjet**. Dahinter die **innere Mauer** (54 Würfel), und in der Zitadelle der dreistufige **Kommandoturm** (rund 140 Würfel), ein **Riesenroboter** (rund 120 Würfel) und das **Munitionsdepot**: ein Bunker voller Granaten und Fässer hinter Panzertüren. **Jedes Geschütz** auf Türmen, Torhäusern, Flaktürmen, Vorposten und dem Kommandoturm (rund 60) ist ein Schütze: Kommt die Figur näher als 150 Würfel plus drei Körperhöhen, feuert es Leuchtspur (Maschinengewehre, drei Schuss) oder Raketen (schwere Geschütze). Wie beim Militär richtet das keinen Schaden an (außer „Militär stößt zurück“ ist an). **Ein zerstörtes Geschütz explodiert** mit seiner Munition (Radius 8, bei Raketen 10, dazu ein Feuerball und drei Nachexplosionen in der folgenden halben Sekunde); daneben stehende Geschütze gehen oft mit hoch. **Mauern, Türme und Torhäuser** sind aus **Festungsmauerwerk** (Festigkeit 22, Beton hat 10, Stahl 16). Über beiden Mauerringen steht ein **Schutzschirm** bis in den Himmel (`rampart.js`): Keine Figur kommt über eine Mauer – nicht springend, nicht kletternd, nicht fliegend; wo sie es versucht, blitzt der Schirm auf und wirft sie zurück. Durch kommt sie nur dort, wo die Mauer vor ihr aufgebrochen ist: so breit wie gut ein Fünftel ihrer Höhe nach jeder Seite und so hoch wie vier Fünftel ihrer Höhe (oder die ganze Mauer), und zwar in jeder Schicht der Mauerdicke mindestens zur Hälfte – Schutt zählt nicht. Die Schwachstelle ist das **Stahltor** (drei Platten dick): Der Panzer bricht es auf Stufe 2 mit rund fünf Kanonenschüssen auf; durch die Mauer braucht er auf Stufe 4 rund 25 bis 40 Schüsse, auf Stufe 5 und 6 drei Rammstöße. Ein blauer Leuchtstreifen auf dem Wehrgang zeigt, wo der Schirm steht; über unversehrten Mauerstücken steigen in der Nähe der Figur Funken auf. Die Vorposten stehen auf Fundamenten (vorher schwebten sie wegen eines Fehlers in zufälliger Höhe). Keine Polizei, keine Feuerwehr, kein Verkehr; es laufen Soldaten mit Helm herum | Geht im Depot das erste Fass hoch, explodiert das ganze Depot: sieben Explosionen rollen durch den Bunker, dann eine riesige (bis Radius 48) mit Zeitlupe. Die Mauern sind dick, hart und müssen aufgebrochen werden – oder das Tor |
 | ☁️ Wolkenwerft (Flieger) | Ein offenes Meer ohne Straßen, darüber **schwebende Inseln** in 50 bis 190 Würfeln Höhe mit Häuschen, Funkmast und Baum, **Felsnadeln** mit einer Insel obenauf, **Luftschiffe** an Ankermasten, und auf einem Großgrundstück ein **Luftschiffhafen**: eine große Insel mit Hangar und angedocktem Luftschiff, verbunden durch eine **Seilbahn** mit zwei Gondeln mit einer kleineren Insel | Die Inseln schweben nicht von selbst: Sie hängen an zwei leuchtenden **Schwebestrahlen** aus Triebwerken unter der Insel und an zwei **Stahlseilen** zu Ankerblöcken im Meer. Sind alle gekappt, stürzt die Insel ab. Ein Luftschiff hängt nur mit der Nase am Mast |
 | 🚧 Großbaustelle (Bagger) | Rohbau-Hochhäuser bis rund 190 Würfel: nackte Betondecken auf Stützen, oben nur noch Stützen mit herausstehendem Bewehrungsstahl, unten stellenweise ausgemauert, ein Gerüst an einer Seite und ein gelber Bauaufzug an einer anderen; Turmdrehkräne und Baustellen; **Kies- und Sandhaufen**; Baucontainer zu zweit gestapelt mit Treppe, Toilettenhäuschen, ein Zementsilo; auf einem Großgrundstück ein **Steinbruch**: ein Felsmassiv in Bermen wie eine Stufenpyramide mit Fahrweg, Findlingen und einem Brecher mit Förderband. Laufstege verbinden die Rohbauten (7.4c). Sandboden, Straßen mit Verkehr, Bauarbeiter in Warnwesten mit Helm | Die Rohbauten haben kaum Wände: Wer die Stützen eines Stockwerks wegschlägt, lässt die Decken darüber fallen. Haufen und Steinbruch sind zum Abtragen da |
+| ⚓ Hafen (Hubschrauber) | die Hafenwelt aus 7.4 mit Containern, Kränen, Schiffen und Tanklager – Lasten zum Anheben und Fallenlassen | wie dort |
+| 🐠 Stadt unter dem Meer (Tentakel) | die Unterwasserwelt aus 7.4 mit Kuppeln und Glasröhren; unter Wasser reist das Tentakel doppelt so schnell | wie dort |
 
 **Grenzen:** Das Licht der Nacht ist ein Schein, keine echte Beleuchtung: Leuchtreklamen werfen kein Licht auf ihre Umgebung, und Schatten gibt es nicht. Ein zerbrochenes Fenster wird zu dunklem Schutt. Die Hochstraßen enden an den Rändern ihres Grundstücks. In der Festung gibt es entlang der Klippen keine Laternen und geparkten Autos; Polizei und Feuerwehr fahren dort noch Autos von heute. In Urzeit und Babel gibt es ohne Einsatzkräfte auch keine Alarmsterne. Ein Zusammenhang zwischen Figur und Heimatwelt besteht außer dem Symbol nicht (kein Bonus).
 
@@ -570,6 +578,124 @@ Der Flieger steht nie still: A/D lenkt, W/S steigt und sinkt, Umschalt ist der N
 - **Wucht beim Treffer:** Staubring und Blitz, Kameraruck, Trümmerfontäne. Bei schnellen Angriffen hält die Welt 0,045 s still. Bei starken hält sie 0,09 s still und läuft danach rund 0,3 s in Zeitlupe (40 %) weiter.
 
 Spätere Kandidaten: Abrissbirne, Meteor, Tornado, schwarzes Loch, Riesenmagnet.
+
+### 9.4 Hubschrauber und Tentakel (Nachtrag 16 und 17)
+
+Zwei Figuren, die sich grundlegend von den sechs bisherigen unterscheiden: Der **Hubschrauber** ist die erste Figur, die in der Luft **stehen** kann – er schwebt, gleitet seitwärts, hebt Dinge hoch und lässt sie wieder fallen. Das **Tentakel** ist die erste Figur, die **nicht läuft**: Es reist unter der Erde, bricht hervor und greift von dort aus mit einem langen, biegsamen Arm an. Beide bleiben kindgerecht: niemand kommt zu Schaden.
+
+Grundsätze wie bei allen (9.1): vier Angriffe auf den Stufen 1, 3, 5, 7, je schnell und stark; Ausholen, dann Wirkung; Radius und Stärke nach R und P. **Die Reihenfolge geht vom unscheinbarsten zum spektakulärsten Angriff** – zuerst gibt es nur, was knabbert und knallt, zuletzt den Wirbelsturm und das Erwachen der Tiefe. **Der Schaden ist an den anderen Figuren ausgerichtet:** jeder Angriff hat sein Gegenstück bei Dino, Gorilla, Roboter oder Bagger mit ähnlichem Radius und ähnlicher Stärke (in der Tabelle genannt); was eine Figur durch Beweglichkeit oder Reichweite mehr hat, gleicht die Wertung aus (5.3). Am Handy bleibt das Schema gleich – Steuerknüppel unten links, ins Bild tippen zum Zielen (kurz = schnell, halten = stark) –, nur der große Knopf rechts bekommt bei beiden eine neue Bedeutung.
+
+#### 🚁 Hubschrauber
+
+Ein Rettungshubschrauber in Rot und Weiß mit großer Frontscheibe, Kufen, Heckausleger und Heckrotor, der Bordkanone unter der Nase, Raketenbehältern an kurzen Auslegern und der Seilwinde unter dem Bauch (sichtbar ist jeweils, was zum gewählten Angriff gehört). **Ab Stufe 3** Schiebetüren, **ab Stufe 5** ein Transporthubschrauber mit langem Rumpf und zwei Rotoren hintereinander (ohne Heckrotor, mit Laderampe), **ab Stufe 7** Stummelflügel mit Raketenbehältern und Panzerplatten, **ab Stufe 8** Leuchtstreifen. Die Rotoren drehen sich immer; er neigt sich in die Richtung, in die er gleitet, und wackelt nach einem Anstoß.
+
+**Bewegung – ganz anders als der Flieger.**
+
+| | Hubschrauber | zum Vergleich: Flieger |
+|---|---|---|
+| Stillstand | schwebt, schaukelt sacht | unmöglich |
+| Richtung | gleitet in jede Richtung, auch rückwärts und seitwärts; **die Nase dreht sich zum Zielpunkt**, nicht zur Flugrichtung | fliegt immer mit der Nase voran |
+| Höhe | **wie unter Wasser, nur mit Halten:** Solange die Sprungtaste gedrückt ist, steigt er (14 + H Würfel pro Sekunde); lässt man los, sackt er von selbst langsamer ab (5 + 0,45 H), bis er auf dem Boden oder einem Dach sitzt. Was direkt vor ihm aufragt, überfliegt er von selbst | steigt und sinkt mit W/S |
+| Trägheit | beschleunigt weich, gleitet nach dem Loslassen kurz nach | – |
+| Tempo | 18 + 0,9 H Würfel pro Sekunde, mit Umschalt das 1,6-Fache | 42 + 1,3 H |
+| Anstoßen | eine Delle (0,3 H + 1,2), ein Ruck zurück, kurzes Taumeln | ähnlich |
+| Landen | sitzt er **ab Stufe 3** auf einem Dach, ist er zu schwer dafür: Das Dach bricht ein, und er sinkt Stockwerk für Stockwerk, bis er auf Festem steht | – |
+| Rotorwind | knapp über dem Boden bläst er Staub und lose Würfel davon, ab Stufe 3 platzt das Glas direkt unter ihm (das ist vom Abwind geblieben) | – |
+
+**Steuerung:**
+
+| Aktion | Maus + Tastatur | Gamepad | Handy |
+|---|---|---|---|
+| Vor und zurück (zur Blickrichtung) | W, S | linker Stick | Steuerknüppel |
+| Ansicht drehen | A, D | linker Stick | Steuerknüppel |
+| Seitwärts gleiten | Q, E | Steuerkreuz | – |
+| Steigen (halten), Sinken (loslassen) | Leertaste | A | **🔼-Knopf**, wo sonst der Sprungknopf ist |
+| Angriffe | wie immer | wie immer | wie immer |
+
+Kein Klettern, kein Doppelsprung, keine Stampfattacke, kein Brüllknopf. Die Kamera bleibt hinter und über ihm.
+
+**Angriffe:**
+
+| Angriff | Schnell | Stark | Vergleich |
+|---|---|---|---|
+| 🔫 Bordkanone (1) | Feuerstoß: fünf Laserimpulse aus der Kanone unter der Nase | **Kreisflug:** Er umkreist den Zielpunkt einmal ganz (selbstständig, 2,6 s, Abstand 1,2 H + 8 bis 4 H + 30) und feuert dabei 16-mal nach innen | wie die Bordwaffen des Fliegers |
+| 🚀 Raketen (3) | zwei Raketen, je eine aus den Behältern links und rechts | **Salve:** acht Raketen steigen auf und gehen rund um das Ziel nieder | Raketen des Fliegers (der eine Rakete je Druck schießt) |
+| 🪝 Seilwinde (5) | **Haken:** Das Seil fällt zum Zielpunkt (höchstens 3 H + 20 weit), der Haken packt, was dort ist – Auto, Baum, Kleinkram, sonst ein Stück des Gebäudes –, und zieht es hoch. Die Last pendelt am Seil und schlägt in alles, was im Weg ist. Noch einmal drücken: Sie fällt mit dem Schwung, den sie hat, und schlägt ein wie eine Bombe | **Abrissbirne:** eine Stahlkugel (Radius 0,2 H + 1) am Seil, die nachschwingt; wer an einem Gebäude vorbeifliegt, schlägt sie hinein – je schneller, desto härter (bis 2,6 P); was nicht nachgibt, wirft sie zurück. Bleibt hängen, bis man den Angriff wechselt oder noch einmal drückt | Wurf des Gorillas; Hammerschlag |
+| 🌪️ Rotor (7) | **Rotorsäge:** Die Nase geht tief, die Blätter schneiden 1,3 s lang hin und her durch, was vor ihm steht – zwei Schnitte übereinander (Reichweite H + 4, Breite 1 + 0,04 H, Stärke 1,6 P), und er schiebt sich in den Schnitt | **Tornado:** Er dreht sich immer schneller, bis unter ihm ein Wirbelsturm entsteht. Der Tornado (8 s, Breite 0,42 H + 5, Höhe 2,8 H) **folgt dem Zielpunkt**, zieht lose Würfel hinein und trägt sie in einer Spirale nach oben und schleudert am Ende alles in einem Ring hinaus | Schneidstrahl des Roboters (die Säge schafft etwa das Zwei- bis Dreifache, dauert aber länger und reicht nur so weit wie die Rotorblätter); Riesenbombe des Fliegers |
+
+**Heimatwelt:** der **Hafen** – Container, Kräne und Schiffe zum Anheben und Fallenlassen.
+
+#### 🐙 Tentakel
+
+**Aussehen (Vorgabe des Autors):** ein riesiger Fangarm aus der Tiefe, **ohne Augen, ohne Gesicht** – eine fremdartige Urgewalt neben den sachlichen Zerstörern, die allein über ihre geschmeidige bis peitschende Körpersprache wirkt. Gebaut aus 14 Gliedern, die zur Spitze hin dünner werden. **Farben:** Grundton ein lebendiges, warmes Korallen-Orange mit feiner Rosa-Nuance; **Rücken** deutlich dunkler, ein tiefes, gebranntes Orange-Rot – als breites Band die Rückenmitte hinunter, an den Flanken bleibt das Korallen-Orange, so dass man auch von hinten die warme Farbe sieht und das Band jede Biegung nachzeichnet; **Innenseite** ein sanfter Pfirsich-Pastellton mit **runden Saugnäpfen**, die sich mit hellem Rand und dunklerer Mulde klar vom Schaft abheben (ab Stufe 4 in zwei Reihen). Ein schwaches Eigenleuchten hält die Farben auch im Schatten warm. **Ab Stufe 6** eine Flosse auf dem Rücken, **ab Stufe 8** leuchtende Punkte. Am Fuß liegt aufgeworfene Erde.
+
+**Manga-Zeichen statt Gesicht:** Über der Spitze ploppen kurz Zeichen aus Würfeln auf, immer zur Kamera gedreht – so, wie ein Manga Gefühle zeichnet: Zeichen mit kräftigem schwarzem **Tuscherand** und Laute in **Katakana**, versetzt wie die Schrift in einem Comic. Jedes bewegt sich auf seine Art:
+
+| Zeichen | Wann | Bewegung |
+|---|---|---|
+| **!** rot mit weißen Schreckstrichen | vor jedem starken Angriff | ploppt auf |
+| **ゴゴゴ** („gogogo“, das drohende Grollen) in Violett | vor dem Erwachen der Tiefe | zittert, schräg |
+| **ドン!** („don“, der Knall) in Orange | es bricht mit Wucht aus dem Boden | zittert, schräg |
+| **ズズズ** („zuzuzu“, das Schieben) in Erdbraun mit weißem Rand | ab und zu, während es unter der Erde reist – dann über der Stelle, unter der es ist | zittert |
+| zwei Herzen mit Glanz | ein Gebäude ist ganz zerstört | ploppt auf |
+| Glitzersterne (kira) | es wächst eine Stufe | funkeln |
+| die rote **Zornesader** | der Schild der Festung wirft es zurück | pocht |
+| der große **Schweißtropfen** | ein starker Angriff hat nichts zerbrochen | rinnt seitlich hinab |
+| die **Spirale** (guru guru) | nach dem Wirbel | dreht sich |
+| eine Note | neun Sekunden nichts zu tun | wiegt sich |
+| die **Rotzblase** (hanachōchin) | nach 24 Sekunden schläft es | bläht sich mit dem Atem auf und ab |
+
+**Bewegung – es läuft nicht.**
+
+| Zustand | Was es tut |
+|---|---|
+| **Abgetaucht** | Es reist **unter der Erde**, unter Häusern hindurch. **Steht es still, ist nichts von ihm zu sehen.** Bewegt es sich, hebt es die **echten Würfel** über sich an (`heave.js`): eine Kuppel, so breit wie 0,9 H und 0,12 H hoch (mindestens ein Würfel), etwas vor ihm, wandert mit. Bis Stufe 2 sinkt sie hinter ihm wieder zurück, wie eine Welle durch den Boden; **ab Stufe 3 bleibt die Erde oben liegen**, über einem Hohlraum, den es darunter freigeschoben hat (ein zweites Darüberreisen hebt sie nicht weiter). Mitgehoben wird, was auf dem Boden steht – Bäume, Laternen, Bänke, Zäune –, aber nur um einen Würfel, damit es an seinen Nachbarn hängen bleibt; was danach keinen Halt mehr hat, fällt. **Was bricht:** etwa jeder zehnte angehobene Pflasterstein (Straße, Gehweg) an der Oberfläche und etwa jeder zehnte Würfel von dem, was auf dem Boden steht; Gras, Erde und Sand heben sich nur. Große Gebäude sind zu schwer: Unter ihnen bricht hier und da der Boden auf (etwa jede zehnte Säule, einmal je Durchgang), sonst nichts – die Reise unter Häusern hindurch bleibt ein stiller Moment. Je größer das Tentakel, desto breiter die Kuppel und desto mehr bricht. Tempo 12 + 1,1 H, unter Wasser und in der Stadt unter dem Meer das Doppelte, mit Umschalt das 1,5-Fache. **Untergraben:** Wartet es unter einem Gebäude, bröckelt alle 0,8 s ein Stück Fundament weg (0,5 R, 0,8 P), das Gebäude wackelt und wird dauerhaft schwächer – so viel, wie die Größe des Tentakels gegen den Rest des Gebäudes ausmacht (dieselbe Rechnung wie beim Schubsen, 11.5): Ein kleines Tentakel kitzelt einen Turm nur |
+| **Aufgetaucht** | Es steht mit seiner Wurzel fest im Boden und **reicht** von dort: rund 2,3 H lang, die Spitze sucht mit einer weichen Verzögerung den Zielpunkt. Der Steuerknüppel **neigt** den ganzen Arm; **hält man ihn einen Augenblick (0,35 s) ganz durch, taucht es ab** und reist los |
+| **Auftauchen** | Großer Knopf, oder einfach angreifen (dann taucht es zuerst auf und schlägt dann zu): Es bricht mit einer Fontäne aus Erde hervor – ein Stoßring (0,32 H, 0,6 R, 0,6 P); **unter einem Gebäude** schießt es durch die Stockwerke nach oben (ein Schacht bis 2,1 H hoch, 0,13 H + 1 breit, 1,05 P). Höchstens alle 1,4 s mit Schaden, damit Auf- und Abtauchen kein Angriff ist |
+| **Abtauchen** | derselbe Knopf: zurück ins Loch, mit Speedlines am Bildrand |
+
+**Steuerung:**
+
+| Aktion | Maus + Tastatur | Gamepad | Handy |
+|---|---|---|---|
+| Unter der Erde reisen / aufgetaucht den Arm neigen | W, A, S, D | linker Stick | Steuerknüppel |
+| Ab- und Auftauchen | Leertaste | A | **🕳️-Knopf**, wo sonst der Sprungknopf ist |
+| Zielen und Angriffe | wie immer (abgetaucht: erst Auftauchen) | wie immer | wie immer |
+
+**Anime-Effekte:** Speedlines am Bildrand beim Auf- und Abtauchen; vor dem Erwachen der Tiefe schiebt sich ein schräges Band in Korallenfarben mit einem Wirbel durchs Bild, und die Welt hält 0,3 s still. Beides fällt weg, wenn in den Einstellungen das Wackeln aus ist oder das System weniger Bewegung wünscht.
+
+**Angriffe:**
+
+| Angriff | Schnell | Stark | Vergleich |
+|---|---|---|---|
+| 〰️ Peitsche (1) | **Schnalzer:** Die Spitze schnellt zum Zielpunkt (Reichweite 2,2 H) und knallt: ein Treffer (0,72 R, 1 P) und ein tiefes, schmales Loch | **Wirbel:** Es wickelt sich auf, dann schlägt der voll gestreckte Arm einmal ganz um die Wurzel, von unten nach oben steigend (vier Treffer bis 1,75 H weit, 0,8 R, 1,4 P) | Faust des Gorillas; Schwanzwirbel des Dinos (der nur die vordere Hälfte trifft) |
+| ➰ Umschlingen (3) | **Zudrücken:** Es wickelt sich um das Ziel und drückt dreimal zu: ein Ring, der sich zusammenzieht (Radius 0,2 H + 2, 1,15 P) – ein Mast, ein Baum, eine Hausecke wird durchtrennt | **Umreißen:** Die Saugnäpfe packen das Gebäude so hoch es reicht, ein Ruck zu sich (Treffer 0,9 R, 1,2 P) und ein Schubs der Stärke 5 (11.5): was nicht sehr massiv ist, kippt | Biss des Dinos; Sturmlauf |
+| 💧 Tinte (5) | **Tintenstrahl:** 0,9 s ein dünner Strahl, der wie ein Wasserschneider schneidet (0,7 + 0,1 S + 0,014 H breit, 7 + 0,8 S tief) | **Tintenbombe:** eine Kugel im Bogen, die wie eine Mörsergranate einschlägt und in einer riesigen dunklen Wolke platzt: Glas, Laub und Stoff zerfallen im weiten Umkreis (0,75 H + 8, höchstens 48) | Laser des Roboters (Stufe 7, etwas stärker); Mörser des Panzers |
+| 🌊 Erwachen (7) | **Bodenwelle:** Es schlägt auf den Boden, eine Welle läuft in neun Stößen durch die Erde zum Zielpunkt (bis 4 H + 20 weit) und reißt Straße und Sockel auf | **Erwachen der Tiefe:** die Einblendung, dann brechen **fünf Tentakel** im Kreis um das Zielgebäude aus dem Boden, umschlingen es, drücken zu und **ziehen es in die Tiefe**: Die Fundamente gehen, das Gebäude wird schwächer (nach Größe wie oben) und sinkt in sich zusammen | Bodenwelle des Gorillas; Riesenbombe des Fliegers |
+
+**Heimatwelt:** die **Stadt unter dem Meer** – dort ist es doppelt so schnell.
+
+#### Ausgleich
+
+Gemessen im Selbstspiel in der Wolkenkratzer-Stadt, je rund 40 Sekunden, Macht pro Sekunde (in Klammern Dino und Flieger aus demselben Durchgang oder aus 5.3):
+
+| Stufe | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| 🚁 Hubschrauber | 9 bis 16 (10 / 27) | 22 bis 48 (26) | 135 (72 / 162) | 3 000 bis 10 300 | 9 600 bis 10 500 (7 400 / 12 200) | 11 100 | 14 500 bis 20 100 (31 800 / 17 800) | 26 000 |
+| 🐙 Tentakel | 9 | 37 | 24 | 7 900 | 12 200 | 16 400 | 39 900 | 27 100 |
+
+Einzelne Läufe streuen stark, weil ab Stufe 3 Kettenreaktionen (11.5) den Großteil bringen – ein Lauf mit einem frühen Einsturz bringt das Hundertfache eines Laufs ohne. Darum ist zusätzlich jeder Angriff einzeln an derselben Wand gemessen, nur mit dem, was er selbst zerstört (`movetest` mit `direct=1`): Die Peitsche liegt auf Stufe 1 bei Schwanz und Faust, das Umschlingen auf Stufe 3 beim Biss, die Tinte auf Stufe 7 zwischen den Laserimpulsen und dem Schneidstrahl des Roboters, das Erwachen der Tiefe bei der Riesenbombe des Fliegers; Bordkanone und Kreisflug liegen bei den Bordwaffen des Fliegers, die Seilwinde beim Wurf des Gorillas, der Tornado unter der Riesenbombe.
+
+**Was dabei korrigiert wurde:** Das Untergraben schwächte ein Gebäude anfangs ohne Grenze – nach 25 Sekunden fiel jedes, und das Tentakel verdiente auf Stufe 1 das Vierzigfache des Dinos; jetzt zählt die Größe wie beim Schubsen. Die Bodenwelle war achtmal so stark wie das Trommeln des Gorillas (jetzt sieben schwächere Stöße). Haken und Abrissbirne „mahlten“ an einer Wand, auch ohne zu schwingen; jetzt schlagen sie nur mit Schwung zu, und die Winde zieht langsam ein. Der Hubschrauber bekam anfangs die starke Kürzung des Fliegers und blieb weit hinter dem Dino; jetzt zählt, was er zerstört, auf Stufe 1 zu 50 %, dann je Stufe 15 Punkte mehr, ab Stufe 5 voll (seit Nachtrag 18; vorher 60 und 80 %, die Raketen kamen dazu).
+
+**Nachtrag 18, nachgemessen** (direkter Schaden je Druck an derselben Wand): die zwei Raketen rund 500 Würfel auf Stufe 3 (eine des Fliegers rund 240), die Salve 1 500 bis 2 300 (Flieger 300 bis 1 300, er fliegt dabei vorbei), die Rotorsäge auf Stufe 7 rund 3 000 bis 25 000 je nach dem, was vor ihr steht (Schneidstrahl des Roboters 6 600 bis 8 500). Die gehobene Erde des Tentakels bringt kaum Macht: Erde zählt wenig, und nur jeder zehnte Pflasterstein bricht.
+
+#### Was weggelassen wurde
+
+- **Schwingen von Haus zu Haus** (Knopf halten, Spitze saugt sich fest, das Tentakel schwingt hinüber): nicht gebaut; das Reisen unter der Erde ist schnell genug.
+- **Verwandlungsszene beim Wachsen** und **Tintenbrille der Einsatzkräfte:** nicht gebaut; beim Wachsen ploppt ein Stern auf.
+- Beim Hubschrauber **kein eigener Sinkknopf** (Vorgabe des Autors: Er sackt von selbst ab).
+- **Abwind und Windhose** des Hubschraubers (gestrichen mit Nachtrag 18, weil Raketen dazukamen und die Rotorsäge zum Tornado wanderte; der Rotorwind beim tiefen Schweben ist geblieben).
 
 ## 10. Zeigen statt erklären
 
@@ -970,6 +1096,10 @@ Offen aus der Analyse vom Oktober 2026, nach Wirkung sortiert:
 **Prüfwerkzeuge.** Im Ordner `tools/` (wird nicht veröffentlicht) liegen `check.mjs` (ohne Browser: Laden beschädigter Spielstände, Erfolgsliste, Erzeugung aller Welten) und `smoke.mjs` (spielt in einem eigenen Headless-Browser alle 18 Welten und sechs längere Szenarien durch). Beide liefen mit diesem Stand fehlerfrei. Was nur ein Mensch beurteilen kann, steht als Checkliste in `TESTEN.md`; sie ist noch nicht abgearbeitet.
 
 **Nachtrag zu Entwurf 12:** Auf Standbildern gesehen: das Rollfeld und das Hafenmeer. Gemessen: die Einnahmen von Dino und Flieger (5.3, 9.2). **Nicht geprüft:** das Zielen durch ausgeblendete Wände in der Praxis, ob fallende Gebäude wirklich im Weg sind und Fahrzeuge treffen (die Abfragen laufen fehlerfrei mit, beobachtet habe ich es nicht), die neue Musik (nie gehört), ob sich das langsamere Wachstum richtig anfühlt.
+
+**Stand von Nachtrag 18:** Alle 42 Smoke-Läufe und `check.mjs` ohne Fehler. Auf Standbildern gesehen: die bleibende Erdspur eines Tentakels der Stufe 5 durch den Zentralpark (vom Brunnen aus, mit Stufen an den Rändern), aufgeworfene Straße mit Rissen auf Stufe 4, die Manga-Zeichen ゴゴゴ, ドン!, Zornesader, Schweißtropfen und Rotzblase, die neue Rotorsäge. Gemessen: Schaden von Raketen und Säge (9.4), Bildzeit 17 bis 20 ms bei einem Tentakel der Stufe 8, das über 16 000 Säulen gehoben hat. **Nicht geprüft:** ob die Welle bis Stufe 2 im laufenden Spiel gut zu sehen ist (auf Standbildern ist sie zu klein, um sie sicher zu erkennen), ob Autos über gehobene Straße richtig fahren, wie sich ein langer Hohlraum beim späteren Zerstören verhält, die übrigen Zeichen (Herzen, Glitzer, Spirale, Note, ズズズ) nur im Code.
+
+**Stand von Nachtrag 17:** In automatisierten Durchläufen ohne Fehler gelaufen: alle acht Angriffe beider Figuren in beiden Fassungen, das Selbstspiel beider auf allen Stufen, Abtauchen und Reisen unter der Erde auch in der Stadt unter dem Meer. Auf Standbildern gesehen: beide Modelle, die Emoticons Herz und Ärger-Zeichen über der Spitze, das Erwachen der Tiefe mit den fünf Tentakeln um einen Bahnhof, der Tornado, das Tentakel nach den Farbkorrekturen (Korallen-Orange mit schwachem Eigenleuchten, Rückenband statt dunkler Rückenhälfte). Gemessen: Einnahmen und Schaden je Angriff (9.4). **Nicht geprüft:** Spielen von Hand, Handy und Gamepad, wie sich Steigen und Absacken anfühlen, ob die Speedlines und die Einblendung gefallen, ob Abrissbirne und Haken sich gezielt einsetzen lassen, die Laute (es gibt keine eigenen für Rotor, Seil und Tentakel; benutzt werden die vorhandenen). Die übrigen Emoticons sind nur im Code ausgelöst, nicht auf Bildern gesehen.
 
 **Stand von Nachtrag 15:** Auf Standbildern gesehen: Berg und Vulkan von oben (wellige Grundfläche, gewundene Schluchten, buckelige Flanken, Schnee oben und auf Graten, Lavaströme auf der Flanke) und beide von innen (Innenräume passen in die schlankere Form). Gemessen: siehe Materialtabelle. Nach dem Erzeugen schwebt nichts Neues. **Nicht geprüft:** wie sich die Härte im Spiel anfühlt.
 

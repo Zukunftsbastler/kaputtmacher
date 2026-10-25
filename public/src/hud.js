@@ -2,7 +2,7 @@
 // in the parents' corner. New controls stay hidden until the game introduces them.
 
 import { ABILITIES, movesFor } from './tools.js';
-import { SPECIES } from './monster.js';
+import { SPECIES, airborne } from './monster.js';
 import { WORLDS } from './worldgen.js';
 import { saveProgress, resetProgress, exportProgress, importProgress, MAX_DETAIL } from './progress.js';
 import { ACHIEVEMENTS, achievementProgress } from './achievements.js';
@@ -113,6 +113,22 @@ export class Hud {
     if (this.hintBox) this.renderHint(); // the demonstration shows the device in use
   }
 
+  // Anime speed lines round the edge of the picture: the tentacle shoots out of the ground or dives.
+  speedLines() {
+    if (!this.g.progress.settings.shake) return; // the same switch as the shaking camera: calm pictures for those who want them
+    this.lines?.remove();
+    this.lines = el('div', 'speedlines', this.root);
+    setTimeout(() => this.lines?.remove(), 600);
+  }
+
+  // The cut-in before the tentacle's great attack: a slanted band with a coral swirl sweeps across the picture.
+  cutIn() {
+    this.band?.remove();
+    this.band = el('div', 'cutin', this.root);
+    el('div', 'swirl', this.band);
+    setTimeout(() => this.band?.remove(), 1100);
+  }
+
   button(parent, icon, onClick, key) {
     const b = el('button', 'btn', parent, icon);
     if (key) el('span', 'key kbm', b, key);
@@ -135,9 +151,18 @@ export class Hud {
       if (announce && !this.shownTools.has(t.id)) b.classList.add('fresh');
       this.shownTools.add(t.id);
     }
+    const sp = g.progress.species;
+    if (sp === 'chopper') { // the jump button, held: up. Let go, the helicopter sinks back by itself
+      const b = this.button(this.abilities, '🔼', null, '␣');
+      b.addEventListener('pointerdown', () => { g.audio.unlock(); g.input.gesture('touch'); g.input.jumpBtn = true; });
+      for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => { g.input.jumpBtn = false; });
+      b.dataset.id = 'up';
+      this.toolButtons.up = b;
+    }
     for (const a of ABILITIES) {
-      if (a.stage > stage || g.progress.species === 'jet') continue; // the aircraft neither jumps nor roars
-      const b = this.button(this.abilities, a.icon, a.id === 'stomp' ? null : () => g.doAction(a.id), a.id === 'stomp' ? '␣' : 'R');
+      if (a.stage > stage || airborne(sp)) continue; // aircraft and helicopter neither jump nor roar
+      // The tentacle's big button sends it down into the ground and brings it up again.
+      const b = this.button(this.abilities, sp === 'tentacle' && a.id === 'stomp' ? '🕳️' : a.icon, a.id === 'stomp' ? null : () => g.doAction(a.id), a.id === 'stomp' ? '␣' : 'R');
       if (a.id === 'stomp') { // held like a real jump button: longer press, higher jump
         b.addEventListener('pointerdown', () => { g.audio.unlock(); g.input.jumpBtn = true; g.doAction('stomp'); });
         for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => { g.input.jumpBtn = false; });

@@ -5,6 +5,7 @@
 import { meshVolume } from './mesher.js';
 import { clamp, wrapDelta, m4 } from './math.js';
 import { GRAVITY, launch } from './particles.js';
+import { TYPE_FLAGS, F_TERRAIN } from './materials.js';
 
 export const SPECIES = [
   { id: 'dino', icon: '🦖', skin: [0x4caf50, 0x2a9d4a], belly: 0xdce775, dark: 0xf57c00 },
@@ -18,9 +19,19 @@ export const SPECIES = [
   // It neither climbs nor shoots: it digs, swings, breaks and pushes.
   { id: 'digger', icon: '🚜', skin: [0xf2b632, 0xd8921c], belly: 0x9fd3ea, dark: 0x2b2b2b, tracked: true },
   { id: 'jet', icon: '✈️', skin: [0xdfe4e8, 0xa9b4bd], belly: 0x3f7fc0, dark: 0x2d3436, gain: (stage) => Math.min(0.9, 0.054 * 1.75 ** (stage - 1)) },
+  // The helicopter: hovers where it is let go, slides in every direction, rises while the jump button is held.
+  // It flies over what stands in the way and fires rockets from stage 3, so up to stage 4 what it destroys counts for a little less (measured, see NEED).
+  { id: 'chopper', icon: '🚁', skin: [0xe53935, 0xc62828], belly: 0x9fd3ea, dark: 0x263238, gain: (stage) => Math.min(1, 0.5 + 0.15 * (stage - 1)) },
+  // The giant tentacle: no eyes, no face, all body language. Warm coral with a pink touch, a dark burnt orange-red back
+  // and a pale peach underside with round suckers. It never walks: it travels under the ground and reaches out from where it surfaces.
+  { id: 'tentacle', icon: '🐙', skin: [0xff8462, 0xff7656], belly: 0xffc6b4, dark: 0xc23f20 },
 ];
 // Creatures on tracks (tank, excavator): no jumping but a hop, no climbing, no swimming, an upper part that turns all round.
 export const tracked = (species) => species === 'tank' || species === 'digger';
+// Creatures that are always in the air (aircraft, helicopter): no jumping, climbing or stomping, attacks at any time.
+export const airborne = (species) => species === 'jet' || species === 'chopper';
+// The tentacle is a chain of segments from the root in the ground to the tip.
+export const SEGS = 14, SEG_LEN = 4.6;
 
 // Height factor per stage, relative to a stage-1 monster. Grows without limit.
 const SCALE = [1, 1.6, 2.6, 3.8, 6, 9, 14, 20, 30];
@@ -35,6 +46,8 @@ export const stageScale = (s) => (s <= 9 ? SCALE[s - 1] : 30 * 1.25 ** (s - 9));
 // The slowest creature on a stage takes up to about half as long again. Checked over seven minutes of self-play from stage 1
 // (seconds for stages 1, 2, 3): dino 62, 120, 184; tank 74, 120, 180; gorilla 123, 215; robot 71, 288 (with 330 and 2 200 then;
 // both lowered since, for the gorilla and the robot).
+// Helicopter (with its gain) / tentacle, measured later in the same way: stage 1: 9-16 / 9, 2: 22-48 / 37, 3: 135 / 24, 4: 10 300 / 7 900,
+// 5: 10 500 / 12 200, 6: 11 100 / 16 400, 7: 14 500 / 39 900, 8: 26 000 / 27 100 (chain reactions make single runs scatter widely).
 // Measure again with: node tools/browser.mjs x "world=skyline&species=dino&stage=N&idle=1&run=50000" income 53000
 const NEED = [280, 1600, 8500, 25000, 850000, 2800000, 3200000, 5600000];
 export const stageNeed = (s) => (s <= 8 ? NEED[s - 1] : 5600000 * 1.6 ** (s - 8));
@@ -58,15 +71,62 @@ const POUND_SPEED = 2.4; // drop speed, in launch speeds of the first jump
 const POUND_STUN = 0.3; // seconds it stays crouched in its crater afterwards
 const POUND_CHAIN = 8; // how many floors in a row it may smash through
 
-const C = { SKIN: 1, BELLY: 2, DARK: 3, WHITE: 4, EYE: 5, TEETH: 6, ARMOR: 7, GLOW: 8 };
+const C = { SKIN: 1, BELLY: 2, DARK: 3, WHITE: 4, EYE: 5, TEETH: 6, ARMOR: 7, GLOW: 8, RED: 9, BLUE: 10, PINK: 11, GOLD: 12, INK: 13, MUD: 14, SOIL: 15, VIOLET: 16, ORANGE: 17, EARTH: 18, BUBBLE: 19, OUTLINE: 20, PAPER: 21 };
+const SEG_NAMES = Array.from({ length: SEGS }, (_, i) => 'seg' + i);
+// The tentacle's emoticons, drawn the way manga draw feelings: marks with a heavy ink outline (the throbbing vein of
+// anger, the big drop of sweat, the snot bubble of sleep, the spiral of dizziness, sparkles), and sound effects
+// written in katakana, staggered like the lettering in a comic (ゴゴゴ, ドン!, ズズズ). They pop up above the tip.
+// Rows from the top; R red, B blue, P pink, G gold, K ink, W white, V violet, A orange, U earth brown, L bubble blue.
+// out: the colour of the outline drawn round every mark (O = ink black), anim: how it moves (main.js), size: scale.
+const KANA = {
+  go: ['......#.#', '.....#.#.', '#######..', '#######..', '.....##..', '.....##..', '.....##..', '#######..', '#######..'],
+  do: ['......#.#', '##...#.#.', '##.......', '##.......', '#####....', '##.###...', '##...##..', '##.......', '##.......'],
+  zu: ['......#.#', '.....#.#.', '######...', '######...', '....##...', '...##....', '..#####..', '.##...##.', '##.....##'],
+  n: ['.........', '##.......', '.##....##', '......##.', '.....##..', '....##...', '..###....', '###......', '.........'],
+  bang: ['##', '##', '##', '##', '##', '..', '##', '##', '..'],
+};
+// A word in katakana: the signs side by side, each a little higher than the one before.
+const word = (signs, c) => {
+  const n = signs.length, h = 9 + n - 1, rows = Array.from({ length: h }, () => '');
+  signs.forEach((sg, k) => { const g = KANA[sg], off = n - 1 - k; for (let r = 0; r < h; r++) rows[r] += (g[r - off] ?? '.'.repeat(g[0].length)).replaceAll('#', c) + '.'; });
+  return rows;
+};
+const EMOTES = {
+  alert: { out: 'O', anim: 'pop', rows: ['W.........W', '.W..RRR..W.', '....RRR....', '....RRR....', '....RRR....', '.....R.....', '...........', '....RRR....', '.W..RRR..W.', 'W.........W'] },
+  heart: { out: 'O', anim: 'pop', rows: ['........PP.PP', '.......PPPPPP', '........PPPP.', '.PP...PP.PP..', 'PWPP.PPPP....', 'PWPPPPPPP....', 'PPPPPPPPP....', '.PPPPPPP.....', '..PPPPP......', '...PPP.......', '....P........'] },
+  star: { out: 'O', anim: 'twinkle', rows: ['....G.......', '....G.......', '...GWG......', 'GGGWWWGGG...', '...GWG....W.', '....G....WWW', '....G.....W.', '............', '.......G....', '......GWG...', '.......G....'] },
+  anger: { out: 'O', anim: 'throb', rows: ['.RR.....RR.', 'RRR.....RRR', '..RR...RR..', '...R...R...', '...........', '...R...R...', '..RR...RR..', 'RRR.....RRR', '.RR.....RR.'] },
+  sweat: { out: 'O', anim: 'slide', rows: ['....B....', '...BB....', '...BBB...', '..BBBBB..', '.BWBBBBB.', '.BWWBBBB.', '.BBWBBBB.', '..BBBBB..', '...BBB...'] },
+  note: { out: 'W', anim: 'sway', rows: ['....KK...', '....KKK..', '....K.KK.', '....K..K.', '....K....', '..KKK....', '.KKKK....', '.KKKK....', '..KK.....'] },
+  sleep: { out: 'O', anim: 'bubble', rows: ['...LLLLL...', '..LLLLLLL..', '.LLWWLLLLL.', '.LLWLLLLLL.', '.LLLLLLLLL.', '.LLLLLLLLL.', '..LLLLLLL..', '...LLLLL...'] },
+  dizzy: { out: null, anim: 'spin', rows: ['G.KKKKKK..', '.K......K.', '.K.KKKK.K.', '.K.K..K.K.', '.K.K.KK.K.', '.K.K....K.', '.K.KKKKKK.', '.K........', '..KKKKKKKG'] },
+  menace: { out: 'O', anim: 'shake', size: 0.7, rows: word(['go', 'go', 'go'], 'V') },
+  boom: { out: 'O', anim: 'shake', size: 0.7, rows: word(['do', 'n', 'bang'], 'A') },
+  rumble: { out: 'W', anim: 'shake', size: 0.65, rows: word(['zu', 'zu', 'zu'], 'U') },
+};
+export const EMOTE_LOOK = Object.fromEntries(Object.entries(EMOTES).map(([id, e]) => [id, { anim: e.anim, size: e.size ?? 1 }]));
+// Draws a ring of outline round every filled pixel of an emoticon (the eight neighbours that are empty).
+function outlined(rows, out) {
+  const h = rows.length, w = Math.max(...rows.map((r) => r.length)) + 2, grid = Array.from({ length: h + 2 }, (_, y) => Array.from({ length: w }, (_, x) => (rows[y - 1]?.[x - 1] ?? '.')));
+  if (!out) return grid;
+  for (let y = 0; y < h + 2; y++) for (let x = 0; x < w; x++) {
+    if (grid[y][x] !== '.') continue;
+    for (let dy = -1; dy <= 1 && grid[y][x] === '.'; dy++) for (let dx = -1; dx <= 1; dx++) { const c = grid[y + dy]?.[x + dx]; if (c && c !== '.' && c !== '_') { grid[y][x] = '_'; break; } }
+  }
+  for (const r of grid) for (let x = 0; x < w; x++) if (r[x] === '_') r[x] = out + '*'; // marked as outline: drawn a little behind the mark
+  return grid;
+}
+export const EMOTE_IDS = Object.keys(EMOTES);
 // Every joint has three rotations (x, y, z) and an offset (x, y, z) in model units.
-export const JOINTS = ['torso', 'head', 'jaw', 'armL', 'armR', 'legL', 'legR', 'tail', 'tail2', 'turret', 'barrel', 'pods', 'bay', 'rack', 'boom', 'stick', 'bucket', 'breaker'];
+export const JOINTS = ['torso', 'head', 'jaw', 'armL', 'armR', 'legL', 'legR', 'tail', 'tail2', 'turret', 'barrel', 'pods', 'bay', 'rack', 'boom', 'stick', 'bucket', 'breaker',
+  'rotor', 'rotor2', 'trotor', 'winch', 'mound', ...SEG_NAMES];
 // Gear that depends on the selected move: only the matching part is drawn (main.js). The aircraft carries one
 // piece under its belly (turret and rocket launcher turn towards the aim point; the aircraft always flies nose
 // first); the excavator has a bucket on its stick, or a hydraulic breaker for the hammer.
 export const GEAR = {
   jet: { guns: 'turret', rockets: 'pods', carpet: 'bay', heavy: 'rack' },
   digger: { scoop: 'bucket', hammer: 'breaker', swing: 'bucket', load: 'bucket' },
+  chopper: { guns: 'turret', rockets: 'pods', winch: 'winch', rotor: '' },
 };
 
 function palette(sp, stage) {
@@ -85,6 +145,18 @@ function palette(sp, stage) {
   put(C.TEETH, [255, 255, 240]);
   put(C.ARMOR, [70, 74, 86]);
   put(C.GLOW, stage >= 8 ? [255, 140, 30] : [255, 210, 60], 230);
+  if (sp.id === 'chopper') { put(C.EYE, [255, 245, 200], 220); put(C.ARMOR, [96, 104, 112]); } // searchlight, metal
+  if (sp.id === 'tentacle') {
+    // A faint glow of its own keeps the coral warm and bright in the shade (unlit, it reads as brick red).
+    const sk = p.slice(C.SKIN * 4, C.SKIN * 4 + 3);
+    put(C.SKIN, sk, 70); put(C.BELLY, hex(sp.belly), 60); put(C.DARK, hex(sp.dark), 35);
+    put(C.WHITE, [255, 214, 200], 60); put(C.TEETH, [236, 146, 132], 40); // the rim and the hollow of a sucker
+    put(C.GLOW, [255, 170, 120], 200); // spots that glow on the back of a big tentacle
+    put(C.MUD, [124, 96, 66]); put(C.SOIL, [150, 120, 86]);
+  }
+  // Emoticon colours, slightly glowing so that they read at any light.
+  put(C.RED, [235, 45, 45], 110); put(C.BLUE, [90, 175, 255], 110); put(C.PINK, [255, 95, 150], 110); put(C.GOLD, [255, 212, 60], 120); put(C.INK, [34, 28, 44], 30);
+  put(C.VIOLET, [130, 60, 190], 110); put(C.ORANGE, [255, 140, 30], 120); put(C.EARTH, [120, 84, 50], 60); put(C.BUBBLE, [170, 225, 255], 140); put(C.OUTLINE, [18, 16, 22], 0); put(C.PAPER, [255, 255, 255], 200);
   return p;
 }
 
@@ -118,6 +190,90 @@ export function buildModel(speciesId, stage) {
     for (const x of [-7, 4]) { b('pods', x, 1, -4, x + 3, 4, 4, C.DARK); b('pods', x, 1, 4, x + 3, 4, 5, C.EYE); }
     for (const z of [-10, -4, 2]) { b('bay', -1, 1, z, 1, 3, z + 5, C.DARK); b('bay', -1, 1, z + 4, 1, 3, z + 5, C.GLOW); b('bay', -2, 2, z, 2, 3, z + 1, C.ARMOR); }
     for (const x of [-4, 1]) { b('rack', x, 0, -7, x + 3, 3, 6, C.GLOW); b('rack', x, 0, -3, x + 3, 3, -2, C.DARK); b('rack', x, 0, 2, x + 3, 3, 3, C.DARK); b('rack', x + 1, 1, 6, x + 2, 2, 8, C.DARK); }
+  } else if (sp.id === 'chopper') {
+    // A rescue helicopter turned troublemaker: cabin with a big windscreen, skids, a tail boom with the tail rotor,
+    // the gun under its nose and a winch under its belly. From stage 5 a transport helicopter with two rotors in a row
+    // (and no tail rotor), from stage 7 armoured, with stub wings and rocket pods.
+    const big = stage >= 5;
+    part('torso', [0, 10, 0]); part('rotor', [0, 18, big ? 8 : 0], 'torso');
+    part('turret', [0, 3, 11], 'torso'); part('barrel', [0, 2.5, 12], 'turret'); part('winch', [0, 3, 0], 'torso');
+    b('torso', -5, 4, -6, 5, 14, 10, C.SKIN); b('torso', -4, 4, 10, 4, 12, 14, C.SKIN); b('torso', -3, 5, 14, 3, 10, 16, C.SKIN); // cabin and nose
+    b('torso', -4, 8, 11, 4, 13, 15, C.BELLY); b('torso', -3, 9, 15, 3, 11, 16, C.BELLY); // windscreen
+    b('torso', -6, 9, 2, -5, 12, 9, C.BELLY); b('torso', 5, 9, 2, 6, 12, 9, C.BELLY); // side windows
+    b('torso', -6, 6, -6, 6, 7, 10, C.WHITE); // the white band round the cabin
+    b('torso', -3, 14, -5, 3, 17, 4, C.ARMOR); b('torso', -1, 17, -1 + (big ? 8 : 0), 1, 18, 1 + (big ? 8 : 0), C.DARK); // engine and mast
+    for (const x of [-7, 5]) { b('torso', x, 0, -6, x + 2, 1, 12, C.DARK); b('torso', x, 1, -3, x + 2, 4, -2, C.DARK); b('torso', x, 1, 6, x + 2, 4, 7, C.DARK); b('torso', x, 0, 12, x + 2, 2, 13, C.DARK); } // skids
+    b('torso', -2, 3, 12, 2, 4, 14, C.EYE); // searchlight
+    b('turret', -2, 1, 9, 2, 4, 13, C.ARMOR); b('barrel', -1, 2, 12, 1, 3, 19, C.DARK); b('barrel', -1, 2, 19, 1, 3, 20, C.EYE);
+    b('winch', -2, 2, -2, 2, 4, 2, C.ARMOR); b('winch', -1, 1, -1, 1, 2, 1, C.DARK);
+    // Rocket pods on short pylons at the sides, shown while the rockets are chosen.
+    part('pods', [0, 6, 2], 'torso');
+    for (const x of [-10, 7]) { b('pods', x < 0 ? -7 : 5, 6, 0, x < 0 ? -5 : 7, 7, 3, C.DARK); b('pods', x, 4, -2, x + 3, 7, 7, C.ARMOR); b('pods', x, 4, 7, x + 3, 7, 8, C.EYE); }
+    // Rotor blades: four of them, long and thin.
+    const rz = big ? 8 : 0, R = big ? 18 : 21;
+    b('rotor', -2, 18, rz - 2, 2, 19, rz + 2, C.DARK); b('rotor', -R, 18, rz - 1, R, 19, rz + 1, C.DARK); b('rotor', -1, 18, rz - R, 1, 19, rz + R, C.DARK);
+    b('rotor', R - 3, 18, rz - 1, R, 19, rz + 1, C.WHITE); b('rotor', -R, 18, rz - 1, -R + 3, 19, rz + 1, C.WHITE); // white tips
+    if (big) {
+      // Transport helicopter: a long body right to the back, the second rotor high on a pylon above the tail.
+      part('rotor2', [0, 22, -22], 'torso');
+      b('torso', -5, 4, -26, 5, 14, -6, C.SKIN); b('torso', -6, 6, -26, 6, 7, -6, C.WHITE); b('torso', -6, 9, -22, -5, 12, -8, C.BELLY); b('torso', 5, 9, -22, 6, 12, -8, C.BELLY);
+      b('torso', -3, 14, -27, 3, 21, -18, C.SKIN); b('torso', -1, 21, -23, 1, 22, -21, C.DARK);
+      b('torso', -4, 2, -24, 4, 4, -16, C.DARK); // the loading ramp
+      b('rotor2', -2, 22, -24, 2, 23, -20, C.DARK); b('rotor2', -R, 22, -23, R, 23, -21, C.DARK); b('rotor2', -1, 22, -22 - R, 1, 23, -22 + R, C.DARK);
+      b('rotor2', R - 3, 22, -23, R, 23, -21, C.WHITE); b('rotor2', -R, 22, -23, -R + 3, 23, -21, C.WHITE);
+    } else {
+      part('trotor', [1.5, 18, -25], 'torso');
+      b('torso', -1, 10, -27, 1, 13, -6, C.SKIN); b('torso', -1, 10, -27, 1, 13, -24, C.WHITE); // tail boom
+      b('torso', 0, 13, -27, 1, 21, -23, C.SKIN); b('torso', 0, 19, -27, 1, 21, -24, C.DARK); // fin
+      b('torso', -5, 11, -21, 5, 12, -19, C.SKIN); // stabiliser
+      b('trotor', 1, 15, -26, 2, 21, -24, C.DARK); b('trotor', 1, 17, -28, 2, 19, -22, C.DARK);
+    }
+    if (stage >= 3) { b('torso', -6, 5, -4, -5, 12, 1, C.DARK); b('torso', 5, 5, -4, 6, 12, 1, C.DARK); } // sliding doors
+    if (stage >= 7) { // stub wings with rocket pods, armour plates
+      b('torso', -11, 7, -2, 11, 8, 4, C.ARMOR);
+      for (const x of [-12, 9]) { b('torso', x, 4, -3, x + 3, 7, 6, C.ARMOR); b('torso', x, 4, 6, x + 3, 7, 7, C.EYE); }
+      b('torso', -6, 4, -6, 6, 5, 10, C.ARMOR);
+    }
+    if (stage >= 8) { b('torso', -6, 13, -6, -5, 14, 10, C.GLOW); b('torso', 5, 13, -6, 6, 14, 10, C.GLOW); }
+  } else if (sp.id === 'tentacle') {
+    // A chain of segments standing on its root, getting thinner towards the tip. Each segment is a rounded block:
+    // coral all round, the back (-z) darker, the inner side (+z, towards what it reaches for) pale, with a round sucker.
+    // No eyes, no mouth: the tentacle speaks with its body and with the emoticons above its tip.
+    part('mound', [0, 0, 0]);
+    for (let i = 0; i < SEGS; i++) {
+      const n = SEG_NAMES[i], y0 = Math.round(i * SEG_LEN), y1 = Math.round((i + 1) * SEG_LEN) + (i < SEGS - 1 ? 1 : 0);
+      const r = Math.max(1, Math.round(6.4 - 4.9 * (i / (SEGS - 1)) ** 0.85)), back = -Math.max(0, Math.round(r * 0.35));
+      part(n, [0, Math.round(i * SEG_LEN), 0], i ? SEG_NAMES[i - 1] : null);
+      if (r === 1) { b(n, -1, y0, -1, 1, y1, 1, C.SKIN); b(n, -1, y0, -1, 1, y1, 0, C.DARK); continue; }
+      b(n, -r, y0, -r + 1, r, y1, r - 1, C.SKIN); b(n, -r + 1, y0, -r, r - 1, y1, r, C.SKIN);
+      // The dark back: a broad band down the middle of the back, coral at the flanks, so that the arm keeps its warm colour
+      // seen from behind as well and the band shows how it bends and turns.
+      const bw = Math.max(1, r - 2);
+      b(n, -bw, y0, -r, bw, y1, back, C.DARK); b(n, -r + 1, y0, -r, r - 1, y1, -r + 1, C.DARK);
+      b(n, -r + 2, y0, r - 1, r - 2, y1, r, C.BELLY); // the pale inner side
+      // Suckers: round discs standing out from the inner side, two in a row on a big tentacle.
+      const s = Math.max(1, Math.round(r * 0.42)), ym = Math.round((y0 + y1 - 1) / 2), cols = stage >= 4 && r >= 4 ? [-s - 0.5, s + 0.5] : [0];
+      for (const cx of cols) {
+        const x0 = Math.round(cx - s), x1 = Math.round(cx + s);
+        b(n, x0 + 1, ym - s, r, x1 - 1, ym + s + 1, r + 1, C.WHITE); b(n, x0, ym - s + 1, r, x1, ym + s, r + 1, C.WHITE);
+        if (s >= 2) b(n, x0 + 1, ym - s + 1, r, x1 - 1, ym + s, r + 1, C.TEETH);
+      }
+      if (stage >= 6 && i > 1 && i < SEGS - 3) b(n, -1, y0, -r - Math.max(1, Math.round(r * 0.4)), 1, y1, -r, C.DARK); // a fin along the back
+      if (stage >= 8 && i % 2) { b(n, -r + 1, ym, -r - 1, -r + 2, ym + 1, -r, C.GLOW); b(n, r - 2, ym + 1, -r - 1, r - 1, ym + 2, -r, C.GLOW); } // glowing spots
+    }
+    // Torn-up ground around the root (and, while it travels below, the bulge of earth that moves along).
+    b('mound', -9, 0, -9, 9, 1, 9, C.MUD); b('mound', -7, 1, -7, 7, 2, 7, C.SOIL); b('mound', -5, 2, -5, 5, 3, 5, C.MUD);
+    for (const [x, z] of [[-10, -2], [8, -4], [-3, 9], [5, 8], [-8, 6], [2, -10]]) b('mound', x, 0, z, x + 2, 2, z + 2, C.SOIL);
+    // The emoticons, each a part of its own centred on its pivot.
+    const col = { R: C.RED, B: C.BLUE, P: C.PINK, G: C.GOLD, K: C.INK, W: C.PAPER, V: C.VIOLET, A: C.ORANGE, U: C.EARTH, L: C.BUBBLE, O: C.OUTLINE };
+    for (const [id, e] of Object.entries(EMOTES)) {
+      const n = 'emo_' + id, grid = outlined(e.rows, e.out), h = grid.length, w = grid[0].length, ox = Math.floor(w / 2), oy = Math.floor(h / 2);
+      part(n, [0, 0, 0]);
+      grid.forEach((row, k) => row.forEach((ch, x) => {
+        const c = col[ch[0]], y = h - 1 - k - oy;
+        if (c) b(n, x - ox, y, ch[1] === '*' ? 0 : 1, x - ox + 1, y + 1, ch[1] === '*' ? 1 : 3, c); // the outline one step behind the mark
+      }));
+    }
   } else if (sp.id === 'tank') {
     part('torso', [0, 6, 0]); part('turret', [0, 12, -1], 'torso'); part('barrel', [0, 13, 5], 'turret');
     b('torso', -8, 3, -12, 8, 10, 12, C.SKIN); b('torso', -8, 6, 12, 8, 9, 14, C.SKIN); b('torso', -6, 10, -11, 6, 11, 9, C.BELLY);
@@ -203,7 +359,7 @@ export function buildModel(speciesId, stage) {
     for (let i = -4; i < 4; i += 2) b('jaw', i, 21, 11, i + 1, 22, 12, C.TEETH);
     for (let i = 0; i < Math.min(3, spikes); i++) b('tail', -1, 15 - i * 2, -8 - i * 3, 1, 15 - i * 2 + spikeH - 1, -6 - i * 3, C.DARK);
   }
-  if (!sp.tracked && sp.id !== 'jet') {
+  if (!sp.tracked && sp.id !== 'jet' && sp.id !== 'chopper' && sp.id !== 'tentacle') {
     for (let i = 0; i < spikes; i++) { // back spikes
       const y = 21 - i * 2;
       if (y < 10) break;
@@ -235,9 +391,9 @@ export function buildModel(speciesId, stage) {
     // chain: joint names from the root down to this part.
     const chain = [];
     for (let n = name; n; n = parents[n]) chain.unshift(n);
-    parts.push({ name, data: mesh.data, quads: mesh.quads, chain });
+    parts.push({ name, data: mesh.data, quads: mesh.quads, chain, emote: name.startsWith('emo_') ? name.slice(4) : null, seg: name.startsWith('seg') });
   }
-  return { parts, pivots, species: sp.id, stage };
+  return { parts, pivots, species: sp.id, stage, tipY: SEGS * SEG_LEN };
 }
 
 export function newPose() {
@@ -245,7 +401,25 @@ export function newPose() {
   for (const n of JOINTS) j[n] = new Float32Array(6);
   // spin/pitch: whole-body yaw and pitch. hop/fwd: whole-body offset in model units. look: where the head turns.
   // bank/climb: how the aircraft leans into a turn and points its nose. flip: somersault angle of the double jump.
-  return { flip: 0, walk: 0, walkAmp: 0, time: 0, squash: 0, spin: 0, pitch: 0, hop: 0, fwd: 0, roar: 0, hold: 0, look: 0, aimPitch: 0, air: 0, cling: 0, climbAmt: 0, climbV: 0, climbH: 0, bank: 0, climb: 0, j };
+  // ta/ts: the tentacle's bend of every segment forwards and sideways (the shape it reaches with), emerge: how far it is out
+  // of the ground (0 = below, 1 = out), lean: the stick's lean of the whole arm (forwards, sideways), emote: the emoticon above the tip.
+  return { flip: 0, walk: 0, walkAmp: 0, time: 0, squash: 0, spin: 0, pitch: 0, hop: 0, fwd: 0, roar: 0, hold: 0, look: 0, aimPitch: 0, air: 0, cling: 0, climbAmt: 0, climbV: 0, climbH: 0, bank: 0, climb: 0,
+    ta: new Float32Array(SEGS), ts: new Float32Array(SEGS), emerge: 1, leanF: 0, leanS: 0, emote: null, emoteT: 0, j };
+}
+
+// The tentacle's reach: a few steps of cyclic coordinate descent in the plane it faces, which bends the segments so that
+// the tip comes closer to (f, u) (forwards and up from the root, in model units). Run a little every frame, from last
+// frame's shape: the arm follows its target with a soft delay instead of snapping to it.
+export function reachFor(pose, f, u, steps = 2) {
+  const a = pose.ta, px = new Float32Array(SEGS + 1), py = new Float32Array(SEGS + 1);
+  const chain = () => { let ang = 0; for (let i = 0; i < SEGS; i++) { ang += a[i]; px[i + 1] = px[i] + Math.sin(ang) * SEG_LEN; py[i + 1] = py[i] + Math.cos(ang) * SEG_LEN; } };
+  for (let s = 0; s < steps; s++) for (let i = SEGS - 1; i >= 0; i--) {
+    chain();
+    const ex = px[SEGS] - px[i], ey = py[SEGS] - py[i], tx = f - px[i], ty = u - py[i];
+    const d = Math.atan2(ex * ty - ey * tx, ex * tx + ey * ty); // turning the tip vector onto the target vector
+    a[i] = clamp(a[i] - clamp(d, -0.25, 0.25) * 0.5, -0.42, 0.42);
+  }
+  for (let i = 1; i < SEGS - 1; i++) a[i] = a[i] * 0.8 + (a[i - 1] + a[i + 1]) * 0.1; // smooth: a bend, not a kink
 }
 
 // Body language that is always on: walking, breathing, tail sway, looking at the aim point, tucking in a jump.
@@ -259,6 +433,28 @@ export function locomotion(pose, species) {
     j.torso[2] = pose.bank; j.torso[0] = pose.climb;
     j.turret[1] = pose.look; j.pods[1] = pose.look; j.barrel[0] = pose.aimPitch;
     pose.hop = Math.sin(t * 2.1) * 0.4;
+    return;
+  }
+  if (species === 'chopper') { // tilts into the way it moves, the rotors turn all the time, the gun follows the aim point
+    j.torso[0] = pose.climb; j.torso[2] = pose.bank;
+    j.rotor[1] = t * 31; j.rotor2[1] = -t * 31; j.trotor[0] = t * 47;
+    j.turret[1] = pose.look; j.barrel[0] = pose.aimPitch;
+    pose.hop = Math.sin(t * 2.3) * 0.5;
+    return;
+  }
+  if (species === 'tentacle') {
+    // Every segment takes its share of the reach, a slow wave runs up the arm and sways it from side to side,
+    // and the lean of the stick tilts the whole arm from the root. Below the ground it is drawn down into its hole.
+    const lean = pose.leanF, side = pose.leanS;
+    for (let i = 0; i < SEGS; i++) {
+      const q = j[SEG_NAMES[i]], k = i / (SEGS - 1);
+      q[0] = pose.ta[i] + Math.sin(t * 2.1 - i * 0.55) * 0.05 * (0.4 + k) + (i < 3 ? lean * 0.22 : 0);
+      q[2] = pose.ts[i] + Math.sin(t * 1.4 - i * 0.45) * 0.06 * (0.3 + k) + (i < 3 ? -side * 0.2 : 0);
+      q[1] = Math.sin(t * 0.9 - i * 0.3) * 0.04;
+    }
+    j.seg0[4] = -(1 - pose.emerge) * SEGS * SEG_LEN;
+    pose.hop = 0;
+    if (pose.roar) { const r = pose.roar; for (let i = 0; i < SEGS; i++) { j[SEG_NAMES[i]][0] *= 1 - r; j[SEG_NAMES[i]][2] += Math.sin(t * 40 + i) * 0.08 * r; } pose.squash = Math.min(pose.squash, -0.5 * r); } // rears up and trembles
     return;
   }
   if (species === 'tank') {
@@ -463,6 +659,8 @@ export class Monster {
     this.bounce = 0; this.bounceDir = 1; // aircraft: seconds it is still tumbling after a crash, and which way
     this.steer = 0; this.pitchIn = 0; // aircraft controls: turn and climb, -1..1
     this.homing = false; // aircraft has left an island and is turning back
+    this.vx = 0; this.vz = 0; this.liftIn = 0; this.strafe = 0; this.washT = 0; this.landT = 0; // helicopter: drift, height over the ground, controls
+    this.under = false; this.diveCool = 0; this.leanT = 0; this.mineT = 0; this.eruptT = -9; this.quietT = 0; // tentacle: below the ground, timers
   }
 
   targetHeight() {
@@ -476,7 +674,10 @@ export class Monster {
     this.jumps = 0; this.flipT = -1; this.flipped = false; this.pose.flip = 0;
     this.pound = null; this.stun = 0; this.cling = null;
     this.h = this.targetHeight();
-    if (this.g.progress.species === 'jet') { this.y = y + 40 + this.h; this.onGround = false; } // the aircraft starts in the air
+    const sp = this.g.progress.species;
+    if (sp === 'jet') { this.y = y + 40 + this.h; this.onGround = false; } // the aircraft starts in the air
+    if (sp === 'chopper') { this.y = y + this.h * 1.1 + 4; this.vx = this.vz = this.vy = 0; this.onGround = false; }
+    if (sp === 'tentacle') { this.under = false; this.pose.emerge = 1; this.pose.ta.fill(0); }
   }
 
   faceTo(x, z) {
@@ -597,6 +798,158 @@ export class Monster {
     locomotion(pose, 'jet');
   }
 
+  // The helicopter hovers: it drifts where it is steered (mx/mz in the world, plus strafe), with inertia, and comes to a stop
+  // when let go. Height works as under water: holding the jump button lifts it, let go it sinks back by itself until it sits
+  // on the ground or a roof. What lies just ahead it rises over on its own. The nose turns towards the aim. Running into
+  // something solid leaves a dent and throws it back. Sitting on a roof from stage 3 on, it is too heavy for it.
+  hover(dt, mx, mz, aimX, aimZ) {
+    const g = this.g, w = g.world, h = this.h, pose = this.pose, size = w.wrap ? w.sx : 0;
+    this.bounce = Math.max(0, this.bounce - dt);
+    const v = (18 + h * 0.9) * (this.sprint ? 1.6 : 1), k = Math.min(1, dt * 2.4);
+    const want = Math.hypot(mx, mz) > 1 ? 1 / Math.hypot(mx, mz) : 1;
+    if (this.bounce <= 0) { this.vx += (mx * want * v - this.vx) * k; this.vz += (mz * want * v - this.vz) * k; }
+    const px = this.x, pz = this.z;
+    this.x += this.vx * dt; this.z += this.vz * dt;
+    // Height: up while the button is held, a slower sinking otherwise. The floor is the highest thing under the body and a little ahead.
+    this.vy += ((this.liftIn > 0 ? 14 + h : -(5 + h * 0.45)) - this.vy) * Math.min(1, dt * 3);
+    let floor = 0;
+    const r = h * 0.3, ax = this.x + this.vx * 0.45, az = this.z + this.vz * 0.45;
+    for (const [ox, oz] of [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]]) floor = Math.max(floor, w.heightBelow(this.x + ox, this.z + oz, w.sy - 1), w.heightBelow(ax + ox, az + oz, w.sy - 1));
+    this.y += this.vy * dt;
+    if (this.y < floor) { this.y += Math.min(floor - this.y, (30 + h * 1.5) * dt); if (this.vy < 0) this.vy = 0; } // over what is ahead
+    if (this.y > w.sy + 60) { this.y = w.sy + 60; this.vy = Math.min(0, this.vy); }
+    this.onGround = this.y <= floor + 0.5;
+    // Landed on a roof: from stage 3 the roof gives way under it, and it sinks floor by floor until it stands on something firm.
+    if (this.onGround && this.stage >= 3 && (this.landT -= dt) <= 0) {
+      const st = w.structureAt(this.x, this.z);
+      if (st && st.major && floor > st.y0 + 2) {
+        this.landT = 0.45;
+        g.lastHit.dx = 0; g.lastHit.dz = 0;
+        g.destruction.sphere(this.x, floor - 1, this.z, h * 0.32 + 1, 3 + this.stage * 1.3, { dx: 0, dy: -0.3, dz: 0, impulse: launch(h * 0.6 + 4), debris: 30 });
+        g.shake(0.15);
+      }
+    }
+    // Into a wall: a dent the size of the helicopter, a bump backwards, a moment of tumbling.
+    const sp = Math.hypot(this.vx, this.vz);
+    if (sp > 2 && this.bounce <= 0) {
+      const fx = this.vx / sp, fz = this.vz / sp, nx = this.x + fx * h * 0.55, nz = this.z + fz * h * 0.55, ny = this.y + h * 0.35;
+      if (w.get(Math.floor(nx), Math.floor(ny), Math.floor(nz)) || w.get(Math.floor(this.x + fx * h * 0.3), Math.floor(this.y + h * 0.6), Math.floor(this.z + fz * h * 0.3))) {
+        g.lastHit.dx = fx; g.lastHit.dz = fz;
+        g.destruction.sphere(nx, ny, nz, h * 0.3 + 1.2, 3 + this.stage * 1.4, { dx: fx, dy: 0.1, dz: fz, impulse: launch(h + 6), debris: 40, spare: true });
+        g.onCrash(this);
+        this.x = px - fx * 0.5; this.z = pz - fz * 0.5;
+        this.vx = -fx * v * 0.5; this.vz = -fz * v * 0.5;
+        this.bounce = 0.45; this.bounceDir = g.rng() < 0.5 ? 1 : -1;
+      }
+    }
+    if (w.wrap) { this.x = ((this.x % w.sx) + w.sx) % w.sx; this.z = ((this.z % w.sz) + w.sz) % w.sz; }
+    else { this.x = clamp(this.x, 4, w.sx - 4); this.z = clamp(this.z, 4, w.sz - 4); }
+    this.speed = sp;
+    // The nose turns towards the aim point; the body tilts into the drift (forwards: nose down) and wobbles after a bump.
+    let dh = Math.atan2(wrapDelta(aimX - this.x, size), wrapDelta(aimZ - this.z, size)) - this.heading;
+    dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+    if (Math.hypot(wrapDelta(aimX - this.x, size), wrapDelta(aimZ - this.z, size)) > h * 0.5) this.heading += dh * Math.min(1, dt * 3);
+    const fwd = (this.vx * Math.sin(this.heading) + this.vz * Math.cos(this.heading)) / v, side = (this.vx * Math.cos(this.heading) - this.vz * Math.sin(this.heading)) / v;
+    pose.climb += (fwd * 0.28 - pose.climb) * Math.min(1, dt * 4);
+    pose.bank += (side * 0.32 + (this.bounce > 0 ? this.bounceDir * Math.sin(this.bounce * 30) * 0.3 : 0) - pose.bank) * Math.min(1, dt * 5);
+    pose.air = 0; pose.walkAmp = 0;
+    let dl = Math.atan2(wrapDelta(aimX - this.x, size), wrapDelta(aimZ - this.z, size)) - this.heading - pose.look;
+    dl = Math.atan2(Math.sin(dl), Math.cos(dl));
+    pose.look += dl * Math.min(1, dt * 10);
+    pose.aimPitch += (clamp(Math.atan2(this.y - g.aim.y, Math.hypot(wrapDelta(aimX - this.x, size), wrapDelta(aimZ - this.z, size))), -0.3, 1.3) - pose.aimPitch) * Math.min(1, dt * 10);
+    // Rotor wash: low over the ground it blows dust about; from stage 3 the windows right under it burst.
+    const gap = this.y - floor;
+    if (gap < h * 1.6 && (this.washT -= dt) <= 0) {
+      this.washT = 0.3;
+      g.onWash(this, floor, 1 - gap / (h * 1.6));
+    }
+    locomotion(pose, 'chopper');
+  }
+
+  // Ground under (x, z): the top of the earth at or below y0, not counting what is built on it; -1 if there is none
+  // within reach below (the edge of an island in the sky).
+  groundBelow(x, z, y0, depth = this.h * 2 + 8) {
+    const w = this.g.world, ix = Math.floor(x), iz = Math.floor(z), top = Math.min(Math.floor(y0), w.sy - 1), lo = Math.max(0, top - Math.ceil(depth));
+    for (let y = top; y >= lo; y--) { const t = w.get(ix, y, iz); if (t && TYPE_FLAGS[t] & F_TERRAIN) return y + 1; }
+    return lo > 0 ? -1 : 0;
+  }
+
+  // The tentacle. Below the ground it travels fast and unseen (only a bulge of earth moves along), and under a building
+  // it digs away at the foundations. Out of the ground it stays where it is and reaches out; the stick leans the whole arm,
+  // and leaning on for a moment sends it down again to travel on.
+  burrow(dt, mx, mz, aimX, aimZ) {
+    const g = this.g, w = g.world, h = this.h, pose = this.pose, size = w.wrap ? w.sx : 0, input = Math.hypot(mx, mz);
+    this.onGround = true; this.vy = 0; this.jumps = 0; this.speed = 0;
+    this.diveCool -= dt;
+    pose.emerge += ((this.under ? 0 : 1) - pose.emerge) * Math.min(1, dt * (this.under ? 10 : 7));
+    if (!this.under && pose.emerge > 0.995) pose.emerge = 1;
+    if (this.under && pose.emerge < 0.01) pose.emerge = 0;
+    const gy = this.groundBelow(this.x, this.z, this.y + h * 0.3);
+    if (gy >= 0 && gy < this.y) this.y = Math.max(gy, this.y - (h * 3 + 20) * dt); // the ground under it was blown away: it follows it down
+    if (this.under) {
+      if (input > 0.05) {
+        const wet = w.under || (w.water && w.water.rects.some((q) => this.x >= q[0] && this.x < q[2] && this.z >= q[1] && this.z < q[3]));
+        const v = (12 + h * 1.1) * (wet ? 2 : 1) * (this.sprint ? 1.5 : 1) * Math.min(1, input), dx = mx / input, dz = mz / input;
+        // Below the ground every rise is just more earth to dig through: out of a crater, up a slope, under a hill.
+        // Only where there is no ground at all (the edge of an island in the sky) it cannot go on.
+        const nx = this.x + dx * v * dt, nz = this.z + dz * v * dt, ny = this.groundBelow(nx, nz, this.y + h * 3 + 40, h * 5 + 48);
+        if (ny >= 0) { this.x = nx; this.z = nz; this.y += (ny - this.y) * Math.min(1, dt * 12); this.speed = v; }
+        this.heading += Math.atan2(Math.sin(Math.atan2(dx, dz) - this.heading), Math.cos(Math.atan2(dx, dz) - this.heading)) * Math.min(1, dt * 8);
+        pose.walk += dt * v * 0.4;
+        if (g.rng() < 0.15) g.onBurrow(this);
+        if ((this.rumbleT = (this.rumbleT ?? 0) - dt) <= 0) { this.rumbleT = 3 + g.rng() * 2; g.emote('rumble'); } // ズズズ over the moving ground, now and then
+        this.mineT = 0;
+      } else {
+        if (pose.emote === 'rumble') pose.emote = null; // standing still below the ground: nothing shows where it is
+        this.rumbleT = 0;
+        // Waiting under a building: the building shakes and its foundations crumble, bit by bit.
+        const st = w.structureAt(this.x, this.z);
+        if (st && st.major && !st.done && (this.mineT += dt) > 0.8) { this.mineT = 0; g.onUndermine(this, st); }
+      }
+    } else {
+      // The stick leans the arm; held over for a moment, the tentacle goes down to travel.
+      const f = input > 0.05 ? (mx * Math.sin(this.heading) + mz * Math.cos(this.heading)) : 0, s = input > 0.05 ? (mx * Math.cos(this.heading) - mz * Math.sin(this.heading)) : 0;
+      pose.leanF += (f - pose.leanF) * Math.min(1, dt * 5); pose.leanS += (s - pose.leanS) * Math.min(1, dt * 5);
+      if (input > 0.75 && !g.tools.act) { if ((this.leanT += dt) > 0.35) this.dive(); } else this.leanT = 0;
+      let dh = Math.atan2(wrapDelta(aimX - this.x, size), wrapDelta(aimZ - this.z, size)) - this.heading;
+      dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+      if (!g.tools.act && Math.hypot(wrapDelta(aimX - this.x, size), wrapDelta(aimZ - this.z, size)) > h * 0.3) this.heading += dh * Math.min(1, dt * 4);
+    }
+    if (w.wrap) { this.x = ((this.x % w.sx) + w.sx) % w.sx; this.z = ((this.z % w.sz) + w.sz) % w.sz; }
+    else { this.x = clamp(this.x, 4, w.sx - 4); this.z = clamp(this.z, 4, w.sz - 4); }
+    // The tip looks for the aim point: forwards and up from the root, as far as the arm reaches, with a soft delay.
+    const k = MODEL_HEIGHT / h, L = SEGS * SEG_LEN, d = Math.hypot(wrapDelta(aimX - this.x, size), wrapDelta(aimZ - this.z, size)) * k;
+    let f = d, u = (g.aim.y - this.y) * k;
+    const len = Math.hypot(f, u) || 1, reach = Math.min(len, L * 0.78);
+    f = (f / len) * reach * 0.85; u = Math.max(L * 0.35, (u / len) * reach);
+    reachFor(pose, f, u, this.under ? 0 : 2);
+    if (this.under) pose.ta.fill(0);
+    for (let i = 0; i < SEGS; i++) pose.ts[i] *= 1 - Math.min(1, dt * 3);
+    pose.leanF *= this.under ? 0 : 1;
+    // Long without anything to do: a little tune, then a nap.
+    this.quietT = input > 0.05 || g.tools.act ? 0 : this.quietT + dt;
+    if (this.quietT > 9 && !pose.emote && !this.under) g.emote(this.quietT > 24 ? 'sleep' : 'note');
+    locomotion(pose, 'tentacle');
+  }
+
+  // The big button of the tentacle: down into the ground, or up out of it. Coming up is a blow of its own: the ground bursts
+  // open, and under a building the tentacle shoots up through its floors.
+  dive() {
+    if (this.diveCool > 0) return false;
+    this.diveCool = 0.35;
+    this.under = true; this.leanT = 0;
+    this.g.onDive(this);
+    return true;
+  }
+  surface() {
+    if (this.diveCool > 0 || !this.under) return false;
+    this.diveCool = 0.3;
+    this.under = false; this.pose.squash = -0.8; this.pose.ta.fill(0);
+    this.g.onSurface(this, this.g.time - this.eruptT > 1.4);
+    this.eruptT = this.g.time;
+    return true;
+  }
+
   // mx/mz: desired walking direction in world space (length 0..1). aimX/aimZ: where the head looks.
   update(dt, mx, mz, aimX, aimZ) {
     const g = this.g, w = g.world, h = this.h, pose = this.pose, species = g.progress.species;
@@ -604,6 +957,8 @@ export class Monster {
     this.grow = Math.max(0, this.grow - dt * 0.7);
     pose.time += dt;
     if (species === 'jet') { pose.roar = Math.max(0, pose.roar - dt * 1.1); pose.squash = 0; this.flyPlane(dt, aimX, aimZ); return; }
+    if (species === 'chopper') { pose.roar = Math.max(0, pose.roar - dt * 1.1); pose.squash = 0; this.hover(dt, mx, mz, aimX, aimZ); return; }
+    if (species === 'tentacle') { pose.roar = Math.max(0, pose.roar - dt * 1.1); pose.squash += (0 - pose.squash) * Math.min(1, dt * 7); this.burrow(dt, mx, mz, aimX, aimZ); return; }
     pose.roar = Math.max(0, pose.roar - dt * 1.1);
     pose.squash = Math.max(0, pose.squash - dt * 4);
     pose.air += ((this.onGround ? 0 : 1) - pose.air) * Math.min(1, dt * 12);

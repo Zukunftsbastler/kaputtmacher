@@ -73,7 +73,7 @@ export class World {
     if (ly === 0) this.markChunk(cx, cy - 1, cz); else if (ly === CM) this.markChunk(cx, cy + 1, cz);
     if (lz === 0) this.markChunk(cx, cy, cz - 1); else if (lz === CM) this.markChunk(cx, cy, cz + 1);
 
-    if (old && old < 128) {
+    if (old && old < 128 && !this.moving) { // (a voxel that is only moved, as by the heaving ground, is not destroyed)
       let st = null;
       if (!(TYPE_FLAGS[old] & F_TERRAIN)) {
         st = this.structures[this.footprint[x + this.sx * z]];
@@ -86,6 +86,16 @@ export class World {
       }
       if (this.onDestroyed) this.onDestroyed(old, x, y, z, st);
     }
+  }
+
+  // Moves the voxels y0..y1 of column (x, z) by dy (up if positive) without counting anything as destroyed;
+  // what they leave behind becomes air. Used by the ground the tentacle heaves up as it passes below.
+  shiftColumn(x, z, y0, y1, dy) {
+    if (!dy) return;
+    this.moving = true;
+    if (dy > 0) for (let y = y1; y >= y0; y--) { this.set(x, y + dy, z, this.get(x, y, z)); this.set(x, y, z, 0); }
+    else for (let y = y0; y <= y1; y++) { this.set(x, y + dy, z, this.get(x, y, z)); this.set(x, y, z, 0); }
+    this.moving = false;
   }
 
   thin(x, y, z) {

@@ -131,3 +131,18 @@ Das Spielprotokoll in den Einstellungen zeigt, wie lange jede Stufe gedauert hat
 - [ ] Jede Figur hat ihre eigene Stufe; beim Wechsel stimmt die Größe.
 - [ ] Neues Spiel und Figurenwechsel: Startet jede Figur in ihrer Heimatwelt? Bleibt eine selbst gewählte Welt für diese Figur gemerkt, auch nach dem Neuladen?
 - [ ] Gamepad, falls vorhanden: alle Aktionen erreichbar?
+
+## 11. Hubschrauber und Tentakel
+
+- [ ] Hubschrauber: Fühlt sich das Steigen mit gehaltener Leertaste (am Handy 🔼) und das Absacken beim Loslassen gut an? Zu schnell, zu langsam?
+- [ ] Hubschrauber: Gleitet er weich, bleibt er beim Loslassen stehen, zeigt die Nase zum Ziel? Ist das seitliche Gleiten mit Q/E nützlich?
+- [ ] Hubschrauber: Fliegt er über Häuser vor ihm von selbst hinweg, statt dagegen zu prallen? Stört es, dass er ab Stufe 3 durch Dächer bricht, auf denen er sitzt?
+- [ ] Hubschrauber: Kreisflug, Raketen, Rotorsäge – sieht man, was passiert? Ist die Säge jetzt stark genug? Packt der Haken Autos und Bäume, pendelt die Last, schlägt sie beim Fallenlassen ein?
+- [ ] Hubschrauber: Lässt sich die Abrissbirne gezielt in ein Gebäude schwingen? Ist der Tornado eindrucksvoll und folgt er dem Zielpunkt?
+- [ ] Tentakel: Wirkt es ohne Gesicht lebendig? Stimmen die Farben (Korallen-Orange, dunkles Rückenband, Pfirsich mit Saugnäpfen)?
+- [ ] Tentakel: Wirken die Zeichen über der Spitze nach Manga (Tuscherand, ゴゴゴ vor dem Erwachen, ドン! beim Auftauchen, ズズズ beim Reisen, pochende Zornesader, rinnender Schweißtropfen, Rotzblase beim Schlafen)?
+- [ ] Tentakel: Entsteht beim Reisen der Eindruck, dass sich etwas unter dem Boden bewegt? Bis Stufe 2 die Welle, ab Stufe 3 der bleibende Wall – zu hoch, zu flach, zu viel Bruch? Ist es im Stillstand wirklich unsichtbar?
+- [ ] Tentakel: Ist das Reisen unter der Erde verständlich (Steuerknüppel durchdrücken taucht ab, Angreifen taucht auf)? Am Handy mit dem 🕳️-Knopf?
+- [ ] Tentakel: Bricht es unter einem Haus beeindruckend durch die Stockwerke? Ist das Untergraben spürbar, aber langsamer als Zuschlagen?
+- [ ] Tentakel: Erwachen der Tiefe – passt die Einblendung, sieht man die fünf Tentakel das Haus umschlingen und hinabziehen?
+- [ ] Beide: Fühlen sich die Angriffe auf jeder Stufe ähnlich stark an wie bei den anderen Figuren? Kommt die spektakulärste Attacke wirklich zuletzt?

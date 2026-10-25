@@ -9,7 +9,7 @@ import { Destruction } from './destruction.js';
 import { Bodies } from './bodies.js';
 import { Debris, Fx, launch } from './particles.js';
 import { Actors } from './actors.js';
-import { Monster, buildModel, partMatrix, stageNeed, newPose, locomotion, MODEL_HEIGHT, GEAR, SPECIES } from './monster.js';
+import { Monster, buildModel, partMatrix, stageNeed, newPose, locomotion, MODEL_HEIGHT, GEAR, SPECIES, SEGS, airborne, EMOTE_LOOK } from './monster.js';
 import { Stability } from './stability.js';
 import { Fire } from './fire.js';
 import { Sweeper } from './sweeper.js';
@@ -19,6 +19,7 @@ import { Traffic } from './traffic.js';
 import { Frail } from './frail.js';
 import { Spans } from './spans.js';
 import { Ramparts } from './rampart.js';
+import { Heave } from './heave.js';
 import { Music } from './music.js';
 import { Tools, movesFor } from './tools.js';
 import { WORLDS } from './worldgen.js';
@@ -37,6 +38,7 @@ const GRAVITY_FX = 60; // gravity of spray particles
 // instead of throwing the creature up several stages at once. The reserve holds at most RESERVE of a stage: a whole one,
 // because destruction comes in bursts (an outpost, then a long walk to the next) and nothing earned should be lost.
 const PACE = 60, RESERVE = 1;
+const EMOTE_TIME = 1.7; // seconds an emoticon of the tentacle stays up
 const CHAIN_FADE = 0.62; // share of a chain reaction's strength that reaches the next generation: a chain dies out after three to five buildings in a row
 // Detail levels 1 (fastest) to 5 (richest), chosen with one slider in the settings.
 // planet: edge length of planet worlds in voxels (tall: of the skyscraper world). cap: radius of the part of a planet
@@ -54,7 +56,7 @@ const DETAIL = [null,
 const DUST = { [MAT.EARTH]: [0.55, 0.42, 0.3], [MAT.GLASS]: [0.85, 0.95, 1], [MAT.LEAF]: [0.4, 0.7, 0.3], [MAT.WOOD]: [0.75, 0.6, 0.4], [MAT.BRICK]: [0.8, 0.5, 0.4], [MAT.CONCRETE]: [0.75, 0.75, 0.73], [MAT.STEEL]: [0.6, 0.62, 0.66], [MAT.SHEET]: [0.7, 0.72, 0.75], [MAT.EXPLOSIVE]: [0.3, 0.3, 0.3], [MAT.FABRIC]: [0.9, 0.9, 0.85], [MAT.FORT]: [0.78, 0.72, 0.6], [MAT.ROCK]: [0.6, 0.58, 0.56] };
 
 const params = new URLSearchParams(location.search);
-const v3 = [0, 0, 0], mat = m4.create(), base = m4.create();
+const v3 = [0, 0, 0], mat = m4.create(), base = m4.create(), tipBase = m4.create(), tipMat = m4.create();
 
 class Game {
   constructor() {
@@ -97,6 +99,7 @@ class Game {
     this.frail = new Frail(this);
     this.spans = new Spans(this);
     this.ramparts = new Ramparts(this);
+    this.heave = new Heave(this); // the ground over the tentacle travelling below
     this.gainScale = 1; // below 1 while a collapse is being processed: falling voxels are worth less
     this.speciesGain = 1; // some creatures destroy so easily that it is worth less (see SPECIES in monster.js); kept up to date in checkStats
     this.chainLoad = 0; // how many collapses the running chain reaction has behind it
@@ -195,6 +198,7 @@ class Game {
     this.world = world;
     this.spans.reset(world);
     this.ramparts.reset(world);
+    this.heave.reset();
     this.rng = makeRng(seed + 5);
     this.minimap.reset(world);
     // In a night world glass carries a marker that the shader turns into lit and dark windows (renderer.js, NIGHT).
@@ -338,6 +342,7 @@ class Game {
 
   selectTool(id) {
     if (!this.unlockedTools().includes(id)) return;
+    if (id !== this.tool) this.tools.stow(); // the helicopter's wrecking ball and load stay with the winch
     this.tool = id;
     this.hud.refreshTools();
   }
@@ -359,7 +364,7 @@ class Game {
   emit(name, data) {
     if (name === 'tool' || name === 'ability') this.hud.doneHint(data);
     if (data === 'light') this.hud.requestHint('heavy');
-    if (data === 'heavy' && this.progress.species !== 'jet') this.hud.requestHint('stomp');
+    if (data === 'heavy' && !airborne(this.progress.species)) this.hud.requestHint('stomp');
     this.quietT = 0;
   }
 
@@ -478,6 +483,88 @@ class Game {
     this.audio.whoosh();
     this.stat('jumps');
     for (let i = 0; i < 10; i++) { const a = (i / 10) * 6.283; this.fx.add(m.x + Math.cos(a) * m.h * 0.3, m.y + m.h * 0.3, m.z + Math.sin(a) * m.h * 0.3, Math.cos(a) * m.h * 0.6, 4, Math.sin(a) * m.h * 0.6, 0.5 + m.h * 0.03, 0.2, 1.6, 0.85, 0.95, 1, 0.6, 0, -6, 1.5); }
+  }
+
+  // The tentacle's emoticons (monster.js): one at a time, a new one replaces the old.
+  emote(id) {
+    if (this.progress.species !== 'tentacle') return;
+    const p = this.monster.pose;
+    if (p.emote === id && p.emoteT < EMOTE_TIME * 0.5) return;
+    p.emote = id; p.emoteT = 0;
+  }
+
+  // World position of the tentacle's tip, as it is drawn right now.
+  tipPos(out) {
+    const m = this.monster, part = this.model.parts.find((q) => q.name === 'seg' + (SEGS - 1));
+    if (!part) { out[0] = m.x; out[1] = m.y + m.h; out[2] = m.z; return out; }
+    this.monsterBase(tipBase, m.x, m.y, m.z, m.heading, m.h, m.pose);
+    partMatrix(tipMat, tipBase, this.model, part, m.pose);
+    m4.transformPoint(tipMat, 0, this.model.tipY, 0, out);
+    out[0] += this.cam.focusX; out[2] += this.cam.focusZ;
+    return out;
+  }
+
+  // Rotor wash of the helicopter, low over the ground (k: 0 at the edge of its reach, 1 right on top): dust is blown out
+  // in a ring, fires flare up, and from stage 3 the glass right under it bursts.
+  onWash(m, floor, k) {
+    const n = Math.ceil(10 * k * this.fx.thin) + 2;
+    for (let i = 0; i < n; i++) {
+      const a = this.rng() * 6.283, r = m.h * (0.3 + this.rng() * 0.6);
+      this.fx.add(m.x + Math.cos(a) * r, floor + 0.5, m.z + Math.sin(a) * r, Math.cos(a) * m.h * 2, 1 + this.rng() * 3, Math.sin(a) * m.h * 2, 0.6 + m.h * 0.04, m.h * 0.05, 0.7, 0.8, 0.76, 0.68, 0.5, 0, 0, 1.5);
+    }
+    this.debris.blast(m.x, floor, m.z, m.h * 1.2 * k + 2, launch(m.h * 0.4 * k + 2));
+    if (m.stage >= 3 && k > 0.3) {
+      this.lastHit.dx = 0; this.lastHit.dz = 0;
+      this.destruction.sphere(m.x, floor, m.z, m.h * 0.35 * k + 1, 1.2, { dx: 0, dy: -0.2, dz: 0, impulse: launch(m.h * 0.5 + 3), debris: 20, quiet: true });
+    }
+  }
+
+  // The tentacle travels below the ground: a bulge of earth, cracks, dust and a deep rumble.
+  onBurrow(m) {
+    const r = this.rng, h = m.h;
+    this.fx.add(m.x + (r() - 0.5) * h * 0.6, m.y + 0.5, m.z + (r() - 0.5) * h * 0.6, (r() - 0.5) * h * 0.5, h * (0.4 + r() * 0.6), (r() - 0.5) * h * 0.5, 0.6 + h * 0.05, h * 0.05, 0.9, 0.55, 0.45, 0.33, 0.8, 0, GRAVITY_FX, 1);
+    if (r() < 0.08) this.audio.crumble(0.15);
+    if (r() < 0.05) this.shake(0.05);
+  }
+
+  // Waiting under a building: it shakes, and a piece of its foundations crumbles away. Slower than hitting it, but unseen.
+  onUndermine(m, st) {
+    const B = this.tools.base(), x = m.x + (this.rng() - 0.5) * m.h * 0.8, z = m.z + (this.rng() - 0.5) * m.h * 0.8, y = Math.max(st.y0, m.y) + 1;
+    this.lastHit.dx = 0; this.lastHit.dz = 0;
+    this.destruction.sphere(x, y, z, B.R * 0.5, B.P * 0.8, { dx: 0, dy: 0.4, dz: 0, impulse: launch(B.H * 0.5 + 4), debris: 16 });
+    // Each time a little weaker for good, as much as the creature's size measures up to what is left of the building
+    // (the reckoning of a shove): a small tentacle under a tower only tickles it.
+    this.stability.weaken(st, clamp((0.01 * m.h ** 3) / Math.max(200, st.remaining), 0, 0.03));
+    this.fx.dust(x, y + 1, z, B.H * 0.3, 0.6, 0.5, 0.4, 3);
+    this.audio.crumble(0.3);
+    this.shake(0.12);
+  }
+
+  onDive(m) {
+    this.audio.whoosh();
+    this.fx.dust(m.x, m.y + 1, m.z, m.h * 0.35, 0.6, 0.5, 0.4, 6);
+    this.hud.speedLines();
+  }
+
+  // The tentacle bursts out of the ground: a fountain of earth and a ring of shock; under a building it punches up
+  // through the floors. blow: false if it came up again too quickly (only the show then, no damage).
+  onSurface(m, blow) {
+    const B = this.tools.base(), x = m.x, y = m.y, z = m.z, r = this.rng;
+    for (let i = 0; i < 24 * this.fx.thin + 6; i++) {
+      const a = r() * 6.283, s = r() * B.H * 0.5;
+      this.fx.add(x + Math.cos(a) * s * 0.3, y + 1, z + Math.sin(a) * s * 0.3, Math.cos(a) * s, B.H * (1.5 + r() * 1.5), Math.sin(a) * s, 0.7 + B.H * 0.06, B.H * 0.06, 1.2, 0.55, 0.43, 0.3, 1, 0, GRAVITY_FX, 1);
+    }
+    this.audio.boom(0.35 + m.stage * 0.05); this.shake(0.3 + m.stage * 0.04);
+    this.hud.speedLines();
+    if (!blow) return;
+    this.emote('boom');
+    this.lastHit.dx = 0; this.lastHit.dz = 0; this.lastHit.pop = launch(B.H * 0.4);
+    this.tools.shock(x, y, z, B.H * 0.32, B.R * 0.6, B.P * 0.6, 6, true);
+    const st = this.world.structureAt(x, z);
+    if (st && st.major) { // up through the building
+      this.destruction.capsule(x, y + 1, z, x, y + B.H * 2.1, z, B.H * 0.13 + 1, B.P * 1.05, { dx: 0, dy: 1, dz: 0, impulse: launch(B.H * 1.6 + 8), debris: 90 });
+      this.impactFx(x, y + B.H, z, B.H * 0.4, 0.5 + m.stage * 0.06, true);
+    }
   }
 
   // The aircraft has flown into something.
@@ -678,6 +765,7 @@ class Game {
     m.stage = p.playStage;
     m.grow = 1;
     m.pose.roar = 1;
+    this.emote('star');
     this.buildMonster();
     this.audio.grow();
     this.audio.roar(m.stage);
@@ -704,6 +792,7 @@ class Game {
     const cx = (st.x0 + st.x1) / 2, cz = (st.z0 + st.z1) / 2;
     this.orbBurst(cx, st.y0 + Math.min(20, (st.top - st.y0) * 0.3), cz, Math.max(st.x1 - st.x0, st.z1 - st.z0) * 0.4, Math.min(28, 10 + (st.total >> 12)));
     this.stat('buildings');
+    this.emote('heart');
     if (st.top - st.y0 > 100) this.stat('towers');
     this.doneTimes.push(this.time);
     while (this.time - this.doneTimes[0] > 10) this.doneTimes.shift();
@@ -761,6 +850,14 @@ class Game {
         this.camYaw += clamp(d, -1, 1) * dt * 2.5;
       }
       m.heading = this.camYaw - inp.turn * dt * 1.9;
+    } else if (this.progress.species === 'chopper') {
+      // The helicopter: forwards and back along the view, Q and E slide it sideways, the jump button (held) lifts it.
+      // Left and right turn the view, as for every other creature.
+      if (!this.tools.driven) {
+        const f = inp.forward, s = inp.lift, cy = Math.cos(this.camYaw), sy = Math.sin(this.camYaw);
+        mx = sy * f - cy * s; mz = cy * f + sy * s;
+      }
+      m.liftIn = inp.jumpHeld ? 1 : 0;
     } else if (m.cling) {
       // On a wall the same controls climb: forwards is up, backwards down, left and right along the wall.
       // The camera settles behind the creature, so that "forwards" keeps meaning "towards the wall".
@@ -775,7 +872,8 @@ class Game {
     m.jumpHeld = inp.jumpHeld;
     m.sprint = inp.sprint;
     m.update(dt, mx, mz, this.aim.x, this.aim.z);
-    this.ramparts.limit(m, px, pz); // fortress Titan: no way over its walls, only through
+    if (this.ramparts.limit(m, px, pz)) this.emote('anger'); // fortress Titan: no way over its walls, only through
+    if (m.pose.emote && (m.pose.emoteT += dt) > EMOTE_TIME) m.pose.emote = null;
     const moved = Math.hypot(wrapDelta(m.x - px, this.cam.wrap), wrapDelta(m.z - pz, this.cam.wrap));
     this.walked += moved;
     if (!this.fly) this.stat('dist', moved);
@@ -793,6 +891,7 @@ class Game {
     this.reactions.update(dt);
     this.frail.update();
     this.spans.update(dt);
+    this.heave.update(dt);
     this.ramparts.update();
     this.chainLoad = Math.max(0, this.chainLoad - dt * 0.25);
     // Under the sea, bubbles rise all around.
@@ -893,7 +992,8 @@ class Game {
     if (this.fly) { c.focusX = this.flyPos[0]; c.focusZ = this.flyPos[2]; ty = this.flyPos[1]; }
     // On an upright phone the picture is narrow, so the camera steps back to keep the surroundings in view.
     const narrow = clamp(1.2 * cv.clientHeight / Math.max(1, cv.clientWidth), 1, 2.2);
-    if (!this.fly) { c.focusX = m.x; c.focusZ = m.z; ty = m.y + m.h * (this.progress.species === 'jet' ? 0.5 : 1.3); dist = (m.h * 3.4 + 12) * narrow; }
+    const sp = this.progress.species;
+    if (!this.fly) { c.focusX = m.x; c.focusZ = m.z; ty = m.y + m.h * (airborne(sp) ? 0.5 : sp === 'tentacle' ? 1.1 : 1.3); dist = (m.h * (sp === 'tentacle' ? 3.9 : 3.4) + 12) * narrow; }
     // Idle mode has a camera of its own: it slowly breathes in and out between a close view and a wide one.
     if (this.idle && !this.fly) dist *= 1.25 + 0.4 * Math.sin(this.time * 0.08);
     c.eye[0] = tx - c.fwd[0] * dist; c.eye[1] = ty - c.fwd[1] * dist; c.eye[2] = tz - c.fwd[2] * dist;
@@ -1073,9 +1173,38 @@ class Game {
   drawMonster(b, pose, alpha, tint) {
     if (this.world.night) this.renderer.setNight(0.45); // the creature stays easy to see in the dark
     // Aircraft and excavator show only the gear that belongs to the selected move (GEAR in monster.js).
-    const set = GEAR[this.model.species], gear = set ? set[this.tool] ?? '' : null;
-    for (let i = 0; i < this.model.parts.length; i++)
-      if (gear === null || !this.model.parts[i].chain.some((n) => n !== gear && Object.values(set).includes(n))) this.renderer.drawMesh(this.modelMeshes[i], partMatrix(mat, b, this.model, this.model.parts[i], pose), alpha, tint);
+    const set = GEAR[this.model.species], gear = set ? set[this.tool] ?? '' : null, hidden = pose.emerge < 0.03; // the tentacle below the ground: only its bulge
+    for (let i = 0; i < this.model.parts.length; i++) {
+      const part = this.model.parts[i];
+      if (part.emote || ((part.seg || part.name === 'mound') && hidden)) continue; // below the ground nothing of it shows
+      if (gear === null || !part.chain.some((n) => n !== gear && Object.values(set).includes(n))) this.renderer.drawMesh(this.modelMeshes[i], partMatrix(mat, b, this.model, part, pose), alpha, tint);
+    }
+    // The tentacle's emoticon pops up above the tip (below the ground: above where it travels), turned to the camera.
+    // It swells in, moves the way its kind of mark moves in a comic, and shrinks away.
+    if (pose.emote && alpha === 1 && (!hidden || pose.emote === 'rumble')) {
+      const i = this.model.parts.findIndex((q) => q.emote === pose.emote), t = pose.emoteT, k = Math.min(1, t / 0.18), end = Math.min(1, (EMOTE_TIME - t) / 0.2);
+      const look = EMOTE_LOOK[pose.emote] ?? { anim: 'pop', size: 1 }, h = this.monster.h;
+      if (i >= 0 && end > 0) {
+        let pop = Math.min(k * 1.25, 1 + (1 - k) * 0.25) * end, ox = 0, oy = 0, roll = 0;
+        const a = look.anim;
+        if (a === 'throb') pop *= 1 + 0.18 * Math.max(0, Math.sin(t * 16)); // the vein throbs
+        else if (a === 'slide') { ox = 0.35; oy = -0.25 * t; } // the drop runs down the side
+        else if (a === 'bubble') pop *= 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(t * 3.2)); // the bubble swells and shrinks with the breath
+        else if (a === 'spin') roll = t * 5;
+        else if (a === 'twinkle') { pop *= 1 + 0.12 * Math.sin(t * 22); roll = Math.sin(t * 3) * 0.2; }
+        else if (a === 'sway') { roll = Math.sin(t * 6) * 0.35; ox = Math.sin(t * 3) * 0.1; }
+        else if (a === 'shake') { ox = (Math.random() - 0.5) * 0.05; oy = (Math.random() - 0.5) * 0.05; roll = -0.18; } // lettering that trembles with the noise
+        else oy = 0.04 * Math.sin(t * 7);
+        const s = (h / MODEL_HEIGHT) * 2.1 * pop * look.size, yaw = this.camYaw + Math.PI;
+        if (hidden) { v3[0] = this.monster.x; v3[1] = this.monster.y + h * 0.1; v3[2] = this.monster.z; } else this.tipPos(v3);
+        const rx = -Math.cos(this.camYaw) * ox * h, rz = Math.sin(this.camYaw) * ox * h; // sideways in the picture
+        m4.translation(mat, wrapDelta(v3[0] + rx - this.cam.focusX, this.cam.wrap), v3[1] + h * (0.5 + oy), wrapDelta(v3[2] + rz - this.cam.focusZ, this.cam.wrap));
+        m4.rotateY(mat, yaw);
+        if (roll) m4.rotateZ(mat, roll);
+        m4.scale(mat, s, s, s);
+        this.renderer.drawMesh(this.modelMeshes[i], mat, 1, null);
+      }
+    }
     if (this.world.night) this.renderer.setNight(1);
   }
 
@@ -1174,7 +1303,7 @@ class Game {
   // Show, don't tell: a see-through twin of the creature performs the action that is being introduced.
   drawGhost() {
     const id = this.hud.hintId, m = this.monster, species = this.progress.species;
-    if (!id || this.fly || ['worlds', 'next'].includes(id) || species === 'jet' || this.idle) return; // no twin for the aircraft
+    if (!id || this.fly || ['worlds', 'next'].includes(id) || airborne(species) || species === 'tentacle' || this.idle) return; // no twin for the aircraft, the helicopter and the tentacle
     const g = this.ghost, p = g.pose, dt = 1 / 60;
     g.t += dt;
     p.time += dt;

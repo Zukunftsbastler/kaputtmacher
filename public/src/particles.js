@@ -91,6 +91,17 @@ export class Debris {
     }
   }
 
+  // Whirls loose cubes round a vertical axis, draws them in and lifts them (a whirlwind).
+  swirl(cx, cz, radius, spin, lift) {
+    const size = this.g.world.wrap ? this.g.world.sx : 0, r2 = radius * radius;
+    for (let i = 0; i < this.n; i++) {
+      const dx = wrapDelta(this.px[i] - cx, size), dz = wrapDelta(this.pz[i] - cz, size), d2 = dx * dx + dz * dz;
+      if (d2 > r2 || d2 < 0.01) continue;
+      const d = Math.sqrt(d2), k = 1 - d / radius;
+      this.vx[i] += ((-dz * spin - dx * spin * 0.3) / d) * k; this.vz[i] += ((dx * spin - dz * spin * 0.3) / d) * k; this.vy[i] += lift * k;
+    }
+  }
+
   // Writes instances (pos3, scale3, yaw, tumble, rgba) and returns the new write offset.
   write(out, o) {
     for (let i = 0; i < this.n; i++) {
