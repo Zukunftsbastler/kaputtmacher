@@ -18,9 +18,14 @@ vec3 nightLight(vec3 p, float light) {
 }
 `;
 
+// Every quad is one instance (mesher.js): its lowest corner, its extent along the face's u and v axes, the face and the
+// ao of its four corners. gl_VertexID 0..3 walks the corners as a triangle strip; the strip's diagonal is chosen
+// so that the ao runs smoothly (the same rule the mesher used to apply when it wrote four vertices per quad).
 const VOXEL_VS = `#version 300 es
-layout(location=0) in vec4 a_pos;
-layout(location=1) in vec4 a_col;
+layout(location=0) in vec3 i_pos;
+layout(location=1) in vec2 i_size;
+layout(location=2) in float i_meta;
+layout(location=3) in vec4 a_col;
 uniform mat4 u_vp, u_model;
 uniform vec3 u_sun, u_eye, u_origin;
 ${CURVE}
@@ -28,17 +33,22 @@ out vec3 v_col; out float v_light; out float v_dist; out vec2 v_flat; out float 
 const vec3 N[6] = vec3[6](vec3(1,0,0), vec3(-1,0,0), vec3(0,1,0), vec3(0,-1,0), vec3(0,0,1), vec3(0,0,-1));
 const vec3 U[6] = vec3[6](vec3(0,1,0), vec3(0,0,1), vec3(0,0,1), vec3(1,0,0), vec3(1,0,0), vec3(0,1,0));
 const vec3 V[6] = vec3[6](vec3(0,0,1), vec3(0,1,0), vec3(1,0,0), vec3(0,0,1), vec3(0,1,0), vec3(1,0,0));
+const int ALONG[4] = int[4](0, 1, 3, 2); // strip with the diagonal from corner 1 to 3
+const int ACROSS[4] = int[4](1, 2, 0, 3); // strip with the diagonal from corner 0 to 2
 void main() {
-  int p = int(a_pos.w);
-  float ao = float((p >> 3) & 3);
+  int meta = int(i_meta), f = meta & 7;
+  int a0 = (meta >> 3) & 3, a1 = (meta >> 5) & 3, a2 = (meta >> 7) & 3, a3 = (meta >> 9) & 3;
+  int corner = a0 + a2 < a1 + a3 ? ALONG[gl_VertexID] : ACROSS[gl_VertexID];
+  float ao = float(corner == 0 ? a0 : corner == 1 ? a1 : corner == 2 ? a2 : a3);
+  float cu = corner == 1 || corner == 2 ? 1.0 : 0.0, cv = corner >= 2 ? 1.0 : 0.0;
+  vec3 p = i_pos + U[f] * (cu * i_size.x) + V[f] * (cv * i_size.y);
   // Merged faces of different sizes meet in T-junctions; growing every quad by a hair closes the pin-hole gaps.
-  int corner = (p >> 5) & 3;
-  vec3 grow = U[p & 7] * (corner == 1 || corner == 2 ? 0.012 : -0.012) + V[p & 7] * (corner >= 2 ? 0.012 : -0.012);
-  vec3 rel = (u_model * vec4(a_pos.xyz + grow, 1.0)).xyz;
-  vec3 n = normalize(mat3(u_model) * N[p & 7]);
+  vec3 grow = U[f] * (cu > 0.5 ? 0.012 : -0.012) + V[f] * (cv > 0.5 ? 0.012 : -0.012);
+  vec3 rel = (u_model * vec4(p + grow, 1.0)).xyz;
+  vec3 n = normalize(mat3(u_model) * N[f]);
   v_light = (0.5 + 0.18 * n.y + 0.55 * max(dot(n, u_sun), 0.0)) * (0.55 + 0.15 * ao);
   v_col = a_col.rgb; v_em = a_col.a; v_flat = rel.xz; v_y = rel.y;
-  v_cell = a_pos.xyz - N[p & 7] * 0.5 + u_origin; // a point inside the voxel this face belongs to
+  v_cell = p - N[f] * 0.5 + u_origin; // a point inside the voxel this face belongs to
   rel = curve(rel);
   v_dist = length(rel - u_eye);
   gl_Position = u_vp * vec4(rel, 1.0);
@@ -196,10 +206,7 @@ export class Renderer {
     this.sky = this.program(SKY_VS, SKY_FS);
     this.pixelScale = 1;
 
-    // One index buffer serves every quad mesh.
-    this.ibo = gl.createBuffer();
-    this.iboQuads = 0;
-    this.ensureQuads(1 << 14);
+    this.meshBytes = 0; // graphics memory held by voxel meshes (shown with ?perf=1)
 
     this.cubeVao = gl.createVertexArray();
     gl.bindVertexArray(this.cubeVao);
@@ -244,37 +251,26 @@ export class Renderer {
     return { p, u };
   }
 
-  ensureQuads(n) {
-    if (n <= this.iboQuads) return;
-    const gl = this.gl;
-    let cap = Math.max(this.iboQuads, 1 << 14);
-    while (cap < n) cap *= 2;
-    const idx = new Uint32Array(cap * 6);
-    for (let q = 0; q < cap; q++) idx.set([q * 4, q * 4 + 1, q * 4 + 2, q * 4, q * 4 + 2, q * 4 + 3], q * 6);
-    gl.bindVertexArray(null);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
-    this.iboQuads = cap;
-  }
-
+  // A voxel mesh from the mesher's quad records (mesher.js, QUAD_BYTES): one instance per quad.
   createMesh(data, quads) {
     const gl = this.gl;
-    this.ensureQuads(quads);
     const vao = gl.createVertexArray(), vbo = gl.createBuffer();
     gl.bindVertexArray(vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.SHORT, false, 12, 0);
-    gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.UNSIGNED_BYTE, true, 12, 8);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
+    const attr = (loc, n, type, norm, off) => { gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, n, type, norm, 16, off); gl.vertexAttribDivisor(loc, 1); };
+    attr(0, 3, gl.SHORT, false, 0); attr(1, 2, gl.UNSIGNED_BYTE, false, 6); attr(2, 1, gl.UNSIGNED_SHORT, false, 8); attr(3, 4, gl.UNSIGNED_BYTE, true, 12);
     gl.bindVertexArray(null);
-    return { vao, vbo, quads };
+    const bytes = data.byteLength;
+    this.meshBytes += bytes;
+    return { vao, vbo, quads, bytes };
   }
 
   deleteMesh(m) {
     if (!m) return;
     this.gl.deleteVertexArray(m.vao);
     this.gl.deleteBuffer(m.vbo);
+    this.meshBytes -= m.bytes ?? 0;
   }
 
   resize() {
@@ -301,7 +297,7 @@ export class Renderer {
 
     for (const pr of [this.voxel, this.cube, this.bill]) {
       gl.useProgram(pr.p);
-      gl.uniformMatrix4fv(pr.u.u_vp, false, cam.vp);
+      gl.uniformMatrix4fv(pr.u.u_vp, false, cam.drawVp ?? cam.vp); // the picture may shake (main.js), aiming does not
       gl.uniform1f(pr.u.u_curv, cam.curv);
       if (pr.u.u_sun) gl.uniform3f(pr.u.u_sun, 0.42, 0.82, 0.38);
       if (pr.u.u_eye) gl.uniform3fv(pr.u.u_eye, cam.eye);
@@ -337,7 +333,7 @@ export class Renderer {
     if (tint) gl.uniform4fv(u.u_tint, tint); else gl.uniform4f(u.u_tint, 0, 0, 0, 0);
     if (alpha < 1) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); } else gl.disable(gl.BLEND);
     gl.bindVertexArray(mesh.vao);
-    gl.drawElements(gl.TRIANGLES, mesh.quads * 6, gl.UNSIGNED_INT, 0);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, mesh.quads);
   }
 
   drawCubes(data, count) {

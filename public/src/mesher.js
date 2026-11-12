@@ -1,22 +1,31 @@
 // Turns a voxel volume into quads: only faces next to air, with per-corner ambient occlusion.
 // Neighbouring faces of the same voxel type and evenly lit are merged into one large rectangle
 // (greedy meshing), so a plain wall costs a handful of quads instead of one per voxel.
-// Vertex layout (12 bytes): int16 x, y, z, packed (face 0..5 | ao << 3 | corner << 5), then uint8 r, g, b, emissive.
-// The slight shade difference between neighbouring voxels is added by the fragment shader.
+// Every quad is one record of QUAD_BYTES = 16 bytes, drawn as an instance of four corners (renderer.js):
+//   int16 x, y, z   the corner with the lowest u and v, already on the face's plane
+//   uint8 w, h      extent along the face's u and v axes (FACES), 1..255
+//   uint16 meta     face 0..5 | ao of corner 0..3 << 3, 5, 7, 9 (0 = darkest, 3 = open)
+//   2 bytes unused, uint8 r, g, b, emissive
+// The vertex shader builds the four corners from this; the slight shade difference between neighbouring voxels is
+// added by the fragment shader. (Before November 2026 every quad was four vertices of 12 bytes: three times as much.)
+// The module touches nothing but its own buffers, so it also runs in the meshing workers (mesh-worker.js).
 
-import { TYPE_RGBA } from './materials.js';
+import { TYPE_RGBA, T } from './materials.js';
 
-let cap = 1 << 16; // vertices
-let buf = new ArrayBuffer(cap * 12);
+export const QUAD_BYTES = 16;
+const MAX_EXTENT = 255; // w and h are bytes
+let cap = 1 << 14; // quads
+let buf = new ArrayBuffer(cap * QUAD_BYTES);
 let i16 = new Int16Array(buf);
+let u16 = new Uint16Array(buf);
 let u8 = new Uint8Array(buf);
 let mask = new Int32Array(34 * 34);
 
 function grow() {
   cap *= 2;
-  const nb = new ArrayBuffer(cap * 12);
+  const nb = new ArrayBuffer(cap * QUAD_BYTES);
   new Uint8Array(nb).set(u8);
-  buf = nb; i16 = new Int16Array(buf); u8 = new Uint8Array(buf);
+  buf = nb; i16 = new Int16Array(buf); u16 = new Uint16Array(buf); u8 = new Uint8Array(buf);
 }
 
 // Per face: normal n, tangents u and v with u x v = n.
@@ -28,7 +37,7 @@ const FACES = [
   [0, 0, 1, 1, 0, 0, 0, 1, 0],
   [0, 0, -1, 0, 1, 0, 1, 0, 0],
 ];
-const CORNERS = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+const CORNERS = [[-1, -1], [1, -1], [1, 1], [-1, 1]]; // corner order of the ao bits (the vertex shader knows it too)
 const MERGE = 1 << 16; // mask flag: all four corners equally lit, so the face may be merged
 
 // pad: volume with a one-voxel border, dimensions (sx+2, sy+2, sz+2), index (x+1) + px*((z+1) + pz*(y+1)).
@@ -38,14 +47,14 @@ export function meshPadded(pad, sx, sy, sz, ox = 0, oy = 0, oz = 0, rgba = TYPE_
   const px = sx + 2, pz = sz + 2, sl = px * pz;
   const dims = [sx, sy, sz], strideOf = [1, sl, px]; // pad index step per x, y, z
   const origin = [ox, oy, oz], pos = [0, 0, 0];
-  let nv = 0;
+  let nq = 0;
   for (let f = 0; f < 6; f++) {
     const F = FACES[f];
     const na = F[0] ? 0 : F[1] ? 1 : 2, ua = F[3] ? 0 : F[4] ? 1 : 2, va = F[6] ? 0 : F[7] ? 1 : 2;
     const sn = dims[na], su = dims[ua], sv = dims[va];
     const dn = (F[0] + F[1] + F[2]) * strideOf[na], du = strideOf[ua], dv = strideOf[va];
     if (mask.length < su * sv) mask = new Int32Array(su * sv);
-    const maxW = ua === 1 ? su : maxRun, maxT = va === 1 ? sv : maxRun;
+    const maxW = Math.min(MAX_EXTENT, ua === 1 ? su : maxRun), maxT = Math.min(MAX_EXTENT, va === 1 ? sv : maxRun);
     for (let s = 0; s < sn; s++) {
       // Collect the visible faces of this slice.
       let any = false;
@@ -79,45 +88,73 @@ export function meshPadded(pad, sx, sy, sz, ox = 0, oy = 0, oz = 0, rgba = TYPE_
           tall: for (; j + h < sv && h < maxT; h++) for (let q = 0; q < w; q++) if (mask[i + q + (j + h) * su] !== k) break tall;
           for (let b = 0; b < h; b++) for (let a = 0; a < w; a++) mask[i + a + (j + b) * su] = 0;
         }
-        if (nv + 4 > cap) grow();
-        const t = k & 255, a0 = (k >> 8) & 3, a1 = (k >> 10) & 3, a2 = (k >> 12) & 3, a3 = (k >> 14) & 3;
-        // Start at corner 1 when that gives the smoother AO diagonal.
-        const start = a0 + a2 < a1 + a3 ? 1 : 0;
-        pos[na] = s + (dn > 0 ? 1 : 0);
-        for (let n = 0; n < 4; n++) {
-          const c = (n + start) & 3, o = nv * 6;
-          pos[ua] = i + (CORNERS[c][0] > 0 ? w : 0);
-          pos[va] = j + (CORNERS[c][1] > 0 ? h : 0);
-          i16[o] = pos[0] + origin[0]; i16[o + 1] = pos[1] + origin[1]; i16[o + 2] = pos[2] + origin[2];
-          i16[o + 3] = f | (((k >> (8 + c * 2)) & 3) << 3) | (c << 5);
-          const b8 = nv * 12 + 8;
-          u8[b8] = rgba[t * 4]; u8[b8 + 1] = rgba[t * 4 + 1]; u8[b8 + 2] = rgba[t * 4 + 2]; u8[b8 + 3] = rgba[t * 4 + 3];
-          nv++;
-        }
+        if (nq + 1 > cap) grow();
+        const t = k & 255, o = nq * 8, b = nq * QUAD_BYTES; // o: in 16-bit words
+        pos[na] = s + (dn > 0 ? 1 : 0); pos[ua] = i; pos[va] = j;
+        i16[o] = pos[0] + origin[0]; i16[o + 1] = pos[1] + origin[1]; i16[o + 2] = pos[2] + origin[2];
+        u8[b + 6] = w; u8[b + 7] = h;
+        u16[o + 4] = f | (((k >> 8) & 255) << 3); // the four corners' ao, two bits each, in corner order
+        u8[b + 12] = rgba[t * 4]; u8[b + 13] = rgba[t * 4 + 1]; u8[b + 14] = rgba[t * 4 + 2]; u8[b + 15] = rgba[t * 4 + 3];
+        nq++;
       }
     }
   }
-  return { data: buf.slice(0, nv * 12), quads: nv >> 2 };
+  return { data: buf.slice(0, nq * QUAD_BYTES), quads: nq };
 }
 
-const chunkPad = new Uint8Array(34 * 34 * 34);
+export const PAD_SIZE = 34 * 34 * 34;
+const chunkPad = new Uint8Array(PAD_SIZE);
 
+// A chunk on the spot (the meshing workers get the copy of padChunk instead).
 export function meshChunk(world, cx, cy, cz) {
-  // A chunk of pure air has no faces of its own.
+  if (!padChunk(world, cx, cy, cz, chunkPad)) return { data: null, quads: 0 };
+  return meshPadded(chunkPad, 32, 32, 32, 0, 0, 0, TYPE_RGBA, world.wrap ? 4 : 1024);
+}
+
+// Copies a chunk with a one-voxel border from its neighbours into pad (PAD_SIZE bytes, index (x+1) + 34*((z+1) + 34*(y+1))).
+// Returns false for a chunk of pure air, which has no faces of its own. The chunk and the six faces of the border are
+// copied straight from the chunk arrays; only the edges and corners of the border go through world.get.
+export function padChunk(world, cx, cy, cz, pad) {
   const ci = cx + world.ncx * (cz + world.ncz * cy);
-  if (!world.chunks[ci] && !world.uniform[ci]) return { data: null, quads: 0 };
-  const x0 = cx * 32, y0 = cy * 32, z0 = cz * 32, chunk = world.chunks[ci], fill = world.uniform[ci];
-  // The chunk's own voxels are copied row by row; only the one-voxel border comes from the neighbours.
+  if (!world.chunks[ci] && !world.uniform[ci]) return false;
+  const chunk = world.chunks[ci], fill = world.uniform[ci];
+  for (let y = 0; y < 32; y++)
+    for (let z = 0; z < 32; z++) {
+      const p = 34 * (z + 1 + 34 * (y + 1)) + 1;
+      if (chunk) pad.set(chunk.subarray((z << 5) | (y << 10), ((z << 5) | (y << 10)) + 32), p);
+      else pad.fill(fill, p, p + 32);
+    }
+  // A neighbouring chunk: its array (or null) in nb.c and its single value in nb.v. Below the world is bedrock.
+  const nb = { c: null, v: 0 };
+  const near = (dx, dy, dz) => {
+    let x = cx + dx, z = cz + dz;
+    const y = cy + dy;
+    nb.c = null; nb.v = 0;
+    if (y < 0) { nb.v = T.BEDROCK; return; }
+    if (y >= world.ncy) return;
+    if (world.wrap) { x = (x + world.ncx) % world.ncx; z = (z + world.ncz) % world.ncz; }
+    else if (x < 0 || z < 0 || x >= world.ncx || z >= world.ncz) return;
+    const i = x + world.ncx * (z + world.ncz * y);
+    nb.c = world.chunks[i]; nb.v = world.uniform[i];
+  };
+  const at = (x, y, z) => 1 + x + 34 * (z + 1 + 34 * (y + 1));
+  for (const side of [-1, 1]) {
+    const o = side < 0 ? 31 : 0, e = side < 0 ? -1 : 32; // the neighbour's layer next to this chunk, and where it goes in the pad
+    near(side, 0, 0);
+    for (let y = 0; y < 32; y++) for (let z = 0; z < 32; z++) pad[at(e, y, z)] = nb.c ? nb.c[o | (z << 5) | (y << 10)] : nb.v;
+    near(0, 0, side);
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) pad[at(x, y, e)] = nb.c ? nb.c[x | (o << 5) | (y << 10)] : nb.v;
+    near(0, side, 0);
+    for (let z = 0; z < 32; z++) for (let x = 0; x < 32; x++) pad[at(x, e, z)] = nb.c ? nb.c[x | (z << 5) | (o << 10)] : nb.v;
+  }
+  const x0 = cx * 32, y0 = cy * 32, z0 = cz * 32;
   for (let y = -1; y <= 32; y++)
     for (let z = -1; z <= 32; z++) {
-      const p = 34 * (z + 1 + 34 * (y + 1));
-      if (y < 0 || y > 31 || z < 0 || z > 31) { for (let x = -1; x <= 32; x++) chunkPad[p + x + 1] = world.get(x0 + x, y0 + y, z0 + z); continue; }
-      chunkPad[p] = world.get(x0 - 1, y0 + y, z0 + z);
-      if (chunk) chunkPad.set(chunk.subarray((z << 5) | (y << 10), ((z << 5) | (y << 10)) + 32), p + 1);
-      else chunkPad.fill(fill, p + 1, p + 33);
-      chunkPad[p + 33] = world.get(x0 + 32, y0 + y, z0 + z);
+      const oy = y < 0 || y > 31, oz = z < 0 || z > 31;
+      if (oy && oz) { for (let x = -1; x <= 32; x++) pad[at(x, y, z)] = world.get(x0 + x, y0 + y, z0 + z); continue; }
+      if (oy || oz) { pad[at(-1, y, z)] = world.get(x0 - 1, y0 + y, z0 + z); pad[at(32, y, z)] = world.get(x0 + 32, y0 + y, z0 + z); }
     }
-  return meshPadded(chunkPad, 32, 32, 32, 0, 0, 0, TYPE_RGBA, world.wrap ? 4 : 1024);
+  return true;
 }
 
 // Meshes a free-standing volume (rigid fragment or monster part). vox index: x + sx*(z + sz*y).

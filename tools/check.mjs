@@ -1,9 +1,11 @@
 // Development only: checks that need no browser.
-// usage: node --experimental-default-type=module tools/check.mjs
+// usage: node tools/check.mjs
 //   1. Hostile and damaged save data must come out of the loader as a valid progress object.
 //   2. The achievement list must be consistent (unique ids, known counters, one per world).
 //   3. Every world must generate without an error, and almost nothing in it may float (tools/floating.mjs):
 //      what is not joined face to face with the ground hangs in the air once its surroundings are destroyed.
+//   4. The description of the music: three states, getting faster, within memory; and the fallback without a worker.
+//   5. Numbers in README and KONZEPT that come from the code (achievements, modules, worlds, the detail table).
 
 let failed = 0;
 const fail = (msg) => { failed++; console.log('FAIL ' + msg); };
@@ -98,6 +100,34 @@ for (const [i, w] of WORLDS.entries()) {
   const music = new Music({ ctx: null });
   music.setWorld('skyline');
   if (music.mode !== 'classic') fail('music: no fallback without a worker');
+}
+// 5. Numbers in the documents that come from the code: they are easily forgotten when the code changes.
+{
+  const fs = await import('node:fs');
+  const root = decodeURIComponent(new URL('..', import.meta.url).pathname), read = (f) => fs.readFileSync(root + f, 'utf8');
+  const readme = read('README.md'), konzept = read('KONZEPT.md'), main = read('public/src/main.js');
+  const modules = ['public/src', 'public/src/moves'].reduce((n, d) => n + fs.readdirSync(root + d).filter((f) => f.endsWith('.js')).length, 0);
+  const expect = (text, re, value, label) => {
+    const m = text.match(re);
+    if (!m) fail(`docs: ${label} not found`);
+    else if (Number(m[1].replace(/\s/g, '')) !== value) fail(`docs: ${label} says ${m[1]}, the code has ${value}`);
+  };
+  expect(readme, /(\d+) kleine Ziele/, ACHIEVEMENTS.length, 'README, number of achievements');
+  expect(readme, /Liste der (\d+) Erfolge/, ACHIEVEMENTS.length, 'README, module table: achievements');
+  expect(readme, /src\/\s+(\d+) ES-Module/, modules, 'README, number of modules');
+  expect(konzept, /in (\d+) Modulen/, modules, 'KONZEPT 12.1, number of modules');
+  expect(readme, /\*\*(\d+) Welten,\*\*/, WORLDS.length, 'README, number of worlds');
+  expect(konzept, /^(\d+) Welten, alle von Anfang an wählbar/m, WORLDS.length, 'KONZEPT 7.4, number of worlds');
+  // KONZEPT 12.4 against DETAIL in main.js: planet and visible cap in metres (half the voxels), shares in per cent.
+  const rows = [...main.matchAll(/\{ planet: (\d+), tall: \d+, cap: (\d+), debris: (\d+), fx: (\d+), people: ([\d.]+), units: ([\d.]+), thin: ([\d.]+), fire: (\d+), pixel: ([\d.]+) \}/g)];
+  const table = [...konzept.matchAll(/^\| (\d) \| (\d+) m \| (\d+) m \| ([\d ]+) \| ([\d ]+) \| (\d+) % \| (\d+) % \| (\d+) % \| ([\d ]+) \| (\d+) % \|$/gm)];
+  if (rows.length !== 5 || table.length !== 5) fail(`docs: KONZEPT 12.4 (${table.length} rows) or DETAIL in main.js (${rows.length}) not found`);
+  else for (let i = 0; i < 5; i++) {
+    const r = rows[i].slice(1).map(Number), t = table[i].slice(2).map((v) => Number(v.replace(/ /g, '')));
+    const want = [r[0] / 2, r[1] / 2, r[2], r[3], Math.round(r[4] * 100), Math.round(r[5] * 100), Math.round(r[6] * 100), r[7], Math.round(r[8] * 100)];
+    if (want.join() !== t.join()) fail(`docs: KONZEPT 12.4, level ${i + 1} says ${t.join(' ')}, the code has ${want.join(' ')}`);
+  }
+  console.log(`documents: ${modules} modules, detail table checked`);
 }
 console.log(`${ACHIEVEMENTS.length} achievements, ${WORLDS.length} worlds`);
 console.log(failed ? `${failed} check(s) FAILED` : 'all checks passed');

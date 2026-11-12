@@ -764,11 +764,18 @@ function town(seed, p) {
   if (p.links) linkUp(g, p.links, G);
   w.people = Math.round(n * n * 4 * (p.people ?? 0.5));
   // The street map, for everything that drives (traffic.js): one street along every lot border, except inside the park.
-  w.roads = p.noRoads ? null : { pitch: P, n, width: roadW, cars: p.cars ?? 0.5,
-    closed: (alongX, line, cell) => {
+  // Kept as plain tables (a world is pure data, so that it can be built in a worker): the width of every street line,
+  // and for both directions which stretch of which line is closed (inside the park or inside one big block).
+  if (p.noRoads) w.roads = null;
+  else {
+    const closed = (alongX, line, cell) => {
       const a = alongX ? [cell, line, cell, line - 1] : [line, cell, line - 1, cell], b = blockOf(a[0], a[1]);
       return (inPark(a[0], a[1]) && inPark(a[2], a[3])) || (b >= 0 && b === blockOf(a[2], a[3]));
-    } };
+    };
+    const closedX = new Uint8Array(n * n), closedZ = new Uint8Array(n * n);
+    for (let line = 0; line < n; line++) for (let cell = 0; cell < n; cell++) { closedX[line * n + cell] = closed(true, line, cell) ? 1 : 0; closedZ[line * n + cell] = closed(false, line, cell) ? 1 : 0; }
+    w.roads = { pitch: P, n, widths: Array.from({ length: n }, (_, i) => roadW(i)), closedX, closedZ, cars: p.cars ?? 0.5 };
+  }
   return w;
 }
 

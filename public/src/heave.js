@@ -9,6 +9,7 @@
 
 import { TYPE_FLAGS, F_TERRAIN, TYPE_MAT, MAT, T } from './materials.js';
 import { launch } from './particles.js';
+import { motionOf } from './species.js';
 
 const STEP = 0.08; // seconds between updates of the dome
 const PAVING = new Set([T.ROAD, T.ROADLINE, T.SIDEWALK]);
@@ -29,7 +30,7 @@ export class Heave {
 
   update(dt) {
     const g = this.g, m = g.monster;
-    if (g.progress.species !== 'tentacle') { if (this.cols.size) this.settle(true); return; }
+    if (motionOf(g.progress.species) !== 'burrow') { if (this.cols.size) this.settle(true); return; }
     if ((this.t += dt) < STEP) return;
     this.t = 0;
     this.pass++;

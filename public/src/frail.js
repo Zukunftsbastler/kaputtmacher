@@ -19,6 +19,7 @@ const BUDGET = 45000; // biggest piece that is examined, in voxels
 const MAX_BASE = 500; // a footing bigger than this does not simply snap
 const CRUSH = 160; // weight a footing carries per unit of its strength
 const DIRS = [[1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, 1, 0], [0, -1, 0]];
+const SEEN_BITS = 19, SEEN_MASK = (1 << SEEN_BITS) - 1; // the table of visited voxels: 2^19 slots, open addressing
 
 export class Frail {
   constructor(game) {
@@ -28,6 +29,30 @@ export class Frail {
     this.stack = new Int32Array(BUDGET * 3 + 64);
     this.base = new Int32Array(MAX_BASE * 3);
     this.fell = 0;
+    // Visited voxels (flat world index). Every flood has a stamp of its own, and a slot counts only for the flood whose
+    // stamp it carries: a new flood needs no clearing. A starting point that an earlier flood of the same round reached
+    // belongs to the piece that flood has judged already and is skipped. (A later flood may overwrite slots of an
+    // earlier one; looking a start up then only fails to find it, and the piece is examined again as it always was.)
+    this.seenKey = new Int32Array(1 << SEEN_BITS);
+    this.seenStamp = new Int32Array(1 << SEEN_BITS);
+    this.stamp = 0;
+  }
+
+  // Marks index k as visited in this round; returns false if it was already.
+  visit(k) {
+    const keys = this.seenKey, stamps = this.seenStamp, stamp = this.stamp;
+    let i = Math.imul(k, 0x9e3779b1) >>> (32 - SEEN_BITS);
+    for (;;) {
+      if (stamps[i] !== stamp) { stamps[i] = stamp; keys[i] = k; return true; }
+      if (keys[i] === k) return false;
+      i = (i + 1) & SEEN_MASK;
+    }
+  }
+
+  seen(k, stamp) {
+    const keys = this.seenKey, stamps = this.seenStamp;
+    for (let i = Math.imul(k, 0x9e3779b1) >>> (32 - SEEN_BITS); stamps[i] === stamp; i = (i + 1) & SEEN_MASK) if (keys[i] === k) return true;
+    return false;
   }
 
   clear() { this.queue.length = 0; }
@@ -43,19 +68,26 @@ export class Frail {
     if (!this.queue.length || --this.wait > 0 || this.queue[0][4] > this.g.time) return;
     this.wait = 5; // at most one examination every few steps
     const [x, y, z, r] = this.queue.shift(), w = this.g.world, rr = Math.ceil(r) + 2;
+    if (this.stamp > 2e9) { this.stamp = 0; this.seenStamp.fill(0); }
+    const first = this.stamp + 1;
     // Start from a few built voxels at the edge of the damage.
     for (const [dx, dy, dz] of [[rr, 0, 0], [-rr, 0, 0], [0, 0, rr], [0, 0, -rr], [0, rr, 0], [0, -rr, 0]]) {
       const sx = Math.floor(x + dx), sy = Math.floor(y + dy), sz = Math.floor(z + dz), t = w.get(sx, sy, sz);
-      if (t && t < 128 && !isTerrain(t) && !w.isLink(sx, sy, sz) && this.examine(sx, sy, sz)) return;
+      if (!t || t >= 128 || isTerrain(t) || w.isLink(sx, sy, sz)) continue;
+      const k = w.index(sx, sy, sz);
+      let known = false;
+      for (let s = first; s <= this.stamp && !known; s++) known = this.seen(k, s);
+      if (!known && this.examine(sx, sy, sz)) return;
     }
   }
 
   // Flood-fills the piece that contains (x, y, z). Returns true if it was brought down.
   examine(x, y, z) {
-    const g = this.g, w = g.world, st = this.stack, seen = new Set();
+    const g = this.g, w = g.world, st = this.stack, head = w.linkHead, wrap = w.wrap, sx = w.sx, mxk = w.mx, mzk = w.mz;
     let n = 0, top = 0, mass = 0, mx = 0, mz = 0, nb = 0, sb = 0, bx = 0, bz = 0;
     st[0] = x; st[1] = y; st[2] = z; top = 3;
-    seen.add(w.index(x, y, z));
+    this.stamp++;
+    this.visit(w.index(x, y, z));
     while (top) {
       top -= 3;
       const cx = st[top], cy = st[top + 1], cz = st[top + 2], t = w.get(cx, cy, cz), m = VOXEL_MASS[t] || 0.5;
@@ -70,10 +102,10 @@ export class Frail {
       }
       for (const d of DIRS) {
         const ax = cx + d[0], ay = cy + d[1], az = cz + d[2], a = w.get(ax, ay, az);
-        if (!a || a >= 128 || isTerrain(a) || w.isLink(ax, ay, az)) continue; // superstructures are spans.js's business: a tree neither leans on its lianas nor carries their weight here
-        const k = w.index(ax, ay, az);
-        if (seen.has(k)) continue;
-        seen.add(k);
+        if (!a || a >= 128 || isTerrain(a)) continue;
+        // Superstructures are spans.js's business: a tree neither leans on its lianas nor carries their weight here.
+        if (head[wrap ? (ax & mxk) + sx * (az & mzk) : ax + sx * az] >= 0 && w.isLink(ax, ay, az)) continue;
+        if (!this.visit(w.index(ax, ay, az))) continue;
         st[top] = ax; st[top + 1] = ay; st[top + 2] = az; top += 3;
       }
     }

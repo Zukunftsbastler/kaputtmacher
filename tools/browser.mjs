@@ -20,8 +20,9 @@ fs.mkdirSync(OUT, { recursive: true });
 const PROFILE = path.join(os.tmpdir(), 'kaputtmacher-test-profile' + (process.env.CDP_PORT ? '-' + process.env.CDP_PORT : ''));
 const BROWSER = process.env.BROWSER ?? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser', '/Applications/Chromium.app/Contents/MacOS/Chromium', '/usr/bin/chromium', '/usr/bin/google-chrome'].find((p) => fs.existsSync(p));
 if (!BROWSER) { console.log('no browser found: set BROWSER=/path/to/chromium'); process.exit(1); }
+// (The three --disable-… switches: several test browsers side by side must not slow down each other's timers and pictures.)
 const args = ['--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${PROFILE}`, '--no-first-run', '--mute-audio', '--hide-scrollbars',
-  `--window-size=${W},${H}`, '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', ...(process.env.GPU ? process.env.GPU.split(' ') : []), 'about:blank'];
+  `--window-size=${W},${H}`, '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', ...(process.env.GPU ? process.env.GPU.split(' ') : []), 'about:blank'];
 const br = spawn(BROWSER, args, { stdio: 'ignore' });
 const kill = () => { try { br.kill('SIGKILL'); } catch {} };
 setTimeout(() => { console.log('TIMEOUT'); kill(); process.exit(1); }, Number(waitMs) + 30000);

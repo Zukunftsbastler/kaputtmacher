@@ -218,3 +218,19 @@ body.compact { --btn: 46px; --sl: calc(8px + env(safe-area-inset-left)); --sr: c
 @keyframes streak { from { background-position: 0 0; } to { background-position: -40px 0; } }
 @keyframes swirl { from { transform: rotate(0) scale(0.6); } to { transform: rotate(540deg) scale(1.1); } }
 @media (prefers-reduced-motion: reduce) { .speedlines, .cutin { display: none; } }
+/* Measuring display for tests (?perf=1, perfmeter.js) */
+#perf { position: absolute; left: 8px; bottom: 8px; margin: 0; padding: 6px 8px; font: 11px/1.35 ui-monospace, Menlo, monospace; color: #fff; background: rgba(0, 0, 0, 0.6); border-radius: 6px; pointer-events: none; z-index: 5; white-space: pre; }
+/* The choice of creature and world (hud.js): the ring opens it, the demonstration shows all creatures, a card names the world. */
+#power { cursor: pointer; pointer-events: auto; }
+#hint .parade { display: inline-flex; gap: 2px; font-size: 30px; }
+#hint .parade span { display: inline-block; animation: parade 1.4s ease-in-out infinite; }
+@keyframes parade { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-12px); } }
+.compact #hint .parade { font-size: 20px; }
+.titlecard { position: absolute; left: 50%; top: 26%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 18px; font-size: 72px; padding: 10px 28px; background: var(--panel); border: 4px solid #fff; border-radius: 30px; pointer-events: none; animation: titlecard 3.2s ease-in-out forwards; z-index: 3; }
+.titlecard .arrow { font-size: 40px; opacity: 0.6; }
+.compact .titlecard { font-size: 44px; gap: 10px; padding: 6px 16px; }
+.compact .titlecard .arrow { font-size: 26px; }
+@keyframes titlecard { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); } 12%, 75% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -60%) scale(0.95); } }
+.sheet .row.creatures .btn { font-size: 44px; width: 76px; height: 76px; border-radius: 22px; }
+.compact .sheet .row.creatures .btn { font-size: 34px; width: 60px; height: 60px; }
+@media (prefers-reduced-motion: reduce) { #hint .parade span, .titlecard { animation: none; } }

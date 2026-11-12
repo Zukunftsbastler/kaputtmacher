@@ -1,6 +1,6 @@
 // Development only: lists the pieces of music (public/src/music-score.js) as the suite composes them – the band
 // each seed picked per state, the tempi, the first notes of the melody and the memory the rendered stems need.
-// Nothing is rendered or played. usage: node --experimental-default-type=module tools/music.mjs [piece]
+// Nothing is rendered or played. usage: node tools/music.mjs [piece]
 const V = '../public/src/vendor/musik-generator/';
 const { TRACKS, scoreFor, RENDER_RATE } = await import('../public/src/music-score.js');
 const { composeSong } = await import(V + 'styles/song.js');

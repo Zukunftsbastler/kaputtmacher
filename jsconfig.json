@@ -1,0 +1,13 @@
+{
+  "//": "For the editor only (go to definition, hover help): nothing is built or checked on delivery. Type checking stays off: the large classes are joined from several files with mixin() (src/mixin.js), which a checker cannot follow.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker.ImportScripts"],
+    "checkJs": false,
+    "allowJs": true,
+    "noEmit": true
+  },
+  "include": ["public/src/**/*.js", "tools/**/*.mjs", "tools/web/**/*.js"]
+}

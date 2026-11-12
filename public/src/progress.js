@@ -56,6 +56,12 @@ export function cleanDetail(v) {
   return Math.round(num(n, 0, MAX_DETAIL, 0));
 }
 
+// Seed of the autopilot from the address bar (?seed=): a whole number 1 .. 2^31-1, else 0 (= pick one at random).
+export function cleanSeed(v) {
+  const n = typeof v === 'string' && /^\d{1,10}$/.test(v) ? Number(v) : 0;
+  return n >= 1 && n < 2 ** 31 ? n : 0;
+}
+
 function cleanCreature(c) {
   const stage = cleanStage(c.stage);
   return { stage, playStage: Math.min(stage, cleanStage(c.playStage, stage)), power: num(c.power, 0, 1e15, 0), t: num(c.t, 0, 1e9, 0), pick: oneOf(c.pick, WORLDS.map((w) => w.id), '') };

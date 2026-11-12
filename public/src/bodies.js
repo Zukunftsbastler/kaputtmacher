@@ -8,6 +8,7 @@ import { GRAVITY, launch } from './particles.js';
 const MIN_SAMPLES = 70, MAX_SAMPLES = 300; // collision probe points per body, more for big ones
 const MAX_BODIES = 36;
 const MIN_BODY = 5; // smaller groups become loose cubes straight away
+const SMALL_BODY = 400; // with MAX_BODIES falling already, groups below this size become loose cubes too
 export const FALL_GAIN = 0.2; // share of the usual power for voxels that come down with a collapse instead of being hit
 
 const tmp = [0, 0, 0], tmp2 = [0, 0, 0];
@@ -95,6 +96,7 @@ export class Bodies {
       if (z < z0) z0 = z; if (z > z1) z1 = z;
     }
     const b = new Body(x1 - x0 + 1, y1 - y0 + 1, z1 - z0 + 1);
+    b.home = [x0, y0, z0, x1, y1, z1]; // where it came out of the grid (meshing.js holds those chunks back until its mesh is there)
     for (let i = 0; i < n * 4; i += 4)
       b.vox[cells[i] - x0 + b.sx * (cells[i + 2] - z0 + b.sz * (cells[i + 1] - y0))] = cells[i + 3];
     this.finalize(b);
@@ -128,6 +130,14 @@ export class Bodies {
     if (n < MIN_BODY) {
       for (let o = 0; o < n * 4; o += 4)
         g.debris.spawn(cells[o] + 0.5, cells[o + 1] + 0.5, cells[o + 2] + 0.5, hit.dx * 6, hit.pop * g.rng() + 6, hit.dz * 6, cells[o + 3]);
+      return;
+    }
+    // As many fragments as may fall at once already: a small piece bursts into loose cubes straight away (as the
+    // smallest ones would at the end of the step anyway), instead of first being built as a body of its own.
+    if (this.list.length >= MAX_BODIES && n < SMALL_BODY) {
+      const p = Math.min(1, 160 / n);
+      for (let o = 0; o < n * 4; o += 4)
+        if (g.rng() < p) g.debris.spawn(cells[o] + 0.5, cells[o + 1] + 0.5, cells[o + 2] + 0.5, hit.dx * 6, hit.pop * g.rng() + 6, hit.dz * 6, cells[o + 3]);
       return;
     }
     const b = this.fromCells(n);
@@ -186,7 +196,7 @@ export class Bodies {
         if ((b.rest > 0 || (sp < 3 && b.age > 1)) && (!calm || b.count < calm.count)) calm = b;
       }
       if (!small) break;
-      if (small.count < 400 || !calm) this.toDebris(small); else this.bake(calm); // (nothing at rest: the smallest bursts into loose cubes)
+      if (small.count < SMALL_BODY || !calm) this.toDebris(small); else this.bake(calm); // (nothing at rest: the smallest bursts into loose cubes)
     }
   }
 

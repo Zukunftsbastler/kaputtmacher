@@ -23,18 +23,22 @@ export class Roads {
 
   get ok() { return !!this.net; }
 
-  centre(line) { const n = this.net; return line * n.pitch + n.width(((line % n.n) + n.n) % n.n) / 2; }
+  // Width of street line i (0 .. n-1), and whether the stretch `cell` of a line is closed (worldgen.js, town).
+  width(i) { return this.net.widths[i]; }
+  closed(alongX, line, cell) { const n = this.net; return (alongX ? n.closedX : n.closedZ)[line * n.n + cell] === 1; }
+
+  centre(line) { const n = this.net; return line * n.pitch + this.width(((line % n.n) + n.n) % n.n) / 2; }
 
   // Is the street leaving crossing (i, j) in direction (ax, dir) there at all? (The central park has none.)
   open(i, j, ax, dir) {
     const n = this.net, m = (k) => ((k % n.n) + n.n) % n.n;
-    return ax === 0 ? !n.closed(true, m(j), m(dir > 0 ? i : i - 1)) : !n.closed(false, m(i), m(dir > 0 ? j : j - 1));
+    return ax === 0 ? !this.closed(true, m(j), m(dir > 0 ? i : i - 1)) : !this.closed(false, m(i), m(dir > 0 ? j : j - 1));
   }
 
   // Puts a vehicle on the street nearest to (x, z), heading towards (tx, tz) if given.
   join(v, x, z, tx = x, tz = z) {
     const n = this.net, P = n.pitch, S = this.w.sx;
-    const i = Math.round((x - n.width(0) / 2) / P), j = Math.round((z - n.width(0) / 2) / P);
+    const i = Math.round((x - this.width(0) / 2) / P), j = Math.round((z - this.width(0) / 2) / P);
     const dx = Math.abs(x - this.centre(i)), dz = Math.abs(z - this.centre(j));
     // The nearer of the two streets around this spot.
     if (dz <= dx) { v.ax = 0; v.line = j; v.s = x; v.dir = wrapDelta(tx - x, S) >= 0 ? 1 : -1; }
@@ -51,14 +55,14 @@ export class Roads {
       this.join(v, px, pz, x, z);
       // Not on a stretch that the park has swallowed.
       const cell = Math.floor((((v.s % S) + S) % S) / P), line = ((v.line % n.n) + n.n) % n.n;
-      if (!n.closed(v.ax === 0, line, cell)) return true;
+      if (!this.closed(v.ax === 0, line, cell)) return true;
     }
     return false;
   }
 
   // World position and facing from the vehicle's place on the network. Traffic keeps to the right.
   place(v) {
-    const n = this.net, S = this.w.sx, rw = n.width(((v.line % n.n) + n.n) % n.n);
+    const n = this.net, S = this.w.sx, rw = this.width(((v.line % n.n) + n.n) % n.n);
     const off = (rw / 4) * v.dir * v.lane * (v.ax === 0 ? 1 : -1), c = this.centre(v.line) + off;
     v.s = ((v.s % S) + S) % S;
     if (v.ax === 0) { v.x = v.s; v.z = ((c % S) + S) % S; } else { v.z = v.s; v.x = ((c % S) + S) % S; }

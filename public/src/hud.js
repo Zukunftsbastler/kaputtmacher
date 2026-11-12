@@ -2,7 +2,7 @@
 // in the parents' corner. New controls stay hidden until the game introduces them.
 
 import { ABILITIES, movesFor } from './tools.js';
-import { SPECIES, airborne } from './monster.js';
+import { SPECIES, airborne, specOf } from './monster.js';
 import { WORLDS } from './worldgen.js';
 import { saveProgress, resetProgress, exportProgress, importProgress, MAX_DETAIL } from './progress.js';
 import { ACHIEVEMENTS, achievementProgress } from './achievements.js';
@@ -37,6 +37,8 @@ export class Hud {
     this.ring = svg('circle', { class: 'fg', cx: 50, cy: 50, r: 43, 'stroke-dasharray': 270.2, 'stroke-dashoffset': 270.2 }, ring);
     this.face = el('div', 'face', this.power);
     this.stageBadge = el('div', 'stage', this.power);
+    // The creature's face opens the choice of creature and world as well: it is where everybody looks for it.
+    this.power.addEventListener('click', () => { game.audio.unlock(); game.audio.click(); this.openWorlds(); });
 
     this.worldbar = el('div', '', root); this.worldbar.id = 'worldbar';
     const track = el('div', 'track', this.worldbar);
@@ -152,7 +154,8 @@ export class Hud {
       this.shownTools.add(t.id);
     }
     const sp = g.progress.species;
-    if (sp === 'chopper') { // the jump button, held: up. Let go, the helicopter sinks back by itself
+    const jumpIcon = specOf(sp).jumpIcon;
+    if (jumpIcon === 'up') { // the jump button, held: up. Let go, the helicopter sinks back by itself
       const b = this.button(this.abilities, '🔼', null, '␣');
       b.addEventListener('pointerdown', (e) => { g.audio.unlock(); if (e.pointerType === 'touch') g.input.gesture('touch'); g.input.jumpBtn = true; }); // a mouse click must not switch to the touch layout
       for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => { g.input.jumpBtn = false; });
@@ -162,7 +165,7 @@ export class Hud {
     for (const a of ABILITIES) {
       if (a.stage > stage || airborne(sp)) continue; // aircraft and helicopter neither jump nor roar
       // The tentacle's big button sends it down into the ground and brings it up again.
-      const b = this.button(this.abilities, sp === 'tentacle' && a.id === 'stomp' ? '🕳️' : a.icon, a.id === 'stomp' ? null : () => g.doAction(a.id), a.id === 'stomp' ? '␣' : 'R');
+      const b = this.button(this.abilities, a.id === 'stomp' && jumpIcon ? jumpIcon : a.icon, a.id === 'stomp' ? null : () => g.doAction(a.id), a.id === 'stomp' ? '␣' : 'R');
       if (a.id === 'stomp') { // held like a real jump button: longer press, higher jump
         b.addEventListener('pointerdown', () => { g.audio.unlock(); g.input.jumpBtn = true; g.doAction('stomp'); });
         for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => { g.input.jumpBtn = false; });
@@ -247,10 +250,23 @@ export class Hud {
 
   showNext(on) { this.next.classList.toggle('hidden', !on); }
 
-  // Shows an hourglass, lets the browser draw it, then runs fn (which blocks the page for a moment).
+  // A world has been loaded: who plays and where, as a big card for a moment (creature, arrow, world).
+  titleCard(creature, world) {
+    this.card?.remove();
+    const c = (this.card = el('div', 'titlecard', this.root));
+    el('span', '', c, creature); el('span', 'arrow', c, '➜'); el('span', '', c, world);
+    setTimeout(() => { if (this.card === c) { c.remove(); this.card = null; } }, 3200);
+  }
+
+  // Shows an hourglass, lets the browser draw it, then runs fn (which may block the page for a moment, or return a
+  // promise: the hourglass stays until it has settled).
   busy(fn) {
     const o = el('div', 'overlay busy', this.root, '⏳');
-    requestAnimationFrame(() => setTimeout(() => { try { fn(); } finally { o.remove(); } }, 20));
+    requestAnimationFrame(() => setTimeout(() => {
+      let r;
+      try { r = fn(); } finally { if (!r?.then) o.remove(); }
+      r?.then?.(() => o.remove(), (err) => { o.remove(); this.g.fault(err); });
+    }, 20));
   }
 
   // Alarm level 0..5 as a row of stars under the world bar.
@@ -377,6 +393,11 @@ export class Hud {
       this.toolButtons[tool]?.classList.add('pulse');
     } else {
       // Interface buttons: the button itself pulses, the bubble shows what to press it with.
+      // For the choice of worlds, all creatures hop in a row beside it: there are more of them than the one on screen.
+      if (id === 'worlds') {
+        const row = el('span', 'parade', box);
+        SPECIES.forEach((s, i) => { const e = el('span', '', row, s.icon); e.style.animationDelay = i * 0.12 + 's'; });
+      }
       const b = { worlds: this.btnWorlds, next: this.next }[id];
       if (b) { b.classList.add('pulse'); el('span', '', box, b.textContent); }
       if (b && this.drawer.contains(b)) this.btnMenu.classList.add('pulse'); // in the compact layout the button sits inside the menu
@@ -404,6 +425,13 @@ export class Hud {
   openWorlds() {
     const g = this.g, p = g.progress, sheet = this.open('worlds');
     this.doneHint('worlds');
+    const mons = el('div', 'row creatures', sheet); // the creatures first: switching them is what players miss most
+    for (const s of SPECIES) {
+      const b = this.button(mons, s.icon, () => { if (g.setSpecies(s.id)) this.close(); else this.openWorlds(); }); // off to its world, or stay and pick one
+      if (s.id === p.species) b.classList.add('sel');
+      // Every creature has its own stage.
+      el('span', 'key ok', b, String(s.id === p.species ? p.stage : p.creatures[s.id].stage));
+    }
     const worlds = el('div', 'row', sheet);
     // Every world can be chosen at any time. The badge shows the monster stage a world is built for
     // (green once the monster has reached it); a tick marks worlds that were destroyed completely.
@@ -415,13 +443,6 @@ export class Hud {
       if (p.completed.includes(w.id)) b.classList.add('complete');
       el('span', 'key' + (p.stage >= w.stage ? ' ok' : ''), b, String(w.stage));
       if (w.home) el('span', 'home', b, SPECIES.find((s) => s.id === w.home).icon); // the home turf of a creature
-    }
-    const mons = el('div', 'row', sheet);
-    for (const s of SPECIES) {
-      const b = this.button(mons, s.icon, () => { if (g.setSpecies(s.id)) this.close(); else this.openWorlds(); }); // off to its world, or stay and pick one
-      if (s.id === p.species) b.classList.add('sel');
-      // Every creature has its own stage.
-      el('span', 'key ok', b, String(s.id === p.species ? p.stage : p.creatures[s.id].stage));
     }
     // Any stage reached so far can be played again, e.g. to take a house apart from the inside.
     if (p.stage > 1) {

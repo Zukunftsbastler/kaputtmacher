@@ -1,7 +1,7 @@
 // Development only: finds what floats in a freshly generated world – built voxels that are not joined face to face
 // with the ground, the way the support search (destruction.js) sees it. They do not fall at the start (nothing
 // looks at them), but they hang in the air once their surroundings are destroyed.
-// usage: node --experimental-default-type=module tools/floating.mjs [world ...]
+// usage: node tools/floating.mjs [world ...]
 const { WORLDS } = await import('../public/src/worldgen.js');
 const { TYPE_FLAGS, F_TERRAIN, T } = await import('../public/src/materials.js');
 const names = Object.fromEntries(Object.entries(T).map(([k, v]) => [v, k]));

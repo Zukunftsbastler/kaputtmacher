@@ -10,8 +10,9 @@ const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; ch
 http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
   if (p === '/') p = '/index.html';
-  const file = ['/test.html', '/test.js'].includes(p) ? scratch + p : path.join(root, p);
-  if (!file.startsWith(root) && !file.startsWith(scratch)) { res.writeHead(403); return res.end(); }
+  // The test page, its driver and its scenarios come from tools/web/, everything else from public/.
+  const file = p === '/test.html' || p === '/test.js' || p.startsWith('/scenarios/') ? path.join(scratch, p) : path.join(root, p);
+  if (!file.startsWith(root + path.sep) && !file.startsWith(scratch + path.sep)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404, headers); return res.end('not found'); }
     res.writeHead(200, { ...headers, 'Content-Type': types[path.extname(file)] ?? 'application/octet-stream', });

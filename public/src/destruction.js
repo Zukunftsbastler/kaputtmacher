@@ -12,7 +12,7 @@ export class Destruction {
     this.g = game;
     this.seeds = new Int32Array(1 << 15);
     this.nSeeds = 0;
-    this.stack = new Int32Array(MAX_COMPONENT + 8);
+    this.stack = new Int32Array((MAX_COMPONENT + 8) * 3); // x, y, z of the voxels still to be looked at
     this.list = new Int32Array(MAX_COMPONENT + 8);
     this.touched = new Int32Array(1 << 16);
     this.nTouched = 0;
@@ -149,9 +149,10 @@ export class Destruction {
 
   // Runs once per simulation step. Depth-first search that prefers going down, so standing
   // structures are confirmed after a few hundred voxels; only real islands are walked completely.
+  // (The marks are looked up from coordinates directly: chunk = bits 5+ of x, z, y, bit = the low five bits.)
   flush() {
     if (!this.nSeeds) return;
-    const g = this.g, w = g.world, sx = w.sx, sz = w.sz, layer = sx * sz;
+    const g = this.g, w = g.world, sx = w.sx, sz = w.sz, layer = sx * sz, ncx = w.ncx, ncxz = w.ncx * w.ncz;
     const { safe, seen, stack, list } = this, head = w.linkHead, wrap = w.wrap, mx = w.mx, mz = w.mz; // head: columns with superstructures (world.isLink)
     let budget = VISIT_BUDGET, s = 0;
     for (; s < this.nSeeds && budget > 0; s++) {
@@ -162,24 +163,30 @@ export class Destruction {
       if (!t0 || TYPE_FLAGS[t0] & F_TERRAIN) continue;
       let sp = 0, n = 0, supported = false;
       const fromLink = head[rem] >= 0 && w.isLink(x, y, z); // a search that starts on a superstructure may pass into the buildings it hangs on
-      stack[sp++] = seed; list[n++] = seed;
+      stack[0] = x; stack[1] = y; stack[2] = z; sp = 3; list[n++] = seed;
       this.mark(seen, seed);
       search: while (sp) {
-        const j = stack[--sp];
-        y = (j / layer) | 0; rem = j - y * layer; z = (rem / sx) | 0; x = rem - z * sx;
-        const inLink = head[rem] >= 0 && w.isLink(x, y, z); // from a building the search does not step onto a superstructure (see world.isLink)
+        sp -= 3;
+        x = stack[sp]; y = stack[sp + 1]; z = stack[sp + 2];
+        const inLink = head[x + sx * z] >= 0 && w.isLink(x, y, z); // from a building the search does not step onto a superstructure (see world.isLink)
         // Down is pushed last, so it is explored first.
         for (let k = 0; k < 6; k++) {
           let nx = x, ny = y, nz = z;
           if (k === 0) ny++; else if (k === 1) nx++; else if (k === 2) nx--; else if (k === 3) nz++; else if (k === 4) nz--; else ny--;
           if (ny < 0) { supported = true; break search; }
           const nt = w.get(nx, ny, nz);
-          if (!nt || (!inLink && head[wrap ? (nx & mx) + sx * (nz & mz) : nx + sx * nz] >= 0 && w.isLink(nx, ny, nz))) continue;
-          const ni = w.index(nx, ny, nz);
-          if (TYPE_FLAGS[nt] & F_TERRAIN || n >= MAX_COMPONENT || this.has(safe, ni)) { supported = true; break search; }
-          if (this.has(seen, ni)) continue;
-          this.mark(seen, ni);
-          list[n++] = ni; stack[sp++] = ni;
+          if (!nt) continue;
+          if (wrap) { nx &= mx; nz &= mz; } // (a voxel outside a flat world is air: get() said so above)
+          const col = nx + sx * nz;
+          if (!inLink && head[col] >= 0 && w.isLink(nx, ny, nz)) continue;
+          if (TYPE_FLAGS[nt] & F_TERRAIN || n >= MAX_COMPONENT) { supported = true; break search; }
+          const ci = (nx >> 5) + ncx * (nz >> 5) + ncxz * (ny >> 5), bit = (nx & 31) | ((nz & 31) << 5) | ((ny & 31) << 10), byte = bit >> 3, m = 1 << (bit & 7);
+          const sf = safe[ci];
+          if (sf && sf[byte] & m) { supported = true; break search; }
+          const vf = seen[ci] ?? (seen[ci] = new Uint8Array(4096));
+          if (vf[byte] & m) continue;
+          vf[byte] |= m;
+          list[n++] = col + layer * ny; stack[sp] = nx; stack[sp + 1] = ny; stack[sp + 2] = nz; sp += 3;
         }
       }
       budget -= n;

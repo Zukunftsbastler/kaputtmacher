@@ -3,8 +3,9 @@
 // It looks for the nearest building that still stands, walks or flies there, takes it apart with
 // changing attacks, moves on, and travels to the next world when one is finished.
 
-import { clamp, wrapDelta } from './math.js';
+import { clamp, wrapDelta, makeRng } from './math.js';
 import { WORLDS } from './worldgen.js';
+import { motionOf } from './species.js';
 
 // Attacks that work from a distance; all others need the creature to stand next to its target.
 const RANGED = new Set(['breath', 'laser', 'rockets', 'orbital', 'gun', 'mortar', 'bunker', 'guns', 'ink', 'deep']);
@@ -12,8 +13,13 @@ const WORLD_TIME = 12 * 60; // seconds after which the autopilot moves on even i
 const v3 = [0, 0, 0];
 
 export class Autopilot {
-  constructor(game) {
+  constructor(game, seed) {
     this.g = game;
+    // The autopilot draws its decisions from a generator of its own, apart from the simulation's game.rng: a run
+    // with the same seed (?seed= in the address, shown as game.autopilot.seed) plays out the same way again.
+    this.seed = seed || ((Math.random() * 2 ** 31) | 0) || 1;
+    this.rnd = makeRng(this.seed);
+    this.worldTime = WORLD_TIME; // (the long-run test shortens it)
     this.reset();
   }
 
@@ -30,7 +36,6 @@ export class Autopilot {
     this.stuckT = 0; this.sx = 0; this.sz = 0; this.stuck = 0;
     this.skip = new Map(); // buildings to leave alone for a while -> time until then
     this.worldT = 0; this.doneT = 0;
-    this.rnd = Math.random; // decisions of the autopilot are deliberately not part of the reproducible simulation
   }
 
   // Chooses the next building. Usually one of the three nearest; every third time or so one further away,
@@ -69,23 +74,27 @@ export class Autopilot {
 
   // Called once per frame while idle mode is on, after the real input has been read.
   update(dt) {
-    const g = this.g, inp = g.input, m = g.monster, size = g.cam.wrap, sp = g.progress.species, jet = sp === 'jet';
+    const g = this.g, inp = g.input, m = g.monster, size = g.cam.wrap, sp = g.progress.species, mo = motionOf(sp), jet = mo === 'plane';
     inp.forward = 0; inp.turn = 0; inp.lift = 0; inp.sprint = false; inp.jumpHeld = true;
+    this.worldT += dt; // (also while climbing: a small creature on a tall tower must not keep the show in one world)
     // Hanging on a wall: climb up it. On the roof the walk goes on.
     if (m.cling) {
-      // Climbing takes a while; if it does not get anywhere (no higher, a wall that will not end), jump off and carry on.
+      // Climbing takes a while; if it does not get anywhere (no higher, a wall that will not end) or goes on for too
+      // long (a small creature on a skyscraper), jump off and carry on.
       inp.forward = 1;
+      this.clingT = (this.clingT ?? 0) + dt;
       if (Math.abs(m.y - (this.climbY ?? -1e9)) > 0.5) { this.climbY = m.y; this.climbT = 0; }
       else if ((this.climbT = (this.climbT ?? 0) + dt) > 1.5) { this.climbT = 0; g.doAction('stomp'); }
+      if (this.clingT > 12) { this.clingT = 0; g.doAction('stomp'); }
       return;
     }
+    this.clingT = 0;
     if (g.fly) g.doAction('camera'); // the show needs its star in the picture
     g.pitchOffset = Math.sin(g.time * 0.11) * 0.12; // the camera breathes a little
 
     // Finished (or long enough here): on to the next world.
-    this.worldT += dt;
     if (g.worldDone) this.doneT += dt;
-    if (this.doneT > 7 || this.worldT > WORLD_TIME) { this.nextWorld(); return; }
+    if (this.doneT > 7 || this.worldT > this.worldTime) { this.nextWorld(); return; }
 
     // Another move every few seconds, so that all of them get shown.
     if ((this.moveT -= dt) <= 0 && !g.tools.act) {
@@ -114,7 +123,7 @@ export class Autopilot {
     if (g.project(this.px, this.py, this.pz, v3)) { inp.aimX = clamp(v3[0], 4, innerWidth - 4); inp.aimY = clamp(v3[1], 4, innerHeight - 4); }
     this.cool -= dt;
 
-    if (sp === 'chopper') {
+    if (mo === 'hover') {
       // The helicopter hovers in to a little way off the target and fires; the winch and the rotor want it close.
       // With the wrecking ball out it keeps flying on past the building, so that the ball swings into it.
       inp.jumpHeld = m.y < this.py + m.h * 0.4; // up to a little above the spot it works on, then let it sink
@@ -128,7 +137,7 @@ export class Autopilot {
       }
       return;
     }
-    if (sp === 'tentacle') {
+    if (mo === 'burrow') {
       // Down into the ground and off to the target (leaning on the stick sends it down), up and strike once there.
       const reach = ranged ? m.h * 2.4 + 16 : m.h * 1.8 + 3;
       if (dist > reach) inp.forward = facing ? 1 : 0.3;
@@ -184,10 +193,14 @@ export class Autopilot {
     this.second = 0.3 + this.rnd() * 0.15; // second press: the double jump
   }
 
+  // On to the next world in the list. A creature's home world brings that creature along: the show goes through all
+  // of them, and whoever watches sees that there are eight to choose from. (When the player takes over, the game
+  // returns to the player's own creature and world: Game.setIdle.)
   nextWorld() {
-    const g = this.g, list = WORLDS.filter((w) => w.id !== 'random'), i = list.findIndex((w) => w.id === g.progress.world);
+    const g = this.g, list = WORLDS.filter((w) => w.id !== 'random'), i = list.findIndex((w) => w.id === g.progress.world), next = list[(i + 1) % list.length];
     g.hud.close();
-    g.travel(list[(i + 1) % list.length].id);
+    if (next.home && next.home !== g.progress.species) g.setSpecies(next.home, false);
+    g.travel(next.id);
     this.reset();
   }
 }

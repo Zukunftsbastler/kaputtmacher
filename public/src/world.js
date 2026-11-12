@@ -24,7 +24,8 @@ export class World {
     this.chunks = new Array(n).fill(null);
     this.uniform = new Uint8Array(n);
     this.builtList = new Int32Array(1 << 20); this.builtN = 0; // where something was built, while the world is generated (for weld)
-    this.dirty = new Set();
+    this.dirty = new Set(); // chunks whose mesh is out of date (or missing)
+    this.hot = new Set(); // of those, the ones changed while playing (meshing.js gives them priority)
     this.touched = []; // buildings that lost voxels since the last stability check
     this.footprint = new Uint16Array(sx * sz); // column -> structure id
     this.structures = [{ id: 0, kind: 'misc', icon: '', total: 0, remaining: 0, done: true, counted: false }];
@@ -67,7 +68,7 @@ export class World {
     c[li] = t;
     if (this.generating) { if (t && !(TYPE_FLAGS[t] & F_TERRAIN) && (!old || TYPE_FLAGS[old] & F_TERRAIN)) this.noteBuilt((x | 0) + this.sx * ((z | 0) + this.sz * (y | 0))); return; } // (builders may pass fractions; the grid cuts them off)
 
-    this.dirty.add(ci);
+    this.dirty.add(ci); this.hot.add(ci);
     const lx = x & CM, ly = y & CM, lz = z & CM;
     if (lx === 0) this.markChunk(cx - 1, cy, cz); else if (lx === CM) this.markChunk(cx + 1, cy, cz);
     if (ly === 0) this.markChunk(cx, cy - 1, cz); else if (ly === CM) this.markChunk(cx, cy + 1, cz);
@@ -111,7 +112,8 @@ export class World {
     if (cy < 0 || cy >= this.ncy) return;
     if (this.wrap) { cx = (cx + this.ncx) % this.ncx; cz = (cz + this.ncz) % this.ncz; }
     else if (cx < 0 || cz < 0 || cx >= this.ncx || cz >= this.ncz) return;
-    this.dirty.add(cx + this.ncx * (cz + this.ncz * cy));
+    const ci = cx + this.ncx * (cz + this.ncz * cy);
+    this.dirty.add(ci); this.hot.add(ci);
   }
 
   // The building or prop that owns the column at (x, z), or null for open ground.

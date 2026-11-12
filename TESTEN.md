@@ -4,6 +4,19 @@ Die automatischen Prüfungen (`tools/`) finden Fehler im Programm. Diese Liste i
 
 Zu jedem Punkt reicht ein Haken oder ein Stichwort, was stört.
 
+**Stand 12. November 2026:** Der Autor und weitere Testspieler haben die Liste zu einem großen Teil zufriedenstellend durchgespielt; was auffiel, waren Kleinigkeiten (Haken sind in dieser Datei nicht gesetzt). Behoben seitdem: Nach einem schrägen Sprung an eine Wand drehte sich die Figur teilweise ins Gebäude. Neu und nur automatisch geprüft ist, was in Abschnitt 0 steht.
+
+## 0. Neu seit der Überarbeitung vom November 2026
+
+- [ ] Nach dem ersten Wachsen (spätestens nach drei Minuten) pulsiert die Weltkugel, daneben hüpfen alle acht Figuren in der Blase. Versteht man, dass man dort Figur und Welt wechseln kann?
+- [ ] Öffnet ein Klick oder Tipp auf das Gesicht im Macht-Ring die Auswahl? Stehen die Figuren dort oben und groß genug?
+- [ ] Nach jedem Weltwechsel steht drei Sekunden eine Karte im Bild (Figur ➜ Welt). Stört sie?
+- [ ] Idle-Modus: Wechselt er mit den Heimatwelten auch die Figur, und kehrt das Spiel beim Übernehmen zur eigenen Figur und Welt zurück?
+- [ ] Weltwechsel: Dreht sich die Sanduhr, und läuft die Musik weiter, während die neue Welt entsteht?
+- [ ] Klettern: Schräg an eine Wand springen – hängt die Figur gerade davor, auch beim Klettern zur Seite und um Ecken?
+- [ ] Läuft das Spiel in den Hochhaus-Welten (Wolkenkratzer-Stadt, Neon-Megacity) flüssiger als vorher, vor allem beim Laufen durch die Stadt und bei großen Einstürzen? (`?perf=1` in der Adresse zeigt die Zeiten)
+- [ ] Auf einem Handy oder schwachen Rechner: Geht die Grafik bei „automatisch“ in den ersten 40 Sekunden einmal eine Stufe herunter, wenn es ruckelt?
+
 ## 1. Die ersten fünf Minuten (ohne Lesen, am besten mit Kind)
 
 - [ ] Versteht man ohne Text, wie man läuft, zuschlägt, springt?
