@@ -41,6 +41,7 @@ export default async function ({ g, sc, wait, fire, moves, errors }) {
     for (const dev of ['kbm', 'touch']) {
       g.input.device = dev; g.hud.layout(); g.progress.species = 'chopper'; g.hud.refreshTools();
       g.hud.openWorlds(); await wait(150); sheet('worlds/' + dev); g.hud.close();
+      g.hud.openMixer(); await wait(150); sheet('mixer/' + dev); g.hud.close();
       g.hud.openParent(); await wait(150); sheet('settings/' + dev); g.hud.close();
       if (document.body.classList.contains('compact')) { g.hud.toggleMenu(true); await wait(150); check('menu/' + dev); g.hud.toggleMenu(false); }
     }

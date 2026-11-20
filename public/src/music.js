@@ -16,7 +16,7 @@
 
 import { ClassicMusic } from './music-classic.js';
 import { StemPlayer } from './vendor/musik-generator/player/stem-player.js';
-import { RENDER_RATE, stateFor, scoreFor, trackFor } from './music-score.js';
+import { RENDER_RATE, RENDER_RATE_LOW, stateFor, scoreFor, trackFor } from './music-score.js';
 
 const WORKER = './vendor/musik-generator/stems/stem-worker.js';
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
@@ -40,6 +40,15 @@ export class Music {
     this.track = null; // the piece that is playing or being rendered
     this.choice = ''; // the piece the player chose for all worlds ('' = each world its own)
     this.world = null;
+    this.sampleRate = RENDER_RATE;
+  }
+
+  // Low-memory devices (detail 1–2, phones): render stems at a lower sample rate to save ~31 % RAM and render time.
+  setLowMemory(low) {
+    const rate = low ? RENDER_RATE_LOW : RENDER_RATE;
+    if (rate === this.sampleRate) return;
+    this.sampleRate = rate;
+    if (this.track && this.mode !== 'classic') this.load(this.track);
   }
 
   // The world that is being played: its piece, unless the player chose one for all.
@@ -86,7 +95,7 @@ export class Music {
       const worker = (this.worker = new Worker(address, { type: 'module' }));
       worker.onmessage = (e) => { if (worker === this.worker) this.receive(e.data); }; // (a worker that was replaced has nothing more to say)
       worker.onerror = () => { if (worker === this.worker) this.fallBack(); };
-      worker.postMessage({ type: 'render', description, sampleRate: RENDER_RATE });
+      worker.postMessage({ type: 'render', description, sampleRate: this.sampleRate });
     } catch {
       this.fallBack();
     }
@@ -97,7 +106,7 @@ export class Music {
     else if (msg.type === 'progress') this.progress = msg.fraction;
     else if (msg.type === 'files') {
       for (const [name, channels] of Object.entries(msg.files)) {
-        const data = { sampleRate: RENDER_RATE, channels };
+        const data = { sampleRate: this.sampleRate, channels };
         if (this.player) {
           this.player.addBuffer(name, data);
           for (const done of this.waiting.get(name) ?? []) done(this.player.buffers.get(name));

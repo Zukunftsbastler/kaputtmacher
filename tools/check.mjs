@@ -5,7 +5,10 @@
 //   3. Every world must generate without an error, and almost nothing in it may float (tools/floating.mjs):
 //      what is not joined face to face with the ground hangs in the air once its surroundings are destroyed.
 //   4. The description of the music: three states, getting faster, within memory; and the fallback without a worker.
-//   5. Numbers in README and KONZEPT that come from the code (achievements, modules, worlds, the detail table).
+//   5. Run-length chunk packing/unpacking preserves every voxel exactly.
+//   6. Numbers in README and KONZEPT that come from the code (achievements, modules, worlds, creatures, detail table).
+//   7. Static security checks: no innerHTML/eval/inline HTML scripts or styles, Trusted Types policies match _headers,
+//      and the localStorage key matches between progress.js and legal.js.
 
 let failed = 0;
 const fail = (msg) => { failed++; console.log('FAIL ' + msg); };
@@ -52,6 +55,19 @@ for (const [i, w] of WORLDS.entries()) {
     if (!major || !world.spawn) fail(w.id + ': no buildings or no starting point');
     const ms = performance.now() - t0, loose = floating(world);
     if (loose.n > 100) fail(w.id + ': ' + loose.n + ' floating voxels: ' + Object.entries(loose.by).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => k + '=' + v).join(' '));
+    // Verify RLE chunk pack/unpack round-trip on the first planet world.
+    if (w.id === 'skyline') {
+      const before = world.memoryBytes(), sampleIdx = world.chunks.findIndex((c) => c !== null);
+      const copy = sampleIdx >= 0 ? world.chunks[sampleIdx].slice() : null;
+      world.packFar(world.spawn[0], world.spawn[2], 180);
+      const after = world.memoryBytes();
+      if (!(after < before)) fail(`rle: skyline memory did not shrink (${before} -> ${after})`);
+      if (sampleIdx >= 0) {
+        const back = world.chunk(sampleIdx);
+        if (!back || back.some((v, idx) => v !== copy[idx])) fail('rle: unpacked chunk differs from original');
+      }
+      console.log(`rle: skyline ${(before / 1e6).toFixed(1)} MB -> ${(after / 1e6).toFixed(1)} MB`);
+    }
     console.log(w.id.padEnd(9), String(major).padStart(4), 'buildings', String(world.total).padStart(9), 'voxels', ms.toFixed(0).padStart(5), 'ms', String(loose.n).padStart(4), 'floating', world.roads ? 'streets' : '');
   } catch (e) { fail(w.id + ': ' + e.message); }
 }
@@ -114,10 +130,13 @@ for (const [i, w] of WORLDS.entries()) {
   };
   expect(readme, /(\d+) kleine Ziele/, ACHIEVEMENTS.length, 'README, number of achievements');
   expect(readme, /Liste der (\d+) Erfolge/, ACHIEVEMENTS.length, 'README, module table: achievements');
+  expect(konzept, /^(\d+) kleine Ziele,/m, ACHIEVEMENTS.length, 'KONZEPT 18, number of achievements');
   expect(readme, /src\/\s+(\d+) ES-Module/, modules, 'README, number of modules');
   expect(konzept, /in (\d+) Modulen/, modules, 'KONZEPT 12.1, number of modules');
   expect(readme, /\*\*(\d+) Welten,\*\*/, WORLDS.length, 'README, number of worlds');
   expect(konzept, /^(\d+) Welten, alle von Anfang an wählbar/m, WORLDS.length, 'KONZEPT 7.4, number of worlds');
+  if (!/Alle acht Figuren sind von Anfang an wählbar/.test(konzept)) fail('docs: KONZEPT 5.4 does not say "Alle acht Figuren"');
+  if (!/Ab Stufe 3 reißen Einstürze Nachbarn mit/.test(readme)) fail('docs: README cascade stage does not say Stufe 3');
   // KONZEPT 12.4 against DETAIL in main.js: planet and visible cap in metres (half the voxels), shares in per cent.
   const rows = [...main.matchAll(/\{ planet: (\d+), tall: \d+, cap: (\d+), debris: (\d+), fx: (\d+), people: ([\d.]+), units: ([\d.]+), thin: ([\d.]+), fire: (\d+), pixel: ([\d.]+) \}/g)];
   const table = [...konzept.matchAll(/^\| (\d) \| (\d+) m \| (\d+) m \| ([\d ]+) \| ([\d ]+) \| (\d+) % \| (\d+) % \| (\d+) % \| ([\d ]+) \| (\d+) % \|$/gm)];
@@ -128,6 +147,31 @@ for (const [i, w] of WORLDS.entries()) {
     if (want.join() !== t.join()) fail(`docs: KONZEPT 12.4, level ${i + 1} says ${t.join(' ')}, the code has ${want.join(' ')}`);
   }
   console.log(`documents: ${modules} modules, detail table checked`);
+
+  // 7. Static security checks: no unsafe DOM sinks, no inline HTML scripts/styles, matching Trusted Types policies and storage key.
+  const srcFiles = [
+    'public/legal.js',
+    ...fs.readdirSync(root + 'public/src').filter((f) => f.endsWith('.js')).map((f) => 'public/src/' + f),
+    ...fs.readdirSync(root + 'public/src/moves').filter((f) => f.endsWith('.js')).map((f) => 'public/src/moves/' + f),
+  ];
+  const policies = new Set();
+  for (const f of srcFiles) {
+    const src = read(f);
+    if (/\b(innerHTML|outerHTML|insertAdjacentHTML|document\.write)\b|\beval\s*\(|\bnew\s+Function\b/.test(src)) fail(`security: unsafe sink in ${f}`);
+    for (const m of src.matchAll(/createPolicy\(\s*'([^']+)'/g)) policies.add(m[1]);
+  }
+  for (const f of fs.readdirSync(root + 'public').filter((x) => x.endsWith('.html'))) {
+    const html = read('public/' + f);
+    if (/\s(style|on[a-z]+)\s*=/i.test(html)) fail(`security: inline style or event handler in public/${f}`);
+    if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(html)) fail(`security: inline script in public/${f}`);
+  }
+  const hdr = read('public/_headers');
+  const hdrPol = new Set((hdr.match(/trusted-types\s+([^;]+)/)?.[1] ?? '').trim().split(/\s+/).filter(Boolean));
+  if ([...policies].sort().join() !== [...hdrPol].sort().join()) fail(`security: Trusted Types mismatch: code=${[...policies].sort().join(',')} headers=${[...hdrPol].sort().join(',')}`);
+  const k1 = read('public/src/progress.js').match(/const KEY = '([^']+)'/)?.[1];
+  const k2 = read('public/legal.js').match(/const KEY = '([^']+)'/)?.[1];
+  if (!k1 || k1 !== k2) fail(`security: storage key mismatch (${k1} vs ${k2})`);
+  console.log(`security: ${srcFiles.length} scripts, ${policies.size} Trusted Types policies, key ${k1}`);
 }
 console.log(`${ACHIEVEMENTS.length} achievements, ${WORLDS.length} worlds`);
 console.log(failed ? `${failed} check(s) FAILED` : 'all checks passed');

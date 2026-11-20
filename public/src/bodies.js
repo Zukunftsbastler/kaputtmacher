@@ -15,6 +15,7 @@ const tmp = [0, 0, 0], tmp2 = [0, 0, 0];
 let cells = new Int32Array(4 * 4096); // scratch: x, y, z, type
 let label = new Uint8Array(1 << 16), order = new Int32Array(1 << 16);
 const MAX_HITS = 5, hits = new Float32Array(MAX_HITS * 4);
+const IMPACT_BUDGET = 12; // deterministic cap on impact destruction spheres per step (prevents spikes when 36 fragments land at once)
 
 export class Body {
   constructor(sx, sy, sz) {
@@ -172,6 +173,7 @@ export class Bodies {
 
   update(dt) {
     const g = this.g, w = g.world;
+    this.impactBudget = IMPACT_BUDGET;
     for (let i = this.list.length - 1; i >= 0; i--) {
       const b = this.list[i];
       if (!b.kinematic) this.step(b, dt);
@@ -261,7 +263,7 @@ export class Bodies {
     }
     if (w.wrap) { pos[0] = ((pos[0] % w.sx) + w.sx) % w.sx; pos[2] = ((pos[2] % w.sz) + w.sz) % w.sz; }
 
-    if (nHits && b.cooldown <= 0) {
+    if (nHits && b.cooldown <= 0 && this.impactBudget > 0) {
       // Every hard contact works like a new hit on both the world and the fragment itself.
       // What decides the outcome is momentum: a piece that is far heavier than the building it lands on
       // goes straight through it, while two heavyweights break each other and may end up leaning.
@@ -270,7 +272,9 @@ export class Bodies {
       g.lastHit.dx = v[0] / sp; g.lastHit.dz = v[2] / sp;
       opt.dx = v[0] / sp; opt.dz = v[2] / sp; opt.impulse = Math.min(hitSpeed * 0.9, launch(60)); opt.spare = !b.thrown;
       let crushed = false;
-      for (let k = 0; k < Math.min(nHits, MAX_HITS); k++) {
+      const count = Math.min(nHits, MAX_HITS, this.impactBudget);
+      this.impactBudget -= count;
+      for (let k = 0; k < count; k++) {
         const hs = hits[k * 4 + 3], st = w.structureAt(hits[k * 4], hits[k * 4 + 2]);
         if (st && st.remaining * 12 < b.mass) {
           // Light target: crushed outright, the falling piece itself is hardly slowed or damaged.

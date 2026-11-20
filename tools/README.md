@@ -4,7 +4,9 @@ Dieser Ordner wird nicht veröffentlicht (Netlify liefert nur `public/` aus). Al
 
 | Befehl | Was es prüft |
 |---|---|
-| `node tools/check.mjs` | Ohne Browser: beschädigte und manipulierte Spielstände, Stimmigkeit der Erfolgsliste, Erzeugung aller Welten (und dass darin fast nichts schwebt), die Musikbeschreibung (Zustände, Tempi, Speicher) und der Rückfall auf die alte Musik |
+| `node tools/check.mjs` | Ohne Browser: beschädigte und manipulierte Spielstände, Stimmigkeit der Erfolgsliste, Erzeugung aller Welten (und dass darin fast nichts schwebt), RLE-Packen/Entpacken, die Musikbeschreibung (Zustände, Tempi, Speicher) und der Rückfall auf die alte Musik, Doku-Zahlen sowie statische Sicherheitsprüfungen (keine unsicheren DOM-Sinks/Inline-Skripte, Abgleich der Trusted-Types-Policies und des Speicher-Schlüssels) |
+| `node tools/log.mjs <datei.json>` | Ohne Browser: wertet das Spielprotokoll (`log`) eines gesicherten Spielstands je Figur und Stufe gegen die Vorgabe „Stufe N dauert N Minuten“ aus |
+| `node tools/balance.mjs [figuren] [stufen] [welt] [ms]` | Mit Browser: misst die Macht pro Sekunde im Selbstspiel je Figur und Stufe gegen das Zielband (70–130 %) |
 | `node tools/vendor-music.mjs [Pfad]` | Kopiert die benötigten Dateien der Musik-Generator-Suite nach `public/src/vendor/musik-generator/` (Standardpfad `../../Musik-Generator`) |
 | `node tools/floating.mjs [welt …]` | Ohne Browser: zählt je Welt, was in der frisch erzeugten Welt schwebt (nicht über Flächen mit dem Boden verbunden), nach Bauwerk und Würfelart; mit `KIND=<art>` Beispielpositionen. `check.mjs` schlägt ab 100 solcher Würfel in einer Welt fehl |
 | `node tools/music.mjs [stück]` | Ohne Browser: listet die Musikstücke, wie die Suite sie komponiert – Besetzung je Zustand, Tempi, die ersten Töne der Melodie, Speicherbedarf |

@@ -6,6 +6,7 @@ import { VOXEL_STRENGTH, VOXEL_MASS, tauOf } from './stability.js';
 
 export const CS = 32;
 const CB = 5, CM = 31, CVOL = CS * CS * CS;
+const rleBuf = new Uint8Array(CVOL * 2); // scratch for run-length packing of distant chunks
 // The twenty neighbours that share only an edge or a corner with a voxel, as x, y, z triples (for World.weld).
 const DIAG = [];
 for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let d = -1; d <= 1; d++) if (Math.abs(a) + Math.abs(b) + Math.abs(d) >= 2) DIAG.push(a, b, d);
@@ -22,6 +23,7 @@ export class World {
     this.ncx = sx >> CB; this.ncy = sy >> CB; this.ncz = sz >> CB;
     const n = this.ncx * this.ncy * this.ncz;
     this.chunks = new Array(n).fill(null);
+    this.rle = new Array(n).fill(null); // run-length packed chunks outside the visible cap
     this.uniform = new Uint8Array(n);
     this.builtList = new Int32Array(1 << 20); this.builtN = 0; // where something was built, while the world is generated (for weld)
     this.dirty = new Set(); // chunks whose mesh is out of date (or missing)
@@ -48,7 +50,9 @@ export class World {
     else if (x < 0 || z < 0 || x >= this.sx || z >= this.sz) return 0;
     const ci = (x >> CB) + this.ncx * ((z >> CB) + this.ncz * (y >> CB));
     const c = this.chunks[ci];
-    return c ? c[(x & CM) | ((z & CM) << CB) | ((y & CM) << (CB * 2))] : this.uniform[ci];
+    if (c) return c[(x & CM) | ((z & CM) << CB) | ((y & CM) << (CB * 2))];
+    if (this.rle[ci]) return this.unpack(ci)[(x & CM) | ((z & CM) << CB) | ((y & CM) << (CB * 2))];
+    return this.uniform[ci];
   }
 
   set(x, y, z, t) {
@@ -58,6 +62,7 @@ export class World {
     const cx = x >> CB, cy = y >> CB, cz = z >> CB;
     const ci = cx + this.ncx * (cz + this.ncz * cy);
     let c = this.chunks[ci];
+    if (!c && this.rle[ci]) c = this.unpack(ci);
     const li = (x & CM) | ((z & CM) << CB) | ((y & CM) << (CB * 2));
     const old = c ? c[li] : this.uniform[ci];
     if (old === t) return;
@@ -262,9 +267,63 @@ export class World {
     this.builtList = null;
   }
 
+  // Uncompressed array of chunk ci (unpacks on demand from rle; null for uniform chunks).
+  chunk(ci) {
+    return this.chunks[ci] ?? (this.rle[ci] ? this.unpack(ci) : null);
+  }
+
+  // Run-length encodes a chunk that has moved behind the horizon (or collapses it if it became uniform).
+  pack(ci) {
+    const c = this.chunks[ci];
+    if (!c) return false;
+    const first = c[0];
+    let same = true, o = 0, i = 0;
+    while (i < CVOL) {
+      const v = c[i];
+      if (v !== first) same = false;
+      let len = 1;
+      while (i + len < CVOL && len < 255 && c[i + len] === v) len++;
+      if (o + 2 >= 20000) return false; // noisy rubble chunk: leave uncompressed
+      rleBuf[o++] = len;
+      rleBuf[o++] = v;
+      i += len;
+    }
+    this.chunks[ci] = null;
+    if (same) { this.uniform[ci] = first; this.rle[ci] = null; return true; }
+    this.rle[ci] = rleBuf.slice(0, o);
+    return true;
+  }
+
+  unpack(ci) {
+    const r = this.rle[ci];
+    if (!r) return this.chunks[ci];
+    const c = (this.chunks[ci] = new Uint8Array(CVOL));
+    for (let i = 0, o = 0; i < r.length; i += 2) {
+      const len = r[i], v = r[i + 1];
+      if (v) c.fill(v, o, o + len);
+      o += len;
+    }
+    this.rle[ci] = null;
+    return c;
+  }
+
+  // Packs every chunk outside the given horizontal radius around (fx, fz), keeping memory low on large planets.
+  packFar(fx, fz, radius) {
+    if (!this.wrap) return;
+    const r2 = radius * radius, sx = this.sx, sz = this.sz, hx = sx / 2, hz = sz / 2;
+    for (let ci = 0; ci < this.chunks.length; ci++) {
+      if (!this.chunks[ci]) continue;
+      let dx = (ci % this.ncx) * CS + 16 - fx, dz = (Math.floor(ci / this.ncx) % this.ncz) * CS + 16 - fz;
+      if (dx > hx) dx -= sx; else if (dx < -hx) dx += sx;
+      if (dz > hz) dz -= sz; else if (dz < -hz) dz += sz;
+      if (dx * dx + dz * dz > r2) this.pack(ci);
+    }
+  }
+
   memoryBytes() {
     let n = this.footprint.byteLength + this.uniform.byteLength;
-    for (const c of this.chunks) if (c) n += CVOL;
+    for (const c of this.chunks) if (c) n += c.byteLength;
+    for (const r of this.rle) if (r) n += r.byteLength;
     return n;
   }
 }

@@ -8,8 +8,10 @@ onmessage = (e) => {
   try {
     const w = WORLDS[index].make(seed, quality, mix);
     w.finalize();
+    if (w.wrap) w.packFar(w.spawn[0], w.spawn[2], Math.min(quality.cap, w.sx / 2 - 2) + 70);
     const transfer = [];
     for (const c of w.chunks) if (c) transfer.push(c.buffer);
+    for (const r of w.rle) if (r) transfer.push(r.buffer);
     postMessage({ id, world: w }, transfer);
   } catch (err) {
     postMessage({ id, error: String(err?.stack ?? err) });

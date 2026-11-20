@@ -5,7 +5,7 @@
 
 import { clamp, wrapDelta } from './math.js';
 import { launch } from './particles.js';
-import { stageScale, tracked, airborne, motionOf } from './monster.js';
+import { stageScale, tracked, airborne, motionOf, specOf } from './monster.js';
 import { ease } from './moves/kit.js';
 import dino from './moves/dino.js';
 import gorilla from './moves/gorilla.js';
@@ -169,7 +169,7 @@ export class Tools {
     if (a.t >= a.W + a.S + a.R) {
       v.end?.(this, a);
       if (a.heavy && g.world.remaining === a.rem) g.emote('sweat'); // all that effort, and nothing gave way
-      if (this.held && g.progress.species !== 'chopper') this.release(1, false); // the helicopter's load stays on its rope
+      if (this.held && specOf(g.progress.species).carry !== 'rope') this.release(1, false); // the helicopter's load stays on its rope
       this.act = null;
       this.cool = 0.05;
     }
@@ -250,11 +250,11 @@ export class Tools {
     for (let i = this.timers.length - 1; i >= 0; i--) if ((this.timers[i].t -= dt) <= 0) { const f = this.timers[i].fn; this.timers.splice(i, 1); f(); }
     for (let i = this.rays.length - 1; i >= 0; i--) if ((this.rays[i].life -= dt) <= 0) this.rays.splice(i, 1);
 
-    // A lump in the hands is carried above the head (the dino holds it in its jaws instead).
+    // A lump in the hands is carried above the head (dino holds it in its jaws, helicopter on its rope).
     if (this.held) {
       const b = this.held;
       if (b.dead) this.held = null;
-      else if (g.progress.species !== 'dino' && g.progress.species !== 'chopper') { b.pos[0] = m.x; b.pos[1] = m.y + m.h * 1.15 + b.radius * 0.6; b.pos[2] = m.z; }
+      else if (!specOf(g.progress.species).carry) { b.pos[0] = m.x; b.pos[1] = m.y + m.h * 1.15 + b.radius * 0.6; b.pos[2] = m.z; }
     }
     this.updateRope(dt);
     this.updateVortices(dt);

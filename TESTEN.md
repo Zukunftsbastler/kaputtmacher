@@ -16,6 +16,10 @@ Zu jedem Punkt reicht ein Haken oder ein Stichwort, was stört.
 - [ ] Klettern: Schräg an eine Wand springen – hängt die Figur gerade davor, auch beim Klettern zur Seite und um Ecken?
 - [ ] Läuft das Spiel in den Hochhaus-Welten (Wolkenkratzer-Stadt, Neon-Megacity) flüssiger als vorher, vor allem beim Laufen durch die Stadt und bei großen Einstürzen? (`?perf=1` in der Adresse zeigt die Zeiten)
 - [ ] Auf einem Handy oder schwachen Rechner: Geht die Grafik bei „automatisch“ in den ersten 40 Sekunden einmal eine Stufe herunter, wenn es ruckelt?
+- [ ] Weltauswahl: Öffnet die Würfel-Kachel 🎲 den Weltenmischer in einem eigenen Blatt, und ist die Hauptseite dadurch ruhiger?
+- [ ] Stampfattacke: Klappt der dritte Sprungdruck jetzt während des gesamten Fallens nach dem Doppelsprung zuverlässig?
+- [ ] Sonder-Figuren (✈️, 🚁, 🐙): Erscheint beim ersten Wechsel ein sprachfreier Hinweis zur Steuerung und verschwindet, sobald man sie ausführt?
+- [ ] Idle-Modus: Wechselt die Kamera weich zwischen den vier Einstellungen, und bleibt der Bildschirm auch nach einem kurzen Tab-Wechsel wach?
 
 ## 1. Die ersten fünf Minuten (ohne Lesen, am besten mit Kind)
 

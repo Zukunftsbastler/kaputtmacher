@@ -233,4 +233,6 @@ body.compact { --btn: 46px; --sl: calc(8px + env(safe-area-inset-left)); --sr: c
 @keyframes titlecard { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); } 12%, 75% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -60%) scale(0.95); } }
 .sheet .row.creatures .btn { font-size: 44px; width: 76px; height: 76px; border-radius: 22px; }
 .compact .sheet .row.creatures .btn { font-size: 34px; width: 60px; height: 60px; }
-@media (prefers-reduced-motion: reduce) { #hint .parade span, .titlecard { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  #hint .parade span, .titlecard, .btn.pulse, .btn.fresh, #power.grow, #power.gain, #hint .finger, #hint .finger.hold, .keycap.blink, .padbtn.blink, #hint svg .lmb { animation: none; }
+}

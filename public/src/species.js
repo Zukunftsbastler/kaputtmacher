@@ -9,10 +9,13 @@
 //   ghost: false if the see-through twin cannot show its moves (its body never stands still to be copied).
 //   emotes: it has manga emoticons over its tip (Game.emote).
 //   jumpIcon: the icon of its jump button (default the stomp's), or 'up' for a button that is held to rise.
+//   carry: how a grabbed fragment is held ('jaw' for dino, 'rope' for helicopter, default above the head).
+//   turnRate: how fast the head or upper carriage tracks the aim point (default 8).
+//   aimArm: true if the upper arm tracks the vertical aim pitch (excavator).
 //   gain: share of the usual power, by stage, for creatures that destroy far more easily than the others.
 
 export const SPECIES = [
-  { id: 'dino', icon: '🦖', skin: [0x4caf50, 0x2a9d4a], belly: 0xdce775, dark: 0xf57c00, motion: 'walk' },
+  { id: 'dino', icon: '🦖', skin: [0x4caf50, 0x2a9d4a], belly: 0xdce775, dark: 0xf57c00, motion: 'walk', carry: 'jaw' },
   { id: 'gorilla', icon: '🦍', skin: [0x5d5d66, 0x26262c], belly: 0xb8956a, dark: 0x1a1a1e, motion: 'walk' },
   { id: 'robot', icon: '🤖', skin: [0x6f9fd8, 0x3d4f7a], belly: 0xcfd8dc, dark: 0x263238, motion: 'walk' },
   { id: 'tank', icon: '🪖', skin: [0x7c8f45, 0x55662e], belly: 0x9aa860, dark: 0x2b2f25, motion: 'walk', tracked: true },
@@ -21,11 +24,11 @@ export const SPECIES = [
   // stages 1 to 3 and raced through them. With this curve it stays ahead on the early stages (about three times) and level later.
   // The excavator: tracks, an upper carriage that turns all the way round, and a boom with stick and bucket.
   // It neither climbs nor shoots: it digs, swings, breaks and pushes.
-  { id: 'digger', icon: '🚜', skin: [0xf2b632, 0xd8921c], belly: 0x9fd3ea, dark: 0x2b2b2b, motion: 'walk', tracked: true },
+  { id: 'digger', icon: '🚜', skin: [0xf2b632, 0xd8921c], belly: 0x9fd3ea, dark: 0x2b2b2b, motion: 'walk', tracked: true, turnRate: 4, aimArm: true },
   { id: 'jet', icon: '✈️', skin: [0xdfe4e8, 0xa9b4bd], belly: 0x3f7fc0, dark: 0x2d3436, motion: 'plane', cam: [0.5, 3.4], ghost: false, gain: (stage) => Math.min(0.9, 0.054 * 1.75 ** (stage - 1)) },
   // The helicopter: hovers where it is let go, slides in every direction, rises while the jump button is held.
   // It flies over what stands in the way and fires rockets from stage 3, so up to stage 4 what it destroys counts for a little less (measured, see NEED).
-  { id: 'chopper', icon: '🚁', skin: [0xe53935, 0xc62828], belly: 0x9fd3ea, dark: 0x263238, motion: 'hover', cam: [0.5, 3.4], ghost: false, jumpIcon: 'up', gain: (stage) => Math.min(1, 0.5 + 0.15 * (stage - 1)) },
+  { id: 'chopper', icon: '🚁', skin: [0xe53935, 0xc62828], belly: 0x9fd3ea, dark: 0x263238, motion: 'hover', cam: [0.5, 3.4], ghost: false, jumpIcon: 'up', carry: 'rope', gain: (stage) => Math.min(1, 0.5 + 0.15 * (stage - 1)) },
   // The giant tentacle: no eyes, no face, all body language. Warm coral with a pink touch, a dark burnt orange-red back
   // and a pale peach underside with round suckers. It never walks: it travels under the ground and reaches out from where it surfaces.
   { id: 'tentacle', icon: '🐙', skin: [0xff8462, 0xff7656], belly: 0xffc6b4, dark: 0xc23f20, motion: 'burrow', cam: [1.1, 3.9], ghost: false, emotes: true, jumpIcon: '🕳️' },

@@ -25,9 +25,10 @@ const VOXEL_VS = `#version 300 es
 layout(location=0) in vec3 i_pos;
 layout(location=1) in vec2 i_size;
 layout(location=2) in float i_meta;
-layout(location=3) in vec4 a_col;
+layout(location=3) in float i_type;
 uniform mat4 u_vp, u_model;
 uniform vec3 u_sun, u_eye, u_origin;
+uniform sampler2D u_pal;
 ${CURVE}
 out vec3 v_col; out float v_light; out float v_dist; out vec2 v_flat; out float v_em; out float v_y; out vec3 v_cell;
 const vec3 N[6] = vec3[6](vec3(1,0,0), vec3(-1,0,0), vec3(0,1,0), vec3(0,-1,0), vec3(0,0,1), vec3(0,0,-1));
@@ -46,6 +47,7 @@ void main() {
   vec3 grow = U[f] * (cu > 0.5 ? 0.012 : -0.012) + V[f] * (cv > 0.5 ? 0.012 : -0.012);
   vec3 rel = (u_model * vec4(p + grow, 1.0)).xyz;
   vec3 n = normalize(mat3(u_model) * N[f]);
+  vec4 a_col = texelFetch(u_pal, ivec2(int(i_type), 0), 0);
   v_light = (0.5 + 0.18 * n.y + 0.55 * max(dot(n, u_sun), 0.0)) * (0.55 + 0.15 * ao);
   v_col = a_col.rgb; v_em = a_col.a; v_flat = rel.xz; v_y = rel.y;
   v_cell = p - N[f] * 0.5 + u_origin; // a point inside the voxel this face belongs to
@@ -207,6 +209,10 @@ export class Renderer {
     this.pixelScale = 1;
 
     this.meshBytes = 0; // graphics memory held by voxel meshes (shown with ?perf=1)
+    this.worldPal = this.createPalette(new Uint8Array(1024));
+    this.boundPal = null;
+    gl.useProgram(this.voxel.p);
+    gl.uniform1i(this.voxel.u.u_pal, 0);
 
     this.cubeVao = gl.createVertexArray();
     gl.bindVertexArray(this.cubeVao);
@@ -251,15 +257,42 @@ export class Renderer {
     return { p, u };
   }
 
-  // A voxel mesh from the mesher's quad records (mesher.js, QUAD_BYTES): one instance per quad.
+  // 256 x 1 RGBA8 colour table for voxel types (world or creature model).
+  createPalette(rgba) {
+    const gl = this.gl, tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+    this.boundPal = tex;
+    return tex;
+  }
+
+  setPalette(rgba) {
+    const gl = this.gl;
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.worldPal);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+    this.boundPal = this.worldPal;
+  }
+
+  deletePalette(tex) {
+    if (!tex) return;
+    if (this.boundPal === tex) this.boundPal = null;
+    this.gl.deleteTexture(tex);
+  }
+
+  // A voxel mesh from the mesher's quad records (mesher.js, QUAD_BYTES = 12): one instance per quad.
   createMesh(data, quads) {
     const gl = this.gl;
     const vao = gl.createVertexArray(), vbo = gl.createBuffer();
     gl.bindVertexArray(vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    const attr = (loc, n, type, norm, off) => { gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, n, type, norm, 16, off); gl.vertexAttribDivisor(loc, 1); };
-    attr(0, 3, gl.SHORT, false, 0); attr(1, 2, gl.UNSIGNED_BYTE, false, 6); attr(2, 1, gl.UNSIGNED_SHORT, false, 8); attr(3, 4, gl.UNSIGNED_BYTE, true, 12);
+    const attr = (loc, n, type, norm, off) => { gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, n, type, norm, 12, off); gl.vertexAttribDivisor(loc, 1); };
+    attr(0, 3, gl.SHORT, false, 0); attr(1, 2, gl.UNSIGNED_BYTE, false, 6); attr(2, 1, gl.UNSIGNED_SHORT, false, 8); attr(3, 1, gl.UNSIGNED_BYTE, false, 10);
     gl.bindVertexArray(null);
     const bytes = data.byteLength;
     this.meshBytes += bytes;
@@ -306,6 +339,9 @@ export class Renderer {
     }
     gl.useProgram(this.voxel.p);
     gl.uniform1f(this.voxel.u.u_cap2, cam.cap2);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.worldPal);
+    this.boundPal = this.worldPal;
   }
 
   // 0 = day, 1 = night (see NIGHT). Set for the whole frame; the creature is drawn at a lower value so it stays easy to see.
@@ -323,10 +359,11 @@ export class Renderer {
   }
 
   // Draws a voxel mesh. alpha < 1 draws it see-through (used for the demonstration ghost).
-  drawMesh(mesh, model, alpha = 1, tint = null, ox = 0, oy = 0, oz = 0) {
+  drawMesh(mesh, model, alpha = 1, tint = null, ox = 0, oy = 0, oz = 0, pal = this.worldPal) {
     const gl = this.gl, u = this.voxel.u;
     if (!mesh || !mesh.quads) return;
     gl.useProgram(this.voxel.p);
+    if (pal !== this.boundPal) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, pal); this.boundPal = pal; }
     gl.uniformMatrix4fv(u.u_model, false, model);
     gl.uniform3f(u.u_origin, ox, oy, oz); // world position of the mesh origin, keeps the per-voxel shade stable
     gl.uniform1f(u.u_alpha, alpha);

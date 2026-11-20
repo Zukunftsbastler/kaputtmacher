@@ -10,7 +10,7 @@ import { TRACKS } from './music-score.js';
 const KEY = 'kaputtmacher.v1';
 export const MAX_STAGE = 30; // far beyond what any world can show; keeps model building and maths bounded
 export const MAX_DETAIL = 5; // detail slider: 1 = fastest .. 5 = richest, 0 = chosen automatically
-const HINTS = ['move', 'light', 'heavy', 'stomp', 'roar', 'worlds', 'next']; // demonstrations that can be marked as seen
+const HINTS = ['move', 'light', 'heavy', 'stomp', 'roar', 'worlds', 'next', 'fly', 'hover', 'burrow']; // demonstrations that can be marked as seen
 const TOGGLES = ['shake', 'life', 'units', 'smoke', 'fireSpread', 'fightBack', 'unlockAll', 'cascade', 'autoIdle', 'minimap'];
 const VERSION = 2; // format of the save; raised whenever a field changes its meaning
 
@@ -92,6 +92,8 @@ function sanitize(raw) {
   d.settings.track = oneOf(set.track, TRACKS.map((t) => t.id), '');
   d.settings.detail = cleanDetail(Object.hasOwn(set, 'detail') ? set.detail : set.quality);
   for (const k of TOGGLES) if (typeof set[k] === 'boolean') d.settings[k] = set[k];
+  // Respect prefers-reduced-motion as default for camera shake on fresh saves without overriding an explicit choice.
+  if (typeof set.shake !== 'boolean' && globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) d.settings.shake = false;
   for (const k of Object.keys(DEFAULT_MIX)) d.mix[k] = num(mix[k], 0, 1, DEFAULT_MIX[k]);
   return d;
 }

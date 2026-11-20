@@ -5,7 +5,7 @@
 
 import { clamp, wrapDelta } from './math.js';
 import { GRAVITY, launch } from './particles.js';
-import { tracked, stageScale, motionOf } from './species.js';
+import { tracked, stageScale, motionOf, specOf } from './species.js';
 import { newPose, locomotion } from './posing.js';
 import { Climber } from './climb.js';
 import { mixin } from './mixin.js';
@@ -148,11 +148,11 @@ export class Monster {
     return true;
   }
 
-  // The right moment for the ground pound: around the top of the double jump, from the second half
-  // of the somersault until the creature has started to fall in earnest.
+  // The right moment for the ground pound: from the second half of the double-jump somersault
+  // through the entire fall, so younger players can trigger it reliably.
   poundReady() {
     return this.jumps === 2 && !this.onGround && !this.leaping && !this.pound &&
-      (this.flipT < 0 || this.flipT > FLIP_TIME * 0.5) && this.vy > -this.v2 * 0.55;
+      (this.flipT < 0 || this.flipT > FLIP_TIME * 0.5);
   }
 
   // An aimed leap: flies in an arc to (tx, tz), ignoring what stands in the way, and reports the landing.
@@ -390,8 +390,9 @@ export class Monster {
     if (!tracked(species)) look = clamp(look, -1, 1);
     let dl = look - pose.look;
     if (tracked(species)) dl = Math.atan2(Math.sin(dl), Math.cos(dl));
-    pose.look += dl * Math.min(1, dt * (species === 'digger' ? 4 : 8)); // the excavator's upper carriage swings round more slowly
-    if (species === 'digger') { // and its arm follows the height of the aim point
+    const spec = specOf(species);
+    pose.look += dl * Math.min(1, dt * (spec.turnRate ?? 8));
+    if (spec.aimArm) { // the excavator's arm follows the height of the aim point
       const d = Math.hypot(wrapDelta(aimX - this.x, size), wrapDelta(aimZ - this.z, size));
       pose.aimPitch += (Math.atan2(g.aim.y - (this.y + h * 0.45), Math.max(d, h * 0.5)) - pose.aimPitch) * Math.min(1, dt * 5);
     }

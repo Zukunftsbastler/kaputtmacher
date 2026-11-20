@@ -69,6 +69,14 @@ class Game {
     if (params.has('stage')) this.progress.stage = this.progress.playStage = cleanStage(params.get('stage'));
     if (params.has('quality')) this.progress.settings.detail = cleanDetail(params.get('quality'));
     if (params.has('unlock')) this.progress.settings.unlockAll = true;
+    // Unattended backdrop (?idle=1 without ?stage=): lift a fresh stage-1 save temporarily so the show is lively right away.
+    this.idleBoost = null;
+    if (params.has('idle') && !params.has('stage') && this.progress.playStage < 4) {
+      this.idleBoost = { stage: this.progress.stage, playStage: this.progress.playStage, volatile: this.progress.volatile };
+      this.progress.volatile = true;
+      this.progress.stage = Math.max(this.progress.stage, 4);
+      this.progress.playStage = 4;
+    }
     this.audio.setVolume(this.progress.settings.volume);
     this.music = new Music(this.audio);
     this.music.setVolume(this.progress.settings.music);
@@ -122,6 +130,7 @@ class Game {
     this.meshQueue = new MeshQueue(this);
     this.bodyMeshes = new Map();
     this.model = null;
+    this.modelPal = null;
     this.modelMeshes = [];
     this.pending = []; // explosions waiting for their short fuse
     this.recent = []; // recent explosions, to keep one tank from going off a hundred times
@@ -150,13 +159,19 @@ class Game {
     if (params.has('fly')) this.fly = true;
     if (params.has('idle')) this.setIdle(true);
     this.hud.refreshTools();
+    this.requestMotionHint();
     this.hud.requestHint('move');
 
     // If the browser takes the graphics context away (driver reset, memory pressure), start over cleanly.
     this.canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.contextLost = true; });
     this.canvas.addEventListener('webglcontextrestored', () => location.reload());
     // In the background nothing runs and nothing sounds; the lost time is not caught up afterwards.
-    document.addEventListener('visibilitychange', () => { this.audio.pause(document.hidden); this.last = performance.now(); this.acc = 0; });
+    // Browsers also release screen wake locks when a tab hides: re-acquire it when returning in idle mode.
+    document.addEventListener('visibilitychange', () => {
+      this.audio.pause(document.hidden);
+      this.last = performance.now(); this.acc = 0;
+      if (!document.hidden && this.idle) this.requestWakeLock();
+    });
 
     this.last = performance.now();
     this.acc = 0;
@@ -175,6 +190,7 @@ class Game {
     this.fx.thin = this.quality.thin;
     this.fire.resize(this.quality.fire);
     this.renderer.pixelScale = this.quality.pixel;
+    this.music?.setLowMemory(this.detail <= 2);
     this.cubeBuf = new Float32Array((this.quality.debris + 1200) * 12);
     this.billBuf = new Float32Array((this.quality.fx + 200) * 9);
   }
@@ -206,9 +222,13 @@ class Game {
   // both at once would double that for a moment. Nothing may draw or step until installWorld (see this.loading).
   freeWorld() {
     if (!this.world) return;
+    this.meshQueue.abort();
     for (const m of this.chunkMeshes.values()) this.renderer.deleteMesh(m);
     this.chunkMeshes.clear();
+    for (const e of this.bodyMeshes.values()) this.renderer.deleteMesh(e.mesh);
+    this.bodyMeshes.clear();
     this.world.chunks.fill(null);
+    this.world.rle?.fill(null);
     this.destruction.safe = this.destruction.seen = null;
   }
 
@@ -268,10 +288,11 @@ class Game {
     // In a night world glass carries a marker that the shader turns into lit and dark windows (renderer.js, NIGHT).
     for (const t of [T.GLASS, T.GLASS_DARK, T.GLASS_GREEN, T.GLASS_BRONZE, T.GLASS_BLACK, T.GLASS_MIRROR]) TYPE_RGBA[t * 4 + 3] = world.night ? 1 : 0;
     TYPE_RGBA[T.ROADLINE * 4 + 3] = world.night ? 80 : 0; // road markings glow at night
+    this.renderer.setPalette(TYPE_RGBA);
 
     for (const m of this.chunkMeshes.values()) this.renderer.deleteMesh(m);
     this.chunkMeshes.clear();
-    this.meshQueue.reset(); // after the colours of this world are set (just above)
+    this.meshQueue.reset();
     this.destruction.reset(world);
     this.bodies.clear();
     this.fire.clear();
@@ -302,6 +323,7 @@ class Game {
     const c = this.cam;
     // On a planet only a cap around the focus is visible; its size does not depend on the size of the world.
     const cap = Math.min(this.quality.cap, world.sx / 2 - 2);
+    if (world.wrap) world.packFar(world.spawn[0], world.spawn[2], cap + 70);
     c.wrap = world.wrap ? world.sx : 0;
     c.curv = world.wrap ? 0.6 / cap : 0;
     c.cap2 = world.wrap ? cap * cap : 1e12;
@@ -328,8 +350,18 @@ class Game {
   buildMonster() {
     const m = this.monster;
     for (const mesh of this.modelMeshes) this.renderer.deleteMesh(mesh);
+    this.renderer.deletePalette(this.modelPal);
     this.model = buildModel(this.progress.species, m.stage);
+    this.modelPal = this.renderer.createPalette(this.model.pal);
     this.modelMeshes = this.model.parts.map((p) => this.renderer.createMesh(p.data, p.quads));
+  }
+
+  // Wordless control hint when first playing a creature with special movement (plane, helicopter, tentacle).
+  requestMotionHint() {
+    const mo = motionOf(this.progress.species);
+    if (mo === 'plane') this.hud.requestHint('fly');
+    else if (mo === 'hover') this.hud.requestHint('hover');
+    else if (mo === 'burrow') this.hud.requestHint('burrow');
   }
 
   // Every creature has its own stage and power: switching creature switches to its progress.
@@ -347,6 +379,7 @@ class Game {
     this.buildMonster();
     this.hud.refreshTools();
     this.hud.refreshButtons();
+    if (!this.idle) this.requestMotionHint();
     if (!travel || startWorld(p) === p.world) return false;
     this.travel(startWorld(p)); // to its home world, or to the world picked for it
     return true;
@@ -386,6 +419,16 @@ class Game {
 
   get allUnlocked() { return this.progress.settings.unlockAll; }
 
+  requestWakeLock() {
+    try {
+      navigator.wakeLock?.request('screen').then((lock) => {
+        if (!this.idle) { lock.release().catch(() => {}); return; }
+        this.wakeLock = lock;
+        lock.addEventListener?.('release', () => { if (this.wakeLock === lock) this.wakeLock = null; });
+      }, () => {});
+    } catch { /* not available: the screen follows the system's settings */ }
+  }
+
   // Idle mode on or off. Any real input switches it off again (see input.onActivity).
   setIdle(on) {
     if (on === this.idle) return;
@@ -393,6 +436,13 @@ class Game {
     if (on) { this.autopilot.reset(); this.hud.close(); this.ownPlay = { species: this.progress.species, world: this.progress.world }; }
     else {
       this.idleOff = performance.now(); this.pitchOffset = 0; this.input.jumpHeld = false;
+      // If ?idle=1 temporarily boosted a fresh save for the backdrop, restore the player's own stage on takeover.
+      if (this.idleBoost) {
+        const b = this.idleBoost; this.idleBoost = null;
+        this.progress.stage = b.stage; this.progress.playStage = b.playStage; this.progress.volatile = b.volatile;
+        this.monster.stage = b.playStage; this.monster.h = this.monster.targetHeight();
+        this.buildMonster(); this.hud.refreshTools(); this.hud.setPower(this.progress.power / stageNeed(b.stage), b.stage);
+      }
       // The show went through other creatures and their worlds (autopilot.nextWorld): the player gets back their own.
       const own = this.ownPlay;
       this.ownPlay = null;
@@ -401,10 +451,8 @@ class Game {
     this.input.lastActivity = performance.now();
     this.hud.refreshButtons();
     // Keep the screen awake while the game is running as a backdrop, where the browser allows it.
-    try {
-      if (on) navigator.wakeLock?.request('screen').then((lock) => { this.wakeLock = lock; if (!this.idle) lock.release(); }, () => {});
-      else { this.wakeLock?.release(); this.wakeLock = null; }
-    } catch { /* not available: the screen follows the system's settings */ }
+    if (on) this.requestWakeLock();
+    else { try { this.wakeLock?.release(); } catch {} this.wakeLock = null; }
   }
 
   unlockedTools() {
@@ -514,6 +562,12 @@ class Game {
     this.walked += moved;
     if (!this.fly) this.stat('dist', moved);
     if (this.walked > m.h * 1.2) { this.hud.doneHint('move'); this.hud.requestHint('light'); this.walked = -1e9; }
+    if (!this.idle) {
+      const mo = motionOf(this.progress.species);
+      if (mo === 'plane' && (Math.abs(inp.turn) > 0.2 || Math.abs(inp.forward) > 0.2)) this.hud.doneHint('fly');
+      else if (mo === 'hover' && m.liftIn > 0) this.hud.doneHint('hover');
+      else if (mo === 'burrow' && m.under) this.hud.doneHint('burrow');
+    }
 
     // Left = the quick version of the selected move, right = the slow, strong one.
     if (inp.heavyPressed) this.tools.use(this.tool, true);

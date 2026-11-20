@@ -17,7 +17,6 @@
 
 import { CS } from './world.js';
 import { meshChunk, padChunk, meshVolume, PAD_SIZE } from './mesher.js';
-import { TYPE_RGBA } from './materials.js';
 import { wrapDelta } from './math.js';
 
 const WORKER = './mesh-worker.js';
@@ -39,6 +38,7 @@ export class MeshQueue {
     this.bodyJobs = new Map(); // job number -> { body, version }
     this.answers = [];
     this.pads = [];
+    this.packQueue = []; // evicted chunks waiting to be run-length packed (few per frame)
     this.pending = 0; // chunks in view that wait for a mesh (or are being meshed); for tests and ?perf=1
     const n = Math.max(1, Math.min(3, (navigator.hardwareConcurrency ?? 4) - 2));
     try {
@@ -67,14 +67,15 @@ export class MeshQueue {
     for (const e of this.g.bodyMeshes?.values() ?? []) e.waiting = -1;
   }
 
-  // A new world: forget every job, tell the workers its colours (night worlds mark their glass, see Game.loadWorld).
-  reset() {
+  // Drops every running and queued job immediately (called before the old world is freed and on installWorld).
+  abort() {
     this.gen++;
     this.ticket.clear(); this.flight.clear(); this.bodyJobs.clear();
+    this.answers.length = 0; this.packQueue.length = 0; this.pending = 0;
     this.load.fill(0);
-    const rgba = TYPE_RGBA.slice();
-    for (const w of this.workers) w.postMessage({ kind: 'rgba', rgba });
   }
+
+  reset() { this.abort(); }
 
   install(ci, data, quads) {
     const g = this.g, r = g.renderer, w = g.world;
@@ -122,11 +123,18 @@ export class MeshQueue {
   update() {
     const g = this.g, w = g.world, dirty = w.dirty, hot = w.hot, c = g.cam;
     this.collect();
-    // On a planet only the chunks inside the visible cap have a mesh at all; those that fall behind the horizon are released.
+    // On a planet only the chunks inside the visible cap have a mesh at all; those that fall behind the horizon are released
+    // and queued for run-length packing to keep memory low.
     const viewR = this.viewR(), view2 = viewR * viewR, drop2 = (viewR + 70) ** 2;
-    if (c.wrap) for (const [ci, gm] of g.chunkMeshes) {
-      const dx = wrapDelta(gm.x + 16 - c.focusX, c.wrap), dz = wrapDelta(gm.z + 16 - c.focusZ, c.wrap);
-      if (dx * dx + dz * dz > drop2) { g.renderer.deleteMesh(gm); g.chunkMeshes.delete(ci); dirty.add(ci); }
+    if (c.wrap) {
+      for (const [ci, gm] of g.chunkMeshes) {
+        const dx = wrapDelta(gm.x + 16 - c.focusX, c.wrap), dz = wrapDelta(gm.z + 16 - c.focusZ, c.wrap);
+        if (dx * dx + dz * dz > drop2) { g.renderer.deleteMesh(gm); g.chunkMeshes.delete(ci); dirty.add(ci); this.packQueue.push(ci); }
+      }
+      for (let n = 0; n < 20 && this.packQueue.length; n++) {
+        const ci = this.packQueue.pop();
+        if (!g.chunkMeshes.has(ci) && !this.flight.has(ci) && this.dist2(ci) > drop2) w.pack(ci);
+      }
     }
     const held = this.held();
     // The chunks that wait, in order: hot ones first, then the nearest.

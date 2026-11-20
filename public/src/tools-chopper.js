@@ -4,6 +4,7 @@
 import { isTerrain } from './materials.js';
 import { clamp, wrapDelta } from './math.js';
 import { GRAVITY, launch } from './particles.js';
+import { specOf } from './species.js';
 
 export class ToolsChopper {
   // Where the gun under the helicopter's nose ends.
@@ -85,7 +86,7 @@ export class ToolsChopper {
 
   // Put away whatever hangs on the winch (when another move is chosen).
   stow() {
-    if (this.held && this.g.progress.species === 'chopper') this.dropLoad();
+    if (this.held && specOf(this.g.progress.species).carry === 'rope') this.dropLoad();
     this.rope = null; this.hook = null;
   }
 

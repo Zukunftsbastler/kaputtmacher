@@ -320,11 +320,11 @@ export function buildModel(speciesId, stage) {
     for (const q of boxes) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); z0 = Math.min(z0, q[2]); x1 = Math.max(x1, q[3]); y1 = Math.max(y1, q[4]); z1 = Math.max(z1, q[5]); }
     const sx = x1 - x0, sy = y1 - y0, sz = z1 - z0, vox = new Uint8Array(sx * sy * sz);
     for (const q of boxes) for (let y = q[1]; y < q[4]; y++) for (let z = q[2]; z < q[5]; z++) for (let x = q[0]; x < q[3]; x++) vox[x - x0 + sx * (z - z0 + sz * (y - y0))] = q[6];
-    const mesh = meshVolume(vox, sx, sy, sz, x0, y0, z0, pal);
+    const mesh = meshVolume(vox, sx, sy, sz, x0, y0, z0);
     // chain: joint names from the root down to this part.
     const chain = [];
     for (let n = name; n; n = parents[n]) chain.unshift(n);
     parts.push({ name, data: mesh.data, quads: mesh.quads, chain, emote: name.startsWith('emo_') ? name.slice(4) : null, seg: name.startsWith('seg') });
   }
-  return { parts, pivots, species: sp.id, stage, tipY: SEGS * SEG_LEN };
+  return { parts, pivots, pal, species: sp.id, stage, tipY: SEGS * SEG_LEN };
 }

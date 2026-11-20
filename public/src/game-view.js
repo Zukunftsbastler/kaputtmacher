@@ -5,6 +5,14 @@ import { partMatrix, locomotion, MODEL_HEIGHT, GEAR, SEGS, specOf, EMOTE_LOOK, E
 
 const FOV = (55 * Math.PI) / 180;
 const v3 = [0, 0, 0], mat = m4.create(), base = m4.create(), tipBase = m4.create(), tipMat = m4.create();
+// Idle camera direction: four calm shots (follow, high overview, low kaiju angle, gentle side sweep) that crossfade smoothly.
+const IDLE_SHOTS = [
+  { dist: 1.15, pitch: 0.0, yaw: 0.0 },
+  { dist: 1.62, pitch: 0.24, yaw: 0.12 },
+  { dist: 0.94, pitch: -0.15, yaw: -0.22 },
+  { dist: 1.30, pitch: 0.05, yaw: 0.28 },
+];
+const SHOT_LEN = 20, SHOT_BLEND = 4;
 
 export class GameView {
   // World position of the tentacle's tip, as it is drawn right now.
@@ -26,19 +34,26 @@ export class GameView {
     else this.pitchOffset = clamp(this.pitchOffset + drag[1] * 0.004, -0.6, 0.9);
     // A small monster between tall buildings looks ahead and up at them; a giant looks down on its planet.
     const tallness = clamp(m.h / (this.world.sy * 0.45), 0, 1);
-    this.camPitch = clamp((this.world.wrap ? 0.2 + 0.5 * tallness : 0.52) + this.pitchOffset + (this.idle ? 0.14 * Math.sin(this.time * 0.053) : 0), 0.02, 1.25);
+    let idleDist = 1, idlePitch = 0, idleYaw = 0;
+    if (this.idle && !this.fly) {
+      const cyc = this.time / SHOT_LEN, idx = Math.floor(cyc), frac = (cyc - idx) * SHOT_LEN;
+      const a = IDLE_SHOTS[idx % IDLE_SHOTS.length], b = IDLE_SHOTS[(idx + 1) % IDLE_SHOTS.length];
+      const u = frac > SHOT_LEN - SHOT_BLEND ? 0.5 - 0.5 * Math.cos(Math.PI * (frac - (SHOT_LEN - SHOT_BLEND)) / SHOT_BLEND) : 0;
+      idleDist = a.dist + (b.dist - a.dist) * u + 0.08 * Math.sin(this.time * 0.13);
+      idlePitch = a.pitch + (b.pitch - a.pitch) * u + 0.04 * Math.sin(this.time * 0.09);
+      idleYaw = this.camOffset ? 0 : (a.yaw + (b.yaw - a.yaw) * u);
+    }
+    this.camPitch = clamp((this.world.wrap ? 0.2 + 0.5 * tallness : 0.52) + this.pitchOffset + idlePitch, 0.04, 1.25);
 
     let tx = 0, ty, tz = 0, dist = 0;
     // camOffset: an extra turn of the view only (used by the test pages to look at the creature from the side).
-    const yaw = this.camYaw + (this.camOffset ?? 0), pitch = this.fly ? this.flyPitch : -this.camPitch, cp = Math.cos(pitch);
+    const yaw = this.camYaw + (this.camOffset ?? 0) + idleYaw, pitch = this.fly ? this.flyPitch : -this.camPitch, cp = Math.cos(pitch);
     c.fwd[0] = Math.sin(yaw) * cp; c.fwd[1] = Math.sin(pitch); c.fwd[2] = Math.cos(yaw) * cp;
     if (this.fly) { c.focusX = this.flyPos[0]; c.focusZ = this.flyPos[2]; ty = this.flyPos[1]; }
     // On an upright phone the picture is narrow, so the camera steps back to keep the surroundings in view.
     const narrow = clamp(1.2 * cv.clientHeight / Math.max(1, cv.clientWidth), 1, 2.2);
     const look = specOf(this.progress.species).cam ?? [1.3, 3.4];
-    if (!this.fly) { c.focusX = m.x; c.focusZ = m.z; ty = m.y + m.h * look[0]; dist = (m.h * look[1] + 12) * narrow; }
-    // Idle mode has a camera of its own: it slowly breathes in and out between a close view and a wide one.
-    if (this.idle && !this.fly) dist *= 1.25 + 0.4 * Math.sin(this.time * 0.08);
+    if (!this.fly) { c.focusX = m.x; c.focusZ = m.z; ty = m.y + m.h * look[0]; dist = (m.h * look[1] + 12) * narrow * idleDist; }
     c.eye[0] = tx - c.fwd[0] * dist; c.eye[1] = ty - c.fwd[1] * dist; c.eye[2] = tz - c.fwd[2] * dist;
     const fl = Math.hypot(c.fwd[0], c.fwd[2]) || 1;
     c.right[0] = -c.fwd[2] / fl; c.right[1] = 0; c.right[2] = c.fwd[0] / fl;
@@ -137,7 +152,7 @@ export class GameView {
     for (let i = 0; i < this.model.parts.length; i++) {
       const part = this.model.parts[i];
       if (part.emote || ((part.seg || part.name === 'mound') && hidden)) continue; // below the ground nothing of it shows
-      if (gear === null || !part.chain.some((n) => n !== gear && Object.values(set).includes(n))) this.renderer.drawMesh(this.modelMeshes[i], partMatrix(mat, b, this.model, part, pose), alpha, tint);
+      if (gear === null || !part.chain.some((n) => n !== gear && Object.values(set).includes(n))) this.renderer.drawMesh(this.modelMeshes[i], partMatrix(mat, b, this.model, part, pose), alpha, tint, 0, 0, 0, this.modelPal);
     }
     // The tentacle's emoticon pops up above the tip (below the ground: above where it travels), turned to the camera.
     // It swells in, moves the way its kind of mark moves in a comic, and shrinks away.
@@ -162,7 +177,7 @@ export class GameView {
         m4.rotateY(mat, yaw);
         if (roll) m4.rotateZ(mat, roll);
         m4.scale(mat, s, s, s);
-        this.renderer.drawMesh(this.modelMeshes[i], mat, 1, null);
+        this.renderer.drawMesh(this.modelMeshes[i], mat, 1, null, 0, 0, 0, this.modelPal);
       }
     }
     if (this.world.night) this.renderer.setNight(1);

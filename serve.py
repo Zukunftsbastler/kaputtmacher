@@ -16,8 +16,31 @@ import sys
 PUBLIC = pathlib.Path(__file__).resolve().parent / "public"
 
 
+def load_headers():
+    """Read the security headers from public/_headers so local dev runs under the same CSP as Netlify."""
+    out = []
+    path = PUBLIC / "_headers"
+    if not path.is_file():
+        return out
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.startswith((" ", "\t")) or ":" not in line:
+            continue
+        name, value = line.split(":", 1)
+        name, value = name.strip(), value.strip()
+        # Local dev disables caching completely and runs over plain HTTP (skip HSTS on localhost).
+        if name.lower() in ("cache-control", "strict-transport-security"):
+            continue
+        out.append((name, value))
+    return out
+
+
+SECURITY_HEADERS = load_headers()
+
+
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
+        for name, value in SECURITY_HEADERS:
+            self.send_header(name, value)
         self.send_header("Cache-Control", "no-store")
         super().end_headers()
 

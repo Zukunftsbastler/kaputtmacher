@@ -64,7 +64,7 @@ Das Tentakel läuft nicht: Es reist unter der Erde (den Steuerknüppel durchdrü
 
 **Die Welt reagiert:** Beim ersten Schaden kommt ein Polizeiauto, dann mehr, dazu Reporter im Hubschrauber, die Feuerwehr, sobald es brennt, und schließlich das Militär mit Hubschraubern und Kampffliegern. Niemand kann dem Kaputtmacher etwas anhaben; alle lassen sich umwerfen oder vom Himmel holen. Die Alarmstufe (Sterne) steigt mit der Zeit und ebbt wieder ab, wenn man nichts zerstört.
 
-**Erfolge:** 143 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der acht Figuren wächst für sich. Ab Stufe 4 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
+**Erfolge:** 143 kleine Ziele, die beim Erreichen kurz eingeblendet werden. Jede der acht Figuren wächst für sich. Ab Stufe 3 reißen Einstürze Nachbarn mit (Kettenreaktionen, abschaltbar). Holz, Blätter und Stoff brennen. Hubschrauber kreisen, sobald es kracht. Lose Trümmer verschwinden nach rund 30 Sekunden wieder; größere Schutthaufen bleiben als Ruinen.
 
 Das vollständige Konzept mit allen Zahlen steht in [KONZEPT.md](KONZEPT.md).
 
@@ -79,7 +79,7 @@ Spielbar. Geprüft wurde bisher fast nur automatisiert (Durchläufe im Browser m
 ### Regeln des Projekts
 
 1. **Keine Abhängigkeiten, kein Build.** Kein npm, kein Framework, keine Engine, kein CDN. Die Musik kommt aus der eigenen, ebenfalls abhängigkeitsfreien Musik-Generator-Suite des Autors; deren Dateien sind eingekopiert (`public/src/vendor/`). Der Inhalt von `public/` wird unverändert ausgeliefert (Netlify, `netlify.toml`). Grund: möglichst kleine Angriffsfläche.
-2. **Strenge Content-Security-Policy** (`public/_headers`): nur eigene Dateien, keine Inline-Skripte, keine Inline-Style-Attribute im Markup (Setzen über `element.style` ist erlaubt), keine Netzwerkzugriffe. Einzige Öffnung: ein Worker aus eigener Quelle für die Musik, dessen Adresse nur die Trusted-Types-Policy `kaputtmacher-music` nennen darf.
+2. **Strenge Content-Security-Policy** (`public/_headers`, auch lokal von `serve.py` ausgeliefert): nur eigene Dateien, keine Inline-Skripte, keine Inline-Style-Attribute im Markup (Setzen über `element.style` ist erlaubt), keine Netzwerkzugriffe. Einzige Öffnungen: drei Worker aus eigener Quelle (Musik, Vernetzen, Welterzeugung), deren Adressen nur die benannten Trusted-Types-Policies (`kaputtmacher-music`, `kaputtmacher-mesh`, `kaputtmacher-world`) liefern dürfen.
 3. **Quellcode englisch,** Spieloberfläche sprachfrei (Emoji als Symbole). Text gibt es nur an zwei Stellen, beide auf Deutsch: in den Einstellungen und als Link „Impressum & Datenschutz“ (rechtlich nötig, führt zu `public/impressum.html`).
    Wer ändert, was das Spiel speichert oder lädt, muss die Datenschutzerklärung in `public/impressum.html` anpassen – sie beschreibt den Ist-Zustand genau.
 4. **Jeder Prompt des Autors wird wörtlich abgelegt** als `PROMPTS/PROMPTnn.md` (nächste freie Nummer).
@@ -119,7 +119,7 @@ public/
 | `world.js` | Statisches Voxel-Gitter in 32³-Blöcken; `get`/`set`; Gebäudeliste (`structures`) mit Grundriss-Karte; `finalize()` nach der Erzeugung, davor `weld()` (verschweißt, was sich nur schräg berührt); `isLink` (gehört ein Würfel zu einer Superstruktur?) |
 | `worldgen.js` | Baukasten und Baupläne aller Welten; Liste `WORLDS`; Stadtgenerator `town()` |
 | `citykit.js` | Großstadt-Baukasten: Wolkenkratzer aus Segmenten, Fassaden, Dächer, Läden, Eingänge |
-| `mesher.js` | Voxel → Flächen: nur sichtbare Flächen, Kantenabdunklung, Zusammenfassen gleicher Flächen; eine Fläche = ein Eintrag von 16 Byte (`QUAD_BYTES`); `padChunk` kopiert einen Block mit Rand für die Worker |
+| `mesher.js` | Voxel → Flächen: nur sichtbare Flächen, Kantenabdunklung, Zusammenfassen gleicher Flächen; eine Fläche = ein Eintrag von 12 Byte (`QUAD_BYTES`, Farbe über Paletten-Textur im Shader); `padChunk` kopiert einen Block mit Rand für die Worker |
 | `meshing.js` | Wann welcher Block ein neues Netz bekommt und wo es entsteht: Reihenfolge (getroffene zuerst, dann die nächsten), sofort bei der Figur, sonst in zwei bis drei Workern; Netze großer Bruchstücke (`MeshQueue`) |
 | `mesh-worker.js` | Der Vernetzungs-Worker |
 | `world-worker.js` | Erzeugt eine Welt beim Reisen im Hintergrund (`Game.loadWorldAway`) |
@@ -186,8 +186,8 @@ Ein Simulationsschritt (`Game.step`), Reihenfolge ist wichtig: Figur bewegen →
 - **Keine Speicheranforderung im Spielverlauf,** wo es sich vermeiden lässt: Schutt, Effekte und Zwischenpuffer sind feste Vorräte.
 - **Zusammengefasste Flächen sind auf Planeten waagerecht höchstens 4 Würfel lang** (`meshChunk`), sonst klaffen sie durch die Krümmung auseinander.
 - **Strahlen verlaufen gerade im Bild, nicht in der Welt** (`Tools.trace`, `toPicture`/`toWorld`). Wer eine neue Strahlenwaffe baut, benutzt `bolt` oder `ray` und liest Treffpunkt und Richtung aus `this.hit` und `rdx/rdy/rdz`, statt selbst entlang einer Weltgeraden zu rechnen.
-- **Eine Fläche ist ein Eintrag von 16 Byte** (`mesher.js`): Ecke als 16-Bit-Ganzzahlen, Ausdehnung als Bytes (höchstens 255), Seite und Kantenabdunklung, Farbe. Der Vertex-Shader baut daraus die vier Ecken (`gl_VertexID`); der Farbton je Würfel entsteht erst im Fragment-Shader. Wer das Format ändert, ändert `meshPadded` und `VOXEL_VS` zusammen.
-- **Netze entstehen in Workern.** Nur `meshing.js` legt Netze von Blöcken an. `world.set` markiert geänderte Blöcke in `world.dirty` und `world.hot`; die Worker bekommen eine Kopie mit Rand (`padChunk`) und die Farbtabelle der Welt (bei jedem Weltwechsel neu, weil Nachtwelten ihr Glas markieren). Ein Ergebnis gilt nur, wenn sein Auftrag der neueste für diesen Block ist.
+- **Eine Fläche ist ein Eintrag von 12 Byte** (`mesher.js`): Ecke als 16-Bit-Ganzzahlen, Ausdehnung als Bytes (höchstens 255), Seite und Kantenabdunklung, Voxel-Typ (Farbe aus einer 256×1-Paletten-Textur im Shader). Der Vertex-Shader baut daraus die vier Ecken (`gl_VertexID`); der Farbton je Würfel entsteht erst im Fragment-Shader. Wer das Format ändert, ändert `meshPadded` und `VOXEL_VS` zusammen.
+- **Netze entstehen in Workern.** Nur `meshing.js` legt Netze von Blöcken an. `world.set` markiert geänderte Blöcke in `world.dirty` und `world.hot`; die Worker bekommen eine Kopie mit Rand (`padChunk`). Blöcke hinter dem Horizont werden auf Planeten lauflängenkodiert (`world.pack`) und beim Wiederbetreten transparent entpackt. Ein Ergebnis gilt nur, wenn sein Auftrag der neueste für diesen Block ist.
 - **Eine Welt ist reine Daten** (keine Funktionen, keine eigenen Klassen außer `World` selbst), damit sie im Worker entstehen und herübergereicht werden kann (`world-worker.js`). Wer im Generator etwas an die Welt hängt, hängt Tabellen an, keine Funktionen (Beispiel: `world.roads`).
 - **Was eine Figur ausmacht, steht in `SPECIES`** (`species.js`): Bewegungsart, Ketten, Kamera, Geist, Emoticons, Sprungknopf. Statt `species === 'chopper'` fragt der Code `motionOf(species) === 'hover'` oder `specOf(species).…`; nur Modelle und Körpersprache unterscheiden nach Namen.
 - **Browser-Cache:** siehe „Starten“. Nach Änderungen an mehreren Modulen immer mit `serve.py` testen. Auf Netlify sorgt `Cache-Control: no-cache` in `_headers` dafür, dass der Browser bei jeder Datei nachfragt.
@@ -252,4 +252,4 @@ Der Autopilot tut nichts, was ein Spieler nicht auch könnte: Er füllt einmal p
 
 ### Bekannte Lücken
 
-Bruchstücke stoßen nicht miteinander zusammen · keine Schlagschatten · Autos weichen einander nicht aus · Feuer frisst sich nicht durch Beton- und Glasbauten · Zeitlupe (außer kurz bei schweren Treffern), Zurückspulen und „Welt wehrt sich“ fehlen · Speicherbedarf der Wolkenkratzer-Stadt rund 190 MB · Balance, Ton und Animationen sind nicht von Menschen abgenommen.
+Bruchstücke stoßen nicht miteinander zusammen · keine Schlagschatten · Autos weichen einander nicht aus · Feuer frisst sich nicht durch Beton- und Glasbauten · Zeitlupe (außer kurz bei schweren Treffern und im Idle-Modus), Zurückspulen und „Welt wehrt sich“ fehlen · Balance, Ton und Animationen sind auf Handy/Gamepad noch nicht vollständig von Menschen abgenommen.

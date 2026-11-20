@@ -49,7 +49,7 @@ export default async function ({ g, sc, wait }) {
     const mix = (v) => { h = Math.imul(h ^ (v & 255), 16777619); h = Math.imul(h ^ ((v >>> 8) & 255), 16777619); h = Math.imul(h ^ ((v >>> 16) & 255), 16777619); h = Math.imul(h ^ (v >>> 24), 16777619); };
     const w = g.world;
     for (let ci = 0; ci < w.chunks.length; ci++) {
-      const c = w.chunks[ci];
+      const c = w.chunk(ci);
       if (!c) { mix(w.uniform[ci] | 0x100); continue; }
       for (let i = 0; i < c.length; i += 4) mix(c[i] | (c[i + 1] << 8) | (c[i + 2] << 16) | (c[i + 3] << 24));
     }
@@ -77,7 +77,7 @@ export default async function ({ g, sc, wait }) {
       out.maxQuietS = Math.max(out.maxQuietS, quiet / 1000);
       lastVox = vox;
       out.samples.push({ s: Math.round((performance.now() - t0) / 1000), world: lastWorld, heap: Math.round((performance.memory?.usedJSHeapSize ?? 0) / 1e6), gpu: Math.round(g.renderer.meshBytes / 1e6),
-        ms: +g.perf.total.toFixed(1), worst: Math.round(g.perf.lastWorst), meshes: g.chunkMeshes.size, bodies: g.bodies.list.length, timers: g.tools.timers.length, debris: g.debris.n, queue: pending() });
+        ms: +g.perf.total.toFixed(1), worst: Math.round(g.perf.lastWorst), meshes: g.chunkMeshes.size, bmesh: g.bodyMeshes.size, bodies: g.bodies.list.length, timers: g.tools.timers.length, debris: g.debris.n, queue: pending(), flight: g.meshQueue?.flight.size ?? 0 });
     }
     Object.assign(out, { faults: g.faultCount ?? 0, lastError: g.lastError ?? null, idle: g.idle });
   }

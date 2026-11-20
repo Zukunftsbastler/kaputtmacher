@@ -62,7 +62,12 @@ export class Input {
       if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
-    addEventListener('blur', () => { this.keys.clear(); this.fire = false; });
+    addEventListener('blur', () => {
+      this.keys.clear(); this.fire = false; this.jumpBtn = false;
+      this.stick.on = false; this.stick.x = this.stick.y = 0;
+      this.fireOn = false; this.touchHeavy = false;
+      this.dragX = this.dragY = 0;
+    });
 
     c.addEventListener('mousemove', (e) => {
       this.aimX = e.clientX; this.aimY = e.clientY;
@@ -103,14 +108,14 @@ export class Input {
       }
       e.preventDefault();
     }, { passive: false });
-    const end = (e) => {
+    const end = (e, cancelled) => {
       for (const t of e.changedTouches) {
         if (this.stick.on && t.identifier === this.stick.id) { this.stick.on = false; this.stick.x = this.stick.y = 0; }
-        else if (this.fireOn && t.identifier === this.fireTouch) { this.fireOn = false; this.fire = false; if (!this.touchHeavy) this.firePressed = true; }
+        else if (this.fireOn && t.identifier === this.fireTouch) { this.fireOn = false; this.fire = false; if (!cancelled && !this.touchHeavy) this.firePressed = true; this.touchHeavy = false; }
       }
     };
-    c.addEventListener('touchend', end);
-    c.addEventListener('touchcancel', end);
+    c.addEventListener('touchend', (e) => end(e, false));
+    c.addEventListener('touchcancel', (e) => end(e, true));
   }
 
   // Call once per frame: folds keyboard, stick and gamepad into forward/turn/lift.

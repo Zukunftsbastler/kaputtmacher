@@ -34,8 +34,9 @@ if (starts.length >= 2) {
   if (b.heap - a.heap > 80) problems.push(`heap grew from ${a.heap} to ${b.heap} MB`);
   if (b.gpu - a.gpu > 60) problems.push(`graphics memory grew from ${a.gpu} to ${b.gpu} MB`);
 }
-console.log('  s  world        heap  gpu  ms   worst meshes bodies timers queue');
-for (const s of samples) console.log([String(s.s).padStart(5), s.world.padEnd(11), String(s.heap).padStart(5), String(s.gpu).padStart(4), String(s.ms).padStart(5), String(s.worst).padStart(5), String(s.meshes).padStart(6), String(s.bodies).padStart(6), String(s.timers).padStart(6), String(s.queue).padStart(5)].join(' '));
+if (samples.some((s) => (s.bmesh ?? 0) > 60)) problems.push('bodyMeshes grew beyond limit');
+console.log('  s  world        heap  gpu  ms   worst meshes bmesh bodies timers queue flight');
+for (const s of samples) console.log([String(s.s).padStart(5), s.world.padEnd(11), String(s.heap).padStart(5), String(s.gpu).padStart(4), String(s.ms).padStart(5), String(s.worst).padStart(5), String(s.meshes).padStart(6), String(s.bmesh ?? 0).padStart(5), String(s.bodies).padStart(6), String(s.timers).padStart(6), String(s.queue).padStart(5), String(s.flight ?? 0).padStart(6)].join(' '));
 console.log(`worlds: ${(x.worlds ?? []).join(' → ')}`);
 console.log(problems.length ? 'FAIL\n  ' + problems.join('\n  ') : 'passed');
 process.exit(problems.length ? 1 : 0);

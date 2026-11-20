@@ -126,8 +126,9 @@ export function scoreFor(id) {
 // The first piece, as it always was.
 export const SCORE = scoreFor('theme');
 
-// Rendering rate: 32 kHz keeps rendering quick and memory small (about 40 MB decoded).
+// Rendering rates: 32 kHz on desktop, 22.05 kHz on phones and low detail levels (saves ~31 % RAM and render time).
 export const RENDER_RATE = 32000;
+export const RENDER_RATE_LOW = 22050;
 
 // Which state belongs to an alarm level (0..5), with a little hysteresis so it does not flutter:
 // police from one star, the big guns from three.

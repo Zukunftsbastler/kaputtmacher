@@ -381,6 +381,25 @@ export class Hud {
       if (dev === 'kbm') box.append(mouse(heavy));
       else if (dev === 'pad') box.append('🎮', pad(heavy ? 'LT' : 'RT'));
       else { const f = finger(); if (heavy) f.classList.add('hold'); box.append(f); }
+    } else if (id === 'fly') {
+      el('span', '', box, '✈️');
+      if (dev === 'kbm') {
+        const k = el('div', 'keys', box);
+        k.append(el('span'), key('W', true), el('span'), key('A', true), key('S'), key('D', true));
+      } else if (dev === 'pad') box.append('🎮', pad('L'));
+      else box.append(finger());
+    } else if (id === 'hover') {
+      el('span', '', box, '🚁'); el('span', '', box, '🔼');
+      if (dev === 'kbm') box.append(key('', true, true));
+      else if (dev === 'pad') box.append('🎮', pad('A'));
+      else { const f = finger(); f.classList.add('hold'); box.append(f); }
+      this.toolButtons.up?.classList.add('pulse');
+    } else if (id === 'burrow') {
+      el('span', '', box, '🐙'); el('span', '', box, '🕳️');
+      if (dev === 'kbm') box.append(key('', true, true));
+      else if (dev === 'pad') box.append('🎮', pad('A'));
+      else box.append(finger());
+      this.toolButtons.stomp?.classList.add('pulse');
     } else if (id === 'stomp' || id === 'roar') {
       el('span', '', box, def.icon);
       if (dev === 'kbm') box.append(id === 'stomp' ? key('', true, true) : key('R', true));
@@ -435,8 +454,15 @@ export class Hud {
     const worlds = el('div', 'row', sheet);
     // Every world can be chosen at any time. The badge shows the monster stage a world is built for
     // (green once the monster has reached it); a tick marks worlds that were destroyed completely.
+    // The dice tile opens the world mixer in a sheet of its own, keeping this page uncluttered.
     for (const w of WORLDS) {
-      if (w.id === 'random') continue; // the dice tile sits next to its mixer below
+      if (w.id === 'random') {
+        const b = this.button(worlds, w.icon, () => this.openMixer());
+        b.classList.add('tile');
+        if (w.id === p.world) b.classList.add('sel');
+        if (p.completed.includes(w.id)) b.classList.add('complete');
+        continue;
+      }
       const b = this.button(worlds, w.icon, () => { this.close(); g.pickWorld(w.id); });
       b.classList.add('tile');
       if (w.id === p.world) b.classList.add('sel');
@@ -454,22 +480,29 @@ export class Hud {
         if (s === p.playStage) b.classList.add('sel');
       }
     }
-    {
-      const mix = el('div', 'mixer', sheet);
-      for (const k of Object.keys(MIX_ICONS)) {
-        el('span', '', mix, MIX_ICONS[k][0]);
-        const r = el('input', '', mix);
-        r.type = 'range'; r.min = 0; r.max = 1; r.step = 0.05; r.value = p.mix[k];
-        r.addEventListener('input', () => { p.mix[k] = Number(r.value); saveProgress(p); });
-        el('span', '', mix, MIX_ICONS[k][1]);
-      }
-      this.button(sheet, '🎲', () => { this.close(); g.pickWorld('random', true); }).classList.add('tile');
-    }
     if (p.stickers.length) el('div', 'stickers', sheet, p.stickers.join(' '));
     // The achievements live here, out of the way of the playing field.
-    const cup = this.button(sheet, '🏆', () => this.openAchievements());
+    const foot = el('div', 'row', sheet);
+    const cup = this.button(foot, '🏆', () => this.openAchievements());
     el('span', 'key ok', cup, String(p.achieved.length));
-    this.button(sheet, '✖️', () => this.close()).classList.add('small');
+    this.button(foot, '✖️', () => this.close()).classList.add('small');
+  }
+
+  // World mixer: opened from the dice tile in the world sheet.
+  openMixer() {
+    const g = this.g, p = g.progress, sheet = this.open('worlds');
+    const mix = el('div', 'mixer', sheet);
+    for (const k of Object.keys(MIX_ICONS)) {
+      el('span', '', mix, MIX_ICONS[k][0]);
+      const r = el('input', '', mix);
+      r.type = 'range'; r.min = 0; r.max = 1; r.step = 0.05; r.value = p.mix[k];
+      r.addEventListener('input', () => { p.mix[k] = Number(r.value); saveProgress(p); });
+      el('span', '', mix, MIX_ICONS[k][1]);
+    }
+    this.button(sheet, '🎲', () => { this.close(); g.pickWorld('random', true); }).classList.add('tile');
+    const foot = el('div', 'row', sheet);
+    this.button(foot, '⬅️', () => this.openWorlds()).classList.add('small');
+    this.button(foot, '✖️', () => this.close()).classList.add('small');
   }
 
   // All achievements: reached ones in colour, the others with how far they have come.
